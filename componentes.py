@@ -12,15 +12,26 @@ import tema
 # ----------------------------------------------------------------------------
 # Tipografia auxiliar
 # ----------------------------------------------------------------------------
-def eyebrow(texto, color=tema.MUTED):
+def eyebrow(texto, color=tema.MUTED, size=11):
     """Etiqueta en mayusculas, DM Sans semibold. Va arriba de titulos/secciones."""
     return ft.Text(
         texto.upper(),
-        size=11,
+        size=size,
         weight=ft.FontWeight.W_600,
         font_family=tema.FUENTE_SUBHEADER,
         color=color,
     )
+
+
+def topbar(subtitulo, derecha="", on_back=None):
+    """Barra superior editorial: 'Climb · {subtitulo}' a la izquierda y un
+    link opcional a la derecha (p. ej. '← Volver al dashboard')."""
+    izquierda = ft.Row(spacing=8, controls=[
+        eyebrow("Climb", color=tema.AMBAR),
+        eyebrow("·  " + subtitulo, color=tema.HINT),
+    ])
+    derecha_ctrl = enlace_cta(derecha, on_click=on_back) if derecha else ft.Container()
+    return ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[izquierda, derecha_ctrl])
 
 
 def hairline(color=tema.AMBAR, width=56):
@@ -88,6 +99,141 @@ def section_header(texto, contador=None):
     if contador is not None:
         controles.append(eyebrow(contador, color=tema.HINT))
     return ft.Row(controls=controles, alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+
+
+# ----------------------------------------------------------------------------
+# Bloques editoriales de Archive (ficha / timeline)
+# ----------------------------------------------------------------------------
+def field_block(label, contenido):
+    """Etiqueta (eyebrow) + valor. Para los campos de una ficha."""
+    return ft.Column(
+        spacing=0,
+        controls=[
+            eyebrow(label, size=10),
+            ft.Container(height=8),
+            ft.Text(contenido, size=15, font_family=tema.FUENTE_BODY, color=tema.NAVY),
+            ft.Container(height=26),
+        ],
+    )
+
+
+def tag_pill(label):
+    """Etiqueta tipo 'pill' para tags."""
+    return ft.Container(
+        bgcolor=tema.SECTION_BG,
+        padding=ft.Padding.symmetric(horizontal=12, vertical=5),
+        border_radius=3,
+        content=ft.Text(label, size=11, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.MUTED),
+    )
+
+
+def metrics_row(metrics):
+    """Fila de metricas de impacto: valor grande (Syne ambar) + etiqueta. metrics: list[{value,label}]."""
+    celdas = [
+        ft.Container(
+            expand=True,
+            alignment=ft.Alignment.CENTER,
+            content=ft.Column(
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=6,
+                controls=[
+                    ft.Text(m.get("value", ""), size=26, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
+                    eyebrow(m.get("label", ""), size=10),
+                ],
+            ),
+        )
+        for m in metrics
+    ]
+    return ft.Container(
+        padding=ft.Padding.symmetric(vertical=22),
+        margin=ft.Margin.only(top=10, bottom=10),
+        border=ft.Border.symmetric(vertical=ft.BorderSide(1, tema.BORDER_LIGHT)),
+        content=ft.Row(controls=celdas, spacing=16),
+    )
+
+
+def stat_block(valor, label):
+    """Estadistica: numero grande (Syne ambar) + etiqueta."""
+    return ft.Column(
+        spacing=6,
+        controls=[
+            ft.Text(valor, size=28, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
+            eyebrow(label, size=10),
+        ],
+    )
+
+
+def filter_pill(label, activo=False, on_click=None):
+    """Pill de filtro; navy relleno si esta activo, contorno sutil si no."""
+    return ft.Container(
+        bgcolor=tema.NAVY if activo else "transparent",
+        border=None if activo else ft.Border.all(1, tema.BORDER_LIGHT),
+        padding=ft.Padding.symmetric(horizontal=14, vertical=7),
+        border_radius=3,
+        on_click=on_click,
+        content=ft.Text(
+            label.upper(), size=11, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER,
+            color=tema.TEXTO_SOBRE_NAVY if activo else tema.MUTED,
+        ),
+    )
+
+
+def month_header(label):
+    """Encabezado de mes en el timeline: eyebrow ambar + linea que se extiende."""
+    return ft.Container(
+        margin=ft.Margin.only(top=28, bottom=4),
+        content=ft.Row(
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
+                eyebrow(label, color=tema.AMBAR),
+                ft.Container(width=14),
+                ft.Container(expand=True, height=1, bgcolor=tema.BORDER_LIGHT),
+            ],
+        ),
+    )
+
+
+def section_divider():
+    """Divisor entre secciones: 40px dorado + resto en borde sutil."""
+    return ft.Container(
+        margin=ft.Margin.symmetric(vertical=24),
+        content=ft.Row(
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
+                ft.Container(width=40, height=1, bgcolor=tema.AMBAR),
+                ft.Container(expand=True, height=1, bgcolor=tema.BORDER_LIGHT),
+            ],
+        ),
+    )
+
+
+def section_head(texto, contador=None, on_ver_todos=None):
+    """Encabezado de sección (eyebrow ámbar) + contador y/o link 'Ver todos →'."""
+    acciones = []
+    if contador:
+        acciones.append(eyebrow(contador, color=tema.HINT))
+    if on_ver_todos:
+        acciones.append(enlace_cta("Ver todos  →", on_click=on_ver_todos))
+    derecha = ft.Row(spacing=20, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=acciones) if acciones else ft.Container()
+    return ft.Container(
+        margin=ft.Margin.only(bottom=18),
+        content=ft.Row(
+            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[eyebrow(texto, color=tema.AMBAR), derecha],
+        ),
+    )
+
+
+def subrayado_bicolor():
+    """Subrayado mixto de inputs: 56px dorado + resto en borde sutil."""
+    return ft.Row(
+        spacing=0,
+        controls=[
+            ft.Container(width=56, height=1, bgcolor=tema.AMBAR),
+            ft.Container(expand=True, height=1, bgcolor=tema.BORDER_LIGHT),
+        ],
+    )
 
 
 # ----------------------------------------------------------------------------

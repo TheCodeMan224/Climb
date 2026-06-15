@@ -144,6 +144,23 @@ def inicializar_db():
 
     cursor.execute(
         """
+        CREATE TABLE IF NOT EXISTS Mirror_Patrones (
+            idPatron INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER NOT NULL,
+            quote TEXT NOT NULL,
+            source TEXT,            -- 'scout' | 'user'
+            status TEXT,            -- 'pending' | 'observing'
+            scout_ref TEXT,         -- nombre del patron de Scout (dedupe), o NULL
+            reframe_json TEXT,
+            detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_observed TIMESTAMP,
+            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS Misiones (
             id_mision INTEGER PRIMARY KEY AUTOINCREMENT,
             id_usuario INTEGER NOT NULL,
@@ -163,6 +180,14 @@ def inicializar_db():
 
     # Progreso de misiones (acciones completadas) sobre la tabla existente.
     _asegurar_columna(cursor, "Misiones", "progreso_json", "TEXT")
+
+    # Modelo enriquecido de logros para Archive (sobre la tabla existente).
+    _asegurar_columna(cursor, "Logros_Personales", "mi_rol", "TEXT")
+    _asegurar_columna(cursor, "Logros_Personales", "aprendizaje", "TEXT")
+    _asegurar_columna(cursor, "Logros_Personales", "tags_json", "TEXT")
+    _asegurar_columna(cursor, "Logros_Personales", "metrics_json", "TEXT")
+    # Conversacion de Archive que origino la ficha (para auditar / rehacer).
+    _asegurar_columna(cursor, "Logros_Personales", "conversacion_json", "TEXT")
     cursor.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuario_handle "
         "ON Usuarios(nombre, discriminador)"

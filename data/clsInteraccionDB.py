@@ -8,6 +8,7 @@ import hmac
 import json
 import os
 import random
+from datetime import datetime
 
 from data.clsConexionDB import obtener_conexion
 
@@ -59,6 +60,20 @@ def crear_usuario(nombre, clave):
         "discriminador": discriminador,
         "handle": f"{nombre}#{discriminador}",
     }
+
+
+def obtener_handle(id_usuario):
+    """Devuelve el handle del usuario ('Nombre#numero'), o solo el nombre, o None."""
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        "SELECT nombre, discriminador FROM Usuarios WHERE id_usuario = ?", (id_usuario,)
+    ).fetchone()
+    conexion.close()
+    if not fila:
+        return None
+    if fila["discriminador"]:
+        return f"{fila['nombre']}#{fila['discriminador']}"
+    return fila["nombre"]
 
 
 def verificar_credenciales(nombre, discriminador, clave):
@@ -335,6 +350,65 @@ def insertar_camino_elegido(
 
 
 # ----------------------------------------------------------------------------
+# Mirror_Patrones
+# ----------------------------------------------------------------------------
+def insertar_patron_usuario(id_usuario, quote):
+    """Registra un patrón descrito por el usuario (pending). Devuelve idPatron."""
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute(
+        "INSERT INTO Mirror_Patrones (id_usuario, quote, source, status) VALUES (?, ?, 'user', 'pending')",
+        (id_usuario, quote),
+    )
+    id_patron = cursor.lastrowid
+    conexion.commit()
+    conexion.close()
+    return id_patron
+
+
+def insertar_patron_procesado(id_usuario, quote, source, reframe_json, scout_ref=None):
+    """Registra un patrón ya procesado (observing) con su reframe. Devuelve idPatron."""
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute(
+        """
+        INSERT INTO Mirror_Patrones (id_usuario, quote, source, status, scout_ref, reframe_json, last_observed)
+        VALUES (?, ?, ?, 'observing', ?, ?, CURRENT_TIMESTAMP)
+        """,
+        (id_usuario, quote, source, scout_ref, reframe_json),
+    )
+    id_patron = cursor.lastrowid
+    conexion.commit()
+    conexion.close()
+    return id_patron
+
+
+def marcar_patron_procesado(id_patron, reframe_json):
+    """Marca un patrón existente como observing con su reframe."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        "UPDATE Mirror_Patrones SET status='observing', reframe_json=?, last_observed=CURRENT_TIMESTAMP WHERE idPatron=?",
+        (reframe_json, id_patron),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_patrones_mirror(id_usuario):
+    """Devuelve todas las filas de patrones de Mirror del usuario como dicts."""
+    conexion = obtener_conexion()
+    filas = conexion.execute(
+        """
+        SELECT idPatron, quote, source, status, scout_ref, reframe_json, detected_at, last_observed
+        FROM Mirror_Patrones WHERE id_usuario = ? ORDER BY idPatron DESC
+        """,
+        (id_usuario,),
+    ).fetchall()
+    conexion.close()
+    return [dict(f) for f in filas]
+
+
+# ----------------------------------------------------------------------------
 # Misiones
 # ----------------------------------------------------------------------------
 def insertar_mision(id_usuario, mision):
@@ -421,6 +495,139 @@ def obtener_logros(id_usuario):
     ).fetchall()
     conexion.close()
     return [dict(f) for f in filas]
+
+
+# --- Modelo enriquecido para Archive (3 pantallas) -------------------------
+# Tipos del archivo de referencia de Archive.
+LOGRO_TYPES = [
+    "Deal cerrado", "Proyecto", "Certificación", "Aprendizaje",
+    "Activación", "Liderazgo", "Presentación", "Otro",
+]
+
+_MESES_CORTO = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+_MESES_LARGO = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+
+
+def _parse_fecha(ts):
+    """Convierte el timestamp de SQLite en datetime (con respaldo a hoy)."""
+    s = str(ts) if ts else ""
+    for fmt, corte in (("%Y-%m-%d %H:%M:%S", 19), ("%Y-%m-%d", 10)):
+        try:
+            return datetime.strptime(s[:corte], fmt)
+        except ValueError:
+            continue
+    return datetime.now()
+
+
+def insertar_logro_completo(id_usuario, tipo, titulo, contexto, mi_rol="", aprendizaje="", tags=None, metrics=None, conversacion=None):
+    """Registra un logro completo (modelo Archive). Devuelve idRegistro.
+
+    tags: list[str].  metrics: list[{"value", "label"}].
+    conversacion: lista de turnos de Archive que originó la ficha (opcional).
+    """
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute(
+        """
+        INSERT INTO Logros_Personales
+            (usuarioLogro, tipoLogro, logro, descripcionLogro, mi_rol, aprendizaje,
+             tags_json, metrics_json, conversacion_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            id_usuario, tipo, titulo, contexto, mi_rol, aprendizaje,
+            json.dumps(tags or [], ensure_ascii=False),
+            json.dumps(metrics or [], ensure_ascii=False),
+            json.dumps(conversacion, ensure_ascii=False) if conversacion is not None else None,
+        ),
+    )
+    id_logro = cursor.lastrowid
+    conexion.commit()
+    conexion.close()
+    return id_logro
+
+
+def _logro_dict(fila):
+    """Construye el dict enriquecido (con campos calculados) desde una fila."""
+    fecha = _parse_fecha(fila["fechaRegistroLogro"])
+    tags = json.loads(fila["tags_json"]) if fila["tags_json"] else []
+    metrics = json.loads(fila["metrics_json"]) if fila["metrics_json"] else []
+    return {
+        "id": fila["idRegistro"],
+        "tipo": fila["tipoLogro"] or "",
+        "titulo": fila["logro"] or "",
+        "contexto": fila["descripcionLogro"] or "",
+        "mi_rol": fila["mi_rol"] or "",
+        "aprendizaje": fila["aprendizaje"] or "",
+        "tags": tags,
+        "metrics": metrics,
+        "fecha": fecha,
+        "fecha_corta": f"{fecha.day:02d} {_MESES_CORTO[fecha.month - 1]}",
+        "mes_anio": f"{_MESES_LARGO[fecha.month - 1]} {fecha.year}",
+        "metric_destacada": metrics[0] if metrics else None,
+    }
+
+
+def obtener_logros_completos(id_usuario):
+    """Devuelve los logros enriquecidos del usuario, mas recientes primero."""
+    conexion = obtener_conexion()
+    filas = conexion.execute(
+        """
+        SELECT idRegistro, tipoLogro, logro, descripcionLogro, mi_rol, aprendizaje,
+               tags_json, metrics_json, fechaRegistroLogro
+        FROM Logros_Personales
+        WHERE usuarioLogro = ?
+        ORDER BY fechaRegistroLogro DESC, idRegistro DESC
+        """,
+        (id_usuario,),
+    ).fetchall()
+    conexion.close()
+    return [_logro_dict(f) for f in filas]
+
+
+def archivo_agrupado_por_mes(id_usuario):
+    """Agrupa los logros por 'Mes Año', preservando orden (mas reciente primero)."""
+    agrupado = {}
+    for logro in obtener_logros_completos(id_usuario):
+        agrupado.setdefault(logro["mes_anio"], []).append(logro)
+    return agrupado
+
+
+def _agregar_impacto(logros):
+    """Suma simple de metricas tipo '$240K' / '$1.2M'. Devuelve string '$X K/M'."""
+    total_k = 0.0
+    for logro in logros:
+        for m in logro["metrics"]:
+            v = str(m.get("value", "")).replace("$", "").replace(",", "").strip()
+            try:
+                if v.endswith("K"):
+                    total_k += float(v[:-1])
+                elif v.endswith("M"):
+                    total_k += float(v[:-1]) * 1000
+            except ValueError:
+                pass
+    if total_k >= 1000:
+        return f"${total_k / 1000:.1f}M"
+    return f"${int(total_k)}K"
+
+
+def archivo_stats(id_usuario):
+    """Estadisticas para el encabezado del timeline de Archive."""
+    logros = obtener_logros_completos(id_usuario)
+    ahora = datetime.now()
+    trimestre = (ahora.month - 1) // 3
+    este_trim = sum(
+        1 for l in logros
+        if l["fecha"].year == ahora.year and (l["fecha"].month - 1) // 3 == trimestre
+    )
+    tags = {t for l in logros for t in l["tags"]}
+    return {
+        "total": len(logros),
+        "este_trimestre": este_trim,
+        "impacto": _agregar_impacto(logros),
+        "tags": len(tags),
+    }
 
 
 def guardar_progreso_mision(id_mision, progreso):

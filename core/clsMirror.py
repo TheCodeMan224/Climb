@@ -1,0 +1,164 @@
+"""Modelo de datos del agente Mirror (dataclasses).
+
+- Patron: un patrón limitante (detectado por Scout o descrito por el usuario).
+- MirrorTurn: un turno de la sesión socrática.
+- MirrorReframe: el reencuadre final de un patrón procesado.
+
+La persistencia (tablas SQLite) se conecta al construir el Hub; aquí viven solo
+las estructuras de datos y sus textos derivados (metadatos legibles).
+"""
+
+import json
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from typing import Optional
+
+from data import clsInteraccionDB
+
+
+def _hace(dias):
+    """Texto relativo en español a partir de un número de días."""
+    if dias <= 0:
+        return "hoy"
+    if dias == 1:
+        return "ayer"
+    if dias < 7:
+        return f"hace {dias} días"
+    if dias < 14:
+        return "hace 1 semana"
+    if dias < 30:
+        return f"hace {dias // 7} semanas"
+    return f"hace {dias // 30} meses"
+
+
+@dataclass
+class MirrorReframe:
+    old_quote: str
+    new_quote: str
+    lo_que_vimos: str
+    manifestacion: str
+    recomendaciones: list = field(default_factory=list)
+
+
+def reframe_de_dict(d):
+    """Construye un MirrorReframe tolerando datos viejos (campo 'pregunta')."""
+    recs = d.get("recomendaciones")
+    if not recs and d.get("pregunta"):
+        recs = [d["pregunta"]]
+    return MirrorReframe(
+        old_quote=d.get("old_quote", ""),
+        new_quote=d.get("new_quote", ""),
+        lo_que_vimos=d.get("lo_que_vimos", ""),
+        manifestacion=d.get("manifestacion", ""),
+        recomendaciones=recs or [],
+    )
+
+
+@dataclass
+class MirrorTurn:
+    speaker: str  # "mirror" | "user"
+    text: str
+
+
+@dataclass
+class Patron:
+    id: str
+    quote: str
+    source: str            # "scout" | "user"
+    detected_at: datetime
+    status: str            # "pending" | "processing" | "observing"
+    reframe: Optional[MirrorReframe] = None
+    last_observed: Optional[datetime] = None
+    scout_ref: Optional[str] = None  # nombre del patron de Scout (para dedupe)
+
+    @property
+    def detected_meta(self) -> str:
+        origen = "Descrito por ti" if self.source == "user" else "Detectado por Scout"
+        return f"{origen}  ·  {_hace((datetime.now() - self.detected_at).days)}"
+
+    @property
+    def observed_meta(self) -> str:
+        if not self.last_observed:
+            return "Sin observaciones recientes"
+        return f"Última observación: {_hace((datetime.now() - self.last_observed).days)}"
+
+
+# ----------------------------------------------------------------------------
+# Carga del Hub: patrones de Scout (del resumen) + patrones de la tabla
+# ----------------------------------------------------------------------------
+def _parse_ts(ts):
+    s = str(ts) if ts else ""
+    for fmt, corte in (("%Y-%m-%d %H:%M:%S", 19), ("%Y-%m-%d", 10)):
+        try:
+            return datetime.strptime(s[:corte], fmt)
+        except ValueError:
+            continue
+    return datetime.now()
+
+
+def reframe_a_json(reframe: MirrorReframe) -> str:
+    return json.dumps(asdict(reframe), ensure_ascii=False)
+
+
+def _patron_de_fila(f):
+    reframe = None
+    if f.get("reframe_json"):
+        try:
+            reframe = reframe_de_dict(json.loads(f["reframe_json"]))
+        except (ValueError, TypeError):
+            reframe = None
+    return Patron(
+        id=f"db:{f['idPatron']}",
+        quote=f["quote"],
+        source=f.get("source") or "user",
+        detected_at=_parse_ts(f.get("detected_at")),
+        status=f.get("status") or "pending",
+        reframe=reframe,
+        last_observed=_parse_ts(f["last_observed"]) if f.get("last_observed") else None,
+        scout_ref=f.get("scout_ref"),
+    )
+
+
+def _patrones_scout(id_usuario):
+    raw = clsInteraccionDB.obtener_ultimo_resumen(id_usuario)
+    if not raw:
+        return []
+    try:
+        return json.loads(raw).get("patrones_consolidados", [])
+    except (ValueError, TypeError):
+        return []
+
+
+def cargar_hub(id_usuario):
+    """Devuelve (pendientes, observando) como listas de Patron, combinando los
+    patrones de Scout (resumen) con los de la tabla Mirror_Patrones."""
+    filas = clsInteraccionDB.obtener_patrones_mirror(id_usuario)
+    pendientes, observando = [], []
+    procesados_scout = set()
+    for f in filas:
+        p = _patron_de_fila(f)
+        if p.status == "observing":
+            observando.append(p)
+            if f.get("scout_ref"):
+                procesados_scout.add(f["scout_ref"])
+        else:
+            pendientes.append(p)
+
+    # Patrones de Scout que aún no se han procesado.
+    for i, sp in enumerate(_patrones_scout(id_usuario)):
+        nombre = sp.get("nombre", "")
+        if nombre in procesados_scout:
+            continue
+        pendientes.append(Patron(
+            id=f"scout:{i}",
+            quote=sp.get("descripcion") or nombre,
+            source="scout",
+            detected_at=datetime.now(),
+            status="pending",
+            scout_ref=nombre,
+        ))
+
+    pendientes.sort(key=lambda p: p.detected_at, reverse=True)
+    observando.sort(key=lambda p: p.detected_at, reverse=True)
+    return pendientes, observando
+

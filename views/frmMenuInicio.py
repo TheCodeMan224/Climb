@@ -6,7 +6,7 @@ import flet as ft
 
 import componentes as cmp
 import tema
-from core import clsAgentes
+from core import clsAgentes, clsMirror
 from data import clsInteraccionDB
 
 # Descripciones breves (texto literal a usar, ver seccion 7.8). No modificar.
@@ -77,6 +77,23 @@ class frmMenuInicio:
             content=cmp.hairline(width=56),
         )
 
+    def _abrir_agente(self, tipo_agente):
+        # Archive y Mirror tienen su propio flujo editorial; el resto, chat genérico.
+        rutas = {"coach_archive": "/archive", "coach_mirror": "/mirror"}
+        self.router.navegar_a(rutas.get(tipo_agente, f"/chat/{tipo_agente}"))
+
+    def _ir_patron_mirror(self, nombre, descripcion):
+        # Lleva el patrón de Scout seleccionado directo a la entrada de Mirror.
+        self.router.mirror_patron = clsMirror.Patron(
+            id=f"scout:{nombre}",
+            quote=descripcion or nombre,
+            source="scout",
+            detected_at=datetime.now(),
+            status="pending",
+            scout_ref=nombre,
+        )
+        self.router.navegar_a("/mirror/entry")
+
     def _card_patron(self, num, nombre, descripcion):
         # Version compacta: numero + nombre en una linea, descripcion breve y link.
         return ft.Container(
@@ -92,7 +109,7 @@ class frmMenuInicio:
                         controls=[
                             ft.Text(num, size=14, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
                             ft.Text(nombre, size=15, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.NAVY, expand=True),
-                            cmp.enlace_cta("Mirror  →", on_click=lambda e: self.router.navegar_a("/chat/coach_mirror")),
+                            cmp.enlace_cta("Mirror  →", on_click=lambda e, n=nombre, d=descripcion: self._ir_patron_mirror(n, d)),
                         ],
                     ),
                     ft.Text(descripcion, size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
@@ -192,7 +209,7 @@ class frmMenuInicio:
                             ft.Container(height=8),
                             ft.Text(descripcion, size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED),
                             ft.Container(height=12),
-                            cmp.enlace_cta("Hablar  →", on_click=lambda e, t=tipo_agente: self.router.navegar_a(f"/chat/{t}")),
+                            cmp.enlace_cta("Hablar  →", on_click=lambda e, t=tipo_agente: self._abrir_agente(t)),
                         ],
                     ),
                 ],

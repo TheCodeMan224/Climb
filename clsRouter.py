@@ -7,6 +7,7 @@ los artefactos JSON que viajan entre pantallas) y cambia la vista actual.
 import flet as ft
 
 import tema
+from data import clsInteraccionDB
 from views.frmLanding import frmLanding
 from views.frmLogin import frmLogin
 from views.frmPreOnboarding import frmPreOnboarding
@@ -18,7 +19,13 @@ from views.frmCaminos import frmCaminos
 from views.frmMenuInicio import frmMenuInicio
 from views.frmAgenteChat import frmAgenteChat
 from views.frmPacer import frmPacer
-from views.frmArchive import frmArchive
+from views.frmArchiveChat import frmArchiveChat
+from views.frmArchiveFicha import frmArchiveFicha
+from views.frmArchiveTimeline import frmArchiveTimeline
+from views.frmMirrorHub import frmMirrorHub
+from views.frmMirrorEntry import frmMirrorEntry
+from views.frmMirrorSession import frmMirrorSession
+from views.frmMirrorEspejo import frmMirrorEspejo
 
 
 class Router:
@@ -33,6 +40,42 @@ class Router:
         self.diagnostico_actual = None
         self.caminos_actual = None
         self.mision_actual = None
+        self.logro_ficha = None  # ficha de logro propuesta por Archive (Pantalla 2)
+        self.mirror_patron = None  # patrón seleccionado para una sesión de Mirror
+        self.mirror_reframe = None  # reframe generado al cerrar la sesión
+        self.mirror_minutos = 0
+
+        # Chip fijo (esquina superior derecha) con el handle del usuario, para
+        # que tenga su codigo de acceso siempre presente. Vive en el overlay, asi
+        # que persiste entre vistas (page.controls.clear() no lo borra).
+        self._chip_texto = ft.Text("", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.NAVY)
+        self.chip_handle = ft.Container(
+            visible=False,
+            right=18,
+            top=14,
+            padding=ft.Padding.symmetric(horizontal=14, vertical=8),
+            bgcolor=tema.SUPERFICIE,
+            border=ft.Border.all(1, tema.BORDER_LIGHT),
+            border_radius=20,
+            content=ft.Row(
+                spacing=8,
+                tight=True,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[ft.Icon(ft.Icons.PERSON_OUTLINE_ROUNDED, size=15, color=tema.AMBAR), self._chip_texto],
+            ),
+        )
+        self.page.overlay.append(self.chip_handle)
+
+    # Rutas sin sesion donde el chip no debe mostrarse.
+    _RUTAS_SIN_CHIP = {"/landing", "/login", "/pre_onboarding"}
+
+    def _actualizar_chip(self, ruta):
+        if self.id_usuario and ruta not in self._RUTAS_SIN_CHIP:
+            handle = clsInteraccionDB.obtener_handle(self.id_usuario)
+            self._chip_texto.value = handle or ""
+            self.chip_handle.visible = bool(handle)
+        else:
+            self.chip_handle.visible = False
 
     def navegar_a(self, ruta):
         """Cambia la vista actual segun la ruta indicada."""
@@ -51,6 +94,7 @@ class Router:
         self.page.padding = 0
 
         self.page.add(vista.construir())
+        self._actualizar_chip(ruta)
         self.page.update()
 
         # Hook opcional que se ejecuta cuando la vista termina de montarse.
@@ -60,9 +104,9 @@ class Router:
     def _resolver_vista(self, ruta):
         if ruta.startswith("/chat/"):
             tipo_agente = ruta.split("/chat/", 1)[1]
-            # Archive tiene su propia pantalla (chat + panel de logros en vivo).
+            # Archive usa su propio flujo editorial (chat → ficha → timeline).
             if tipo_agente == "coach_archive":
-                return frmArchive(self, self.id_usuario)
+                return frmArchiveChat(self, self.id_usuario)
             return frmAgenteChat(self, self.id_usuario, tipo_agente)
 
         vistas = {
@@ -76,6 +120,12 @@ class Router:
             "/caminos": frmCaminos,
             "/menu_inicio": frmMenuInicio,
             "/pacer": frmPacer,
+            "/archive": frmArchiveTimeline,
+            "/archive/ficha": frmArchiveFicha,
+            "/mirror": frmMirrorHub,
+            "/mirror/entry": frmMirrorEntry,
+            "/mirror/session": frmMirrorSession,
+            "/mirror/espejo": frmMirrorEspejo,
         }
         clase = vistas.get(ruta, frmLanding)
         return clase(self, self.id_usuario)

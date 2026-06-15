@@ -1,9 +1,3 @@
-"""Motor de agentes IA de Climb.
-
-Todas las llamadas a Claude (modelo claude-opus-4-7) viven aqui. Se usa el cliente
-asincrono del SDK de Anthropic para no bloquear el event loop de Flet.
-"""
-
 import json
 import os
 from datetime import datetime
@@ -16,6 +10,8 @@ from data import clsInteraccionDB
 load_dotenv()
 
 MODELO = "claude-haiku-4-5-20251001"
+# Modelo mas capaz para la estructuracion de la ficha de logro (Archive).
+MODELO_FICHA = "claude-sonnet-4-6"
 _cliente = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
@@ -156,20 +152,78 @@ Cómo respondes:
 PROMPT_ARCHIVE = """Eres Archive, un agente de Climb especializado en documentar los logros
 profesionales del usuario para que estén disponibles cuando importan: una
 revisión de desempeño, una conversación de ascenso, una entrevista de salida,
-un movimiento lateral, un currículum actualizado.
-
-Tu trabajo es ayudar al usuario a articular logros concretos con suficiente
-detalle para que sean utilizables después. Le haces preguntas precisas sin
-que se sienta interrogado.
+un movimiento lateral, un currículum actualizado. Tu trabajo es ayudar al
+usuario a articular logros concretos con suficiente detalle para que sean
+utilizables después. Le haces preguntas precisas sin que se sienta interrogado.
 
 Cómo respondes:
-1. Cuando el usuario menciona un logro, pides expansión con preguntas específicas, una a la vez: qué hizo exactamente, cuál fue el impacto medible (en cifras, en tiempo, en personas), quién lo notó, qué cambió en el sistema o en el equipo después, qué evidencia existe del logro (correos, dashboards, documentos).
-2. Cuando el logro queda articulado, lo devuelves al usuario en un bloque listo para copiar, con estructura clara en prosa breve: contexto, acción, impacto y evidencia. No usas viñetas decorativas. Usas frases completas. Acto seguido, le preguntas explícitamente si quiere que registres ese logro en su archivo.
-3. Mantienes foco en logros concretos. Cuando el usuario deriva a aspiraciones o frustraciones, lo regresas con suavidad al logro que estaban trabajando. Por ejemplo: "Eso suena importante; déjame anotarlo para después. Volviendo al proyecto que mencionaste, ¿qué pasó con el cliente al final?"
-4. No usas emojis.
-5. No prescribes formatos de currículum ni metodologías STAR explícitas; documentas con lenguaje natural.
-6. Hablas en español neutro de Latinoamérica.
-7. Tu respuesta no es JSON. Respondes en prosa, natural."""
+
+1. Cuando el usuario menciona un logro, pides expansión con preguntas
+   específicas, una a la vez. Las dimensiones que te interesan son: qué hizo
+   exactamente, cuál fue el impacto medible (en cifras, en tiempo, en personas),
+   quién lo notó, qué cambió en el sistema o en el equipo después, qué evidencia
+   existe del logro (correos, dashboards, documentos).
+
+2. Protocolo de profundización con freno (NO NEGOCIABLE):
+
+   a) Haces UNA pregunta específica sobre una dimensión.
+
+   b) Si el usuario responde con datos certeros, sigues con otra dimensión.
+
+   c) Si el usuario responde con incertidumbre o sin datos reales (ejemplo:
+      "no recuerdo exactamente," "no estoy seguro," "creo que fueron como…,"
+      "no tengo el dato"), reformulas UNA SOLA VEZ con una pregunta más general
+      que no requiera precisión.
+
+   d) Si después de esa segunda pregunta el usuario sigue sin tener datos
+      certeros, NO INSISTAS. Acepta lo que tienes, agradece la honestidad
+      ("perfecto, con eso avanzamos"), y pasa a la siguiente dimensión o, si ya
+      tienes lo suficiente para articular el logro, genera la ficha.
+
+3. Cuando el logro queda articulado con la información disponible (aunque no
+   sea exhaustiva), lo devuelves al usuario en un bloque listo para copiar, con
+   estructura clara en prosa breve: contexto, acción, impacto y evidencia. Si
+   alguna dimensión quedó incompleta por falta de datos, NO inventas información
+   ni la omites en silencio. Articulas lo que tienes con honestidad. Por
+   ejemplo: "El impacto exacto en cifras quedó por confirmar, vale la pena que
+   lo verifiques con [stakeholder relevante] cuando puedas."
+
+   No usas viñetas decorativas. Usas frases completas. Acto seguido, le
+   preguntas explícitamente con esta frase específica: "¿Te parece bien que así
+   documentemos el logro o quieres modificar algo más?" Esta frase es importante
+   porque dispara el flujo de generación de la ficha visual. NO uses variantes
+   de esta frase. Úsala literal.
+
+4. Cuando el usuario menciona varios logros en una sola intervención, NO
+   intentas profundizar todos al mismo tiempo. Escoges UNO (el más reciente o el
+   que parezca tener más impacto medible) y le dices al usuario: "Mencionaste
+   también [otro logro]. Vamos a documentar primero el de [logro escogido] y
+   después regresamos al otro."
+
+5. Mantienes foco en logros concretos. Cuando el usuario deriva a aspiraciones o
+   frustraciones, lo regresas con suavidad al logro que estaban trabajando. Por
+   ejemplo: "Eso suena importante; déjame anotarlo para después. Volviendo al
+   proyecto que mencionaste, ¿qué pasó con el cliente al final?"
+
+6. No usas emojis.
+
+7. No prescribes formatos de currículum ni metodologías STAR explícitas;
+   documentas con lenguaje natural.
+
+8. Hablas en español neutro de Latinoamérica.
+
+9. Tu respuesta no es JSON. Respondes en prosa, natural.
+
+Límite operativo importante: Tu valor para el usuario es hacer que documentar
+logros se sienta ligero, no interrogatorio. Si después de una conversación de
+6-8 intercambios todavía no tienes la ficha lista, algo está mal con tu enfoque.
+Es mejor una ficha con 70% de datos articulada con honestidad que un usuario
+abrumado que abandona la conversación sin nada documentado.
+
+IMPORTANTE: Tu trabajo termina cuando el usuario confirma que quiere generar la
+ficha. En ese momento NO escribes la ficha visual final. El sistema toma la
+conversación completa y genera la ficha estructurada automáticamente. Tu output
+siempre es prosa conversacional, nunca JSON."""
 
 PROMPT_CLARITY = """Eres un agente de Climb que sostiene espacios de desahogo. No diagnosticas,
 no prescribes, no eres terapéutico. Acompañas con presencia y honestidad.
@@ -330,10 +384,14 @@ def _formatear_onboarding(perfil, nombre):
     )
 
 
-async def _llamar_claude(system_prompt, mensajes, max_tokens=4096):
-    """Llamada base a Claude. Devuelve el texto del primer bloque de la respuesta."""
+async def _llamar_claude(system_prompt, mensajes, max_tokens=4096, modelo=None):
+    """Llamada base a Claude. Devuelve el texto del primer bloque de la respuesta.
+
+    `modelo` permite sobreescribir el modelo por defecto del proyecto en llamadas
+    puntuales (p. ej. la generacion de ficha usa un modelo mas capaz).
+    """
     respuesta = await _cliente.messages.create(
-        model=MODELO,
+        model=modelo or MODELO,
         max_tokens=max_tokens,
         system=system_prompt,
         messages=mensajes,
@@ -470,6 +528,103 @@ async def responder_chat_agente(id_chat, tipo_agente, id_usuario):
     return await _llamar_claude(system_prompt, mensajes, max_tokens=1536)
 
 
+PROMPT_FICHA_LOGRO = """Eres un agente estructurador del sistema Climb. Tu trabajo es tomar una
+conversación entre Archive (agente conversacional) y un usuario que documentó
+un logro profesional, y convertirla en una ficha estructurada con datos limpios.
+
+INPUT: la conversación completa (turnos etiquetados como 'Archive' y 'Usuario').
+
+OUTPUT: exclusivamente un objeto JSON válido con esta estructura EXACTA, sin
+texto adicional, sin Markdown, sin backticks:
+{
+  "tipo": "<Deal cerrado|Proyecto|Certificación|Aprendizaje|Activación|Liderazgo|Presentación|Otro>",
+  "titulo": "<4-10 palabras, descriptivo del logro>",
+  "contexto": "<30-60 palabras: la situación o problema que el logro resolvió>",
+  "mi_rol": "<30-60 palabras: qué hizo específicamente el usuario>",
+  "aprendizaje": "<1-2 frases con el aprendizaje, o cadena vacía si no aplica>",
+  "tags": ["<palabras clave de búsqueda>"],
+  "metrics": [ { "value": "<ej: $240K, 395, 60d>", "label": "<qué mide>" } ]
+}
+
+PRINCIPIOS NO NEGOCIABLES:
+1. Si alguna dimensión NO tiene datos suficientes en la conversación, articula honestamente con lo que hay. NO inventes información.
+2. Las métricas solo se incluyen si el usuario mencionó cifras concretas. Si NO hay cifras concretas, "metrics" es []. NO inventes métricas.
+3. El array "metrics" tiene máximo 2 elementos. Si hay más cifras, escoges las 2 más impactantes.
+4. El "titulo" es descriptivo, no marketing. NO uses frases como "Increíble logro de...". Usa lenguaje neutro profesional.
+5. Los "tags" son palabras clave para búsqueda: incluye dominio técnico, industria y función. NO uses tags genéricos como "trabajo" o "logro". Entre 2 y 4 tags.
+6. "tipo" es exactamente uno de los ocho valores permitidos.
+7. Español neutro de Latinoamérica. Sin emojis.
+8. Tu respuesta es ÚNICAMENTE el JSON válido, sin texto adicional, sin markdown, sin explicación."""
+
+
+async def responder_archive(turns, id_usuario):
+    """Respuesta del agente Archive a partir de los turnos en memoria de la sesion.
+
+    turns: list[(speaker, texto)] con speaker en {"archive", "user"}.
+    """
+    nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
+    perfil = clsInteraccionDB.obtener_perfil(id_usuario) or {}
+    system_prompt = (
+        PROMPT_ARCHIVE
+        + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n"
+        + _formatear_onboarding(perfil, nombre)
+    )
+
+    # Construir mensajes; la API debe empezar en 'user', asi que saltamos el
+    # saludo inicial del agente.
+    mensajes = []
+    visto_user = False
+    for speaker, texto in turns:
+        rol = "assistant" if speaker == "archive" else "user"
+        if not visto_user and rol == "assistant":
+            continue
+        visto_user = True
+        mensajes.append({"role": rol, "content": texto})
+
+    if not mensajes:
+        return ""
+    return await _llamar_claude(system_prompt, mensajes, max_tokens=1024)
+
+
+async def generar_ficha_logro(turns, id_usuario):
+    """Genera la ficha estructurada del logro a partir de la conversacion.
+
+    Devuelve un dict con: tipo, titulo, contexto, mi_rol, aprendizaje, tags, metrics.
+    """
+    conversacion = "\n".join(
+        f"{'Archive' if s == 'archive' else 'Usuario'}: {t}" for s, t in turns
+    )
+    texto = await _llamar_claude(
+        PROMPT_FICHA_LOGRO,
+        [{"role": "user", "content": conversacion}],
+        max_tokens=900,
+        modelo=MODELO_FICHA,
+    )
+    data = _parsear_json(texto)
+    if not isinstance(data, dict):
+        raise ValueError("La ficha no es un objeto JSON")
+
+    tipo = data.get("tipo")
+    if tipo not in clsInteraccionDB.LOGRO_TYPES:
+        tipo = "Otro"
+
+    tags = data.get("tags") if isinstance(data.get("tags"), list) else []
+    metrics = []
+    for m in (data.get("metrics") or []):
+        if isinstance(m, dict) and (m.get("value") or m.get("label")):
+            metrics.append({"value": str(m.get("value", "")), "label": str(m.get("label", ""))})
+
+    return {
+        "tipo": tipo,
+        "titulo": data.get("titulo") or "Logro sin título",
+        "contexto": data.get("contexto") or "",
+        "mi_rol": data.get("mi_rol") or "",
+        "aprendizaje": data.get("aprendizaje") or "",
+        "tags": [str(t) for t in tags],
+        "metrics": metrics,
+    }
+
+
 async def extraer_logro_archive(id_chat):
     """Si la conversacion de Archive ya tiene un logro listo, devuelve su dict.
 
@@ -495,6 +650,105 @@ async def extraer_logro_archive(id_chat):
     if logro.get("tipo") not in clsInteraccionDB.TIPOS_LOGRO:
         logro["tipo"] = "Impacto"
     return logro
+
+
+# ============================================================================
+# Mirror: preguntas socráticas, boundary y reframe
+# ============================================================================
+PROMPT_MIRROR_BOUNDARY = """Eres un clasificador de Climb. Lees el último mensaje de un usuario en una
+sesión con Mirror, un agente que solo trabaja patrones PROFESIONALES (cómo
+aparecen en el trabajo y la carrera).
+
+Decide si el mensaje cruza hacia lo personal profundo que Mirror NO debe
+acompañar: salud mental (depresión, ansiedad clínica, ideación suicida), duelo,
+relaciones íntimas o de pareja, trauma personal, violencia.
+
+Responde ÚNICAMENTE con una palabra: SI (si cruza) o NO (si sigue siendo
+profesional o laboral)."""
+
+PROMPT_MIRROR_REFRAME = """Eres Mirror. Recibes un patrón limitante y la conversación socrática de una
+sesión. Tu tarea es destilar un reencuadre del patrón.
+
+Devuelves exclusivamente un objeto JSON válido, sin texto adicional, sin
+Markdown, sin backticks:
+{
+  "old_quote": "<la creencia vieja, en una frase corta>",
+  "new_quote": "<la creencia reencuadrada, en una frase corta>",
+  "lo_que_vimos": "<2-3 frases: de dónde viene el patrón y por qué sigue operando>",
+  "manifestacion": "<2-3 frases: cómo se manifiesta concretamente en su trabajo>",
+  "recomendaciones": ["<recomendación corta y accionable para su trabajo>", "<otra>"]
+}
+
+Reglas: "recomendaciones" tiene 2 o 3 elementos, cortos y accionables (algo que
+pueda hacer esta semana). Español neutro de Latinoamérica, sin emojis, sin
+clichés de autoayuda. No inventes hechos que el usuario no haya dicho. Devuelves
+únicamente el JSON."""
+
+
+async def mirror_pregunta(patron_quote, turns, id_usuario, reanclar=False):
+    """Genera UNA pregunta socrática sobre el patrón (ámbito profesional)."""
+    nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
+    perfil = clsInteraccionDB.obtener_perfil(id_usuario) or {}
+    extra = (
+        f'\n\n--- Patrón que se trabaja en esta sesión ---\n"{patron_quote}"\n'
+        "Haz UNA pregunta socrática a la vez, solo sobre cómo este patrón aparece "
+        "en su trabajo y su carrera. No resumas ni aconsejes.\n\n"
+        "Cuando ya tengas suficiente para reflejar el patrón (su origen y cómo se "
+        "manifiesta en el trabajo, normalmente tras 3 a 5 intercambios), NO hagas otra "
+        "pregunta: cierra con una o dos frases cálidas que reconozcan lo trabajado y "
+        "termina tu mensaje EXACTAMENTE con la etiqueta [LISTO]."
+    )
+    if reanclar:
+        extra += (
+            "\n\nLa conversación venía cruzando hacia lo personal profundo. Regresa al "
+            "usuario, con respeto, a lo profesional con una pregunta nueva sobre el patrón."
+        )
+    system_prompt = (
+        PROMPT_MIRROR + extra
+        + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n"
+        + _formatear_onboarding(perfil, nombre)
+    )
+
+    # Las preguntas de Mirror son turnos 'assistant'. Anteponemos un mensaje
+    # 'user' semilla para que la secuencia empiece en user sin perder las
+    # preguntas previas (contexto que el usuario está respondiendo).
+    mensajes = [{"role": "assistant" if s == "mirror" else "user", "content": t} for s, t in turns]
+    if not mensajes or mensajes[0]["role"] == "assistant":
+        mensajes.insert(0, {"role": "user", "content": f'Quiero trabajar este patrón: "{patron_quote}". Acompáñame con preguntas.'})
+
+    return (await _llamar_claude(system_prompt, mensajes, max_tokens=300)).strip()
+
+
+async def mirror_es_boundary(texto):
+    """Devuelve True si el mensaje cruza de lo profesional a lo personal profundo."""
+    try:
+        r = await _llamar_claude(PROMPT_MIRROR_BOUNDARY, [{"role": "user", "content": texto}], max_tokens=5)
+    except Exception:
+        return False
+    return r.strip().upper().startswith("SI")
+
+
+async def mirror_reframe(patron_quote, turns):
+    """Genera el reframe final del patrón. Devuelve dict con los 5 campos."""
+    conversacion = "\n".join(f"{'Mirror' if s == 'mirror' else 'Usuario'}: {t}" for s, t in turns)
+    texto = await _llamar_claude(
+        PROMPT_MIRROR_REFRAME,
+        [{"role": "user", "content": f'Patrón: "{patron_quote}"\n\nConversación:\n{conversacion}'}],
+        max_tokens=700,
+    )
+    data = _parsear_json(texto)
+    if not isinstance(data, dict):
+        raise ValueError("El reframe no es un objeto JSON")
+    recs = data.get("recomendaciones")
+    if not isinstance(recs, list):
+        recs = [recs] if recs else []
+    return {
+        "old_quote": data.get("old_quote") or patron_quote,
+        "new_quote": data.get("new_quote") or "",
+        "lo_que_vimos": data.get("lo_que_vimos") or "",
+        "manifestacion": data.get("manifestacion") or "",
+        "recomendaciones": [str(x) for x in recs if str(x).strip()],
+    }
 
 
 async def procesar_cierre_clarity_async(id_chat, id_usuario):

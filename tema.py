@@ -21,6 +21,7 @@ SECTION_BG = "#F5F5F2"  # diferenciar secciones, loading states, cards inactivas
 # ----------------------------------------------------------------------------
 VERDE = "#1A6B3F"       # estados positivos ("Solida", "Establecida")
 AMBAR = "#BA7517"       # estados intermedios, highlight de mision activa, CTAs sobre navy
+AMBAR_LIGHT = "#FAEEDA" # relleno/acento suave ambar (fichas, metricas de Archive)
 CORAL = "#712B13"       # estados criticos ("Invisible"), borde de patrones limitantes, alertas
 
 # ----------------------------------------------------------------------------
@@ -29,6 +30,7 @@ CORAL = "#712B13"       # estados criticos ("Invisible"), borde de patrones limi
 BORDER_LIGHT = "#E5E5E0"  # bordes de cards normales, separadores, divisores sutiles
 SUPERFICIE = "#FFFFFF"    # superficie de cards normales sobre el fondo off-white
 HINT = "#B4B2A9"          # color de placeholders / texto fantasma en inputs
+GRIS_TACHADO = "#D3D1C7"  # citas/patrones "viejos" atenuados (reframes de Mirror)
 
 # ----------------------------------------------------------------------------
 # Texto
