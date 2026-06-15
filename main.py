@@ -3,6 +3,7 @@
 import flet as ft
 from dotenv import load_dotenv
 
+import tema
 from clsRouter import Router
 from data.clsConexionDB import inicializar_db
 
@@ -12,12 +13,13 @@ def main(page: ft.Page):
     inicializar_db()
 
     page.title = "Climb"
-    page.bgcolor = "#0B1020"
+    page.bgcolor = tema.OFF_WHITE
     page.fonts = {
         "Inter": "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf",
         "Syne": "https://github.com/google/fonts/raw/main/ofl/syne/Syne%5Bwght%5D.ttf",
+        "DM Sans": "https://github.com/google/fonts/raw/main/ofl/dmsans/DMSans%5Bopsz,wght%5D.ttf",
     }
-    page.theme = ft.Theme(font_family="Inter")
+    page.theme = ft.Theme(font_family=tema.FUENTE_BODY)
 
     router = Router(page)
     router.navegar_a("/landing")

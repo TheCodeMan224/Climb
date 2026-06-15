@@ -1,11 +1,10 @@
 """Interfaz de chat con Mirror, Editor, Archive o Clarity."""
 
 import flet as ft
+import tema
 
 from core import clsAgentes
 from data import clsInteraccionDB
-
-AMBAR = "#BA7517"
 
 NOMBRES_AGENTE = {
     "coach_mirror": "Mirror",
@@ -32,15 +31,15 @@ class frmAgenteChat:
             multiline=True,
             min_lines=1,
             max_lines=4,
-            border_color="#39406A",
-            focused_border_color=AMBAR,
-            color="#FFFFFF",
-            cursor_color=AMBAR,
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
             on_submit=self._enviar,
         )
         self.boton_enviar = ft.IconButton(
             icon=ft.Icons.SEND_ROUNDED,
-            icon_color=AMBAR,
+            icon_color=tema.NAVY,
             on_click=self._enviar,
         )
 
@@ -52,13 +51,13 @@ class frmAgenteChat:
             controls=[
                 ft.Container(
                     padding=ft.Padding.symmetric(horizontal=16, vertical=12),
-                    bgcolor=AMBAR if es_usuario else "#1B2342",
+                    bgcolor=tema.NAVY if es_usuario else tema.SECTION_BG,
                     border_radius=14,
                     width=520,
                     content=ft.Text(
                         contenido,
                         size=14,
-                        color="#FFFFFF" if es_usuario else "#DDE2F2",
+                        color=tema.TEXTO_SOBRE_NAVY if es_usuario else tema.TEXTO,
                         selectable=True,
                     ),
                 )
@@ -113,20 +112,20 @@ class frmAgenteChat:
 
         header = ft.Container(
             padding=ft.Padding.symmetric(horizontal=20, vertical=16),
-            bgcolor="#141C36",
+            bgcolor=tema.SUPERFICIE,
             content=ft.Row(
                 spacing=12,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    ft.IconButton(icon=ft.Icons.ARROW_BACK_ROUNDED, icon_color="#FFFFFF", on_click=self._regresar),
-                    ft.Text(self.nombre_agente, size=22, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
+                    ft.IconButton(icon=ft.Icons.ARROW_BACK_ROUNDED, icon_color=tema.TEXTO, on_click=self._regresar),
+                    ft.Text(self.nombre_agente, size=22, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
                 ],
             ),
         )
 
         entrada = ft.Container(
             padding=ft.Padding.symmetric(horizontal=20, vertical=14),
-            bgcolor="#141C36",
+            bgcolor=tema.SUPERFICIE,
             content=ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[self.campo, self.boton_enviar],

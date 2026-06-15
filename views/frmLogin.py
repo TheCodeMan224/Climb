@@ -1,10 +1,9 @@
 """Inicio de sesión: handle (Nombre#número) + clave."""
 
 import flet as ft
+import tema
 
 from data import clsInteraccionDB
-
-AMBAR = "#BA7517"
 
 
 class frmLogin:
@@ -14,29 +13,29 @@ class frmLogin:
         self.campo_nombre = ft.TextField(
             label="Tu nombre",
             autofocus=True,
-            border_color="#39406A",
-            focused_border_color=AMBAR,
-            color="#FFFFFF",
-            cursor_color=AMBAR,
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
         )
         self.campo_numero = ft.TextField(
             label="Número (ej. 4821)",
-            border_color="#39406A",
-            focused_border_color=AMBAR,
-            color="#FFFFFF",
-            cursor_color=AMBAR,
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
         )
         self.campo_clave = ft.TextField(
             label="Tu clave",
             password=True,
             can_reveal_password=True,
-            border_color="#39406A",
-            focused_border_color=AMBAR,
-            color="#FFFFFF",
-            cursor_color=AMBAR,
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
             on_submit=self._entrar,
         )
-        self.error = ft.Text("", color="#E0633F", size=13)
+        self.error = ft.Text("", color=tema.CORAL, size=13)
 
     def _entrar(self, e):
         nombre = (self.campo_nombre.value or "").strip()
@@ -74,7 +73,7 @@ class frmLogin:
             content=ft.Container(
                 width=480,
                 padding=40,
-                bgcolor="#141C36",
+                bgcolor=tema.SUPERFICIE,
                 border_radius=20,
                 shadow=ft.BoxShadow(blur_radius=40, color="#00000066"),
                 content=ft.Column(
@@ -85,13 +84,13 @@ class frmLogin:
                             "Inicia sesión",
                             size=30,
                             weight=ft.FontWeight.BOLD,
-                            font_family="Syne",
-                            color="#FFFFFF",
+                            font_family=tema.FUENTE_DISPLAY,
+                            color=tema.TEXTO,
                         ),
                         ft.Text(
                             "Entra con el usuario que te dimos al crear tu cuenta.",
                             size=14,
-                            color="#AEB6D0",
+                            color=tema.TEXTO_SUAVE,
                             text_align=ft.TextAlign.CENTER,
                         ),
                         ft.Row(
@@ -107,8 +106,8 @@ class frmLogin:
                             "Entrar",
                             on_click=self._entrar,
                             style=ft.ButtonStyle(
-                                bgcolor=AMBAR,
-                                color="#FFFFFF",
+                                bgcolor=tema.NAVY,
+                                color=tema.TEXTO_SOBRE_NAVY,
                                 padding=ft.Padding.symmetric(horizontal=36, vertical=20),
                                 shape=ft.RoundedRectangleBorder(radius=12),
                             ),
@@ -116,7 +115,7 @@ class frmLogin:
                         ft.TextButton(
                             "¿No tienes cuenta? Créala",
                             on_click=lambda e: self.router.navegar_a("/pre_onboarding"),
-                            style=ft.ButtonStyle(color="#AEB6D0"),
+                            style=ft.ButtonStyle(color=tema.BLUE),
                         ),
                     ],
                 ),

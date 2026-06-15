@@ -5,6 +5,7 @@ Ninguna vista ni el motor de agentes ejecuta SQL directamente: todo pasa por aqu
 
 import hashlib
 import hmac
+import json
 import os
 import random
 
@@ -331,6 +332,36 @@ def insertar_camino_elegido(
     )
     conexion.commit()
     conexion.close()
+
+
+# ----------------------------------------------------------------------------
+# Misiones
+# ----------------------------------------------------------------------------
+def insertar_mision(id_usuario, mision):
+    """Guarda una mision (dict) serializada como JSON."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        "INSERT INTO Misiones (id_usuario, contenido_json) VALUES (?, ?)",
+        (id_usuario, json.dumps(mision, ensure_ascii=False)),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_ultima_mision(id_usuario):
+    """Devuelve la mision mas reciente del usuario como dict, o None."""
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        """
+        SELECT contenido_json FROM Misiones
+        WHERE id_usuario = ?
+        ORDER BY id_mision DESC
+        LIMIT 1
+        """,
+        (id_usuario,),
+    ).fetchone()
+    conexion.close()
+    return json.loads(fila["contenido_json"]) if fila else None
 
 
 def obtener_camino_elegido(id_usuario):

@@ -6,6 +6,7 @@ los artefactos JSON que viajan entre pantallas) y cambia la vista actual.
 
 import flet as ft
 
+import tema
 from views.frmLanding import frmLanding
 from views.frmLogin import frmLogin
 from views.frmPreOnboarding import frmPreOnboarding
@@ -45,7 +46,7 @@ class Router:
         self.page.scroll = None
         self.page.vertical_alignment = ft.MainAxisAlignment.START
         self.page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-        self.page.bgcolor = "#0B1020"
+        self.page.bgcolor = tema.OFF_WHITE
         self.page.padding = 0
 
         self.page.add(vista.construir())

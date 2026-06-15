@@ -504,7 +504,9 @@ async def generar_mision_pacer(id_usuario):
         [{"role": "user", "content": entrada}],
         max_tokens=2048,
     )
-    return _parsear_json(texto)
+    mision = _parsear_json(texto)
+    clsInteraccionDB.insertar_mision(id_usuario, mision)
+    return mision
 
 
 # ============================================================================

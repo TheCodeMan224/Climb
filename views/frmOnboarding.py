@@ -1,6 +1,7 @@
 """Cuestionario de 9 preguntas de Scout, organizado en 4 actos."""
 
 import flet as ft
+import tema
 
 from data import clsInteraccionDB
 
@@ -49,10 +50,10 @@ class frmOnboarding:
             multiline=True,
             min_lines=2,
             max_lines=5,
-            border_color="#39406A",
-            focused_border_color="#BA7517",
-            color="#FFFFFF",
-            cursor_color="#BA7517",
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
         )
         self.campos.append(campo)
         return campo
@@ -83,13 +84,13 @@ class frmOnboarding:
                 "Cuéntale a Scout quién eres",
                 size=34,
                 weight=ft.FontWeight.BOLD,
-                font_family="Syne",
-                color="#FFFFFF",
+                font_family=tema.FUENTE_DISPLAY,
+                color=tema.TEXTO,
             ),
             ft.Text(
                 "Nueve preguntas en cuatro actos. Tómate tu tiempo.",
                 size=16,
-                color="#AEB6D0",
+                color=tema.TEXTO_SUAVE,
             ),
             ft.Container(height=10),
         ]
@@ -100,12 +101,12 @@ class frmOnboarding:
                     titulo_acto,
                     size=20,
                     weight=ft.FontWeight.BOLD,
-                    color="#BA7517",
-                    font_family="Syne",
+                    color=tema.AMBAR,
+                    font_family=tema.FUENTE_SUBHEADER,
                 )
             )
             for pregunta in preguntas:
-                bloques.append(ft.Text(pregunta, size=15, color="#DDE2F2"))
+                bloques.append(ft.Text(pregunta, size=15, color=tema.TEXTO))
                 bloques.append(self._campo())
                 bloques.append(ft.Container(height=6))
             bloques.append(ft.Container(height=14))
@@ -115,8 +116,8 @@ class frmOnboarding:
                 "Terminar",
                 on_click=self._terminar,
                 style=ft.ButtonStyle(
-                    bgcolor="#BA7517",
-                    color="#FFFFFF",
+                    bgcolor=tema.NAVY,
+                    color=tema.TEXTO_SOBRE_NAVY,
                     padding=ft.Padding.symmetric(horizontal=40, vertical=20),
                     shape=ft.RoundedRectangleBorder(radius=12),
                 ),

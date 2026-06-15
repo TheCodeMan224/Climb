@@ -128,6 +128,18 @@ def inicializar_db():
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS Misiones (
+            id_mision INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER NOT NULL,
+            contenido_json TEXT NOT NULL,
+            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
+        );
+        """
+    )
+
     # Migracion de autenticacion: handle (Nombre#numero) + clave hasheada.
     # Las columnas se agregan sobre la tabla Usuarios existente sin perder datos.
     _asegurar_columna(cursor, "Usuarios", "discriminador", "TEXT")

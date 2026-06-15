@@ -1,19 +1,9 @@
 """Las 9 secciones ceremoniales del diagnostico cualitativo."""
 
 import flet as ft
+import tema
 
 from core import clsAgentes
-
-NAVY = "#1B2A55"
-CORAL = "#E0633F"
-AMBAR = "#BA7517"
-AZUL_CREENCIA = "#2244DD"
-
-COLOR_SEMAFORO = {
-    "verde": "#3FB37F",
-    "ambar": "#E0A53F",
-    "rojo": "#E0633F",
-}
 
 
 class frmDiagnostico:
@@ -43,20 +33,20 @@ class frmDiagnostico:
         return ft.Container(
             expand=True,
             padding=18,
-            bgcolor="#141C36",
+            bgcolor=tema.SUPERFICIE,
             border_radius=12,
             border=ft.Border.only(left=ft.BorderSide(5, color)),
             content=ft.Column(
                 spacing=8,
                 controls=[
                     ft.Text(titulo, size=13, weight=ft.FontWeight.BOLD, color=color),
-                    ft.Text(texto, size=14, color="#DDE2F2"),
+                    ft.Text(texto, size=14, color=tema.TEXTO),
                 ],
             ),
         )
 
     def _fila_visibilidad(self, dim):
-        color = COLOR_SEMAFORO.get(dim.get("estado"), "#8C95B8")
+        color = tema.COLOR_SEMAFORO.get(dim.get("estado"), tema.MUTED)
         return ft.Container(
             padding=ft.Padding.symmetric(vertical=10),
             content=ft.Row(
@@ -68,8 +58,8 @@ class frmDiagnostico:
                         expand=True,
                         spacing=2,
                         controls=[
-                            ft.Text(dim.get("dimension", ""), size=15, weight=ft.FontWeight.BOLD, color="#FFFFFF"),
-                            ft.Text(dim.get("descripcion", ""), size=13, color="#AEB6D0"),
+                            ft.Text(dim.get("dimension", ""), size=15, weight=ft.FontWeight.BOLD, color=tema.TEXTO),
+                            ft.Text(dim.get("descripcion", ""), size=13, color=tema.TEXTO_SUAVE),
                         ],
                     ),
                 ],
@@ -79,19 +69,20 @@ class frmDiagnostico:
     def _card_patron(self, patron):
         return ft.Container(
             padding=18,
-            bgcolor="#141C36",
+            bgcolor=tema.SUPERFICIE,
             border_radius=12,
+            border=ft.Border.only(left=ft.BorderSide(5, tema.NAVY)),
             content=ft.Column(
                 spacing=6,
                 controls=[
-                    ft.Text(patron.get("nombre", ""), size=16, weight=ft.FontWeight.BOLD, color="#BA7517", font_family="Syne"),
-                    ft.Text(patron.get("descripcion", ""), size=14, color="#DDE2F2"),
+                    ft.Text(patron.get("nombre", ""), size=16, weight=ft.FontWeight.BOLD, color=tema.NAVY, font_family=tema.FUENTE_SUBHEADER),
+                    ft.Text(patron.get("descripcion", ""), size=14, color=tema.TEXTO),
                 ],
             ),
         )
 
     def _subheader(self, texto):
-        return ft.Text(texto, size=20, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne")
+        return ft.Text(texto, size=20, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_SUBHEADER)
 
     # --- Construccion -------------------------------------------------------
     def construir(self):
@@ -118,16 +109,16 @@ class frmDiagnostico:
                                 f"Esto es lo que vi en ti, {nombre}",
                                 size=36,
                                 weight=ft.FontWeight.BOLD,
-                                font_family="Syne",
-                                color="#FFFFFF",
+                                font_family=tema.FUENTE_DISPLAY,
+                                color=tema.TEXTO,
                             ),
-                            ft.Text("Tu diagnóstico cualitativo", size=15, italic=True, color="#8C95B8"),
+                            ft.Text("Tu diagnóstico cualitativo", size=15, italic=True, color=tema.TEXTO_SUAVE),
                         ],
                     ),
                     ft.OutlinedButton(
                         "Descargar PDF",
                         on_click=lambda e: None,  # mockup, sin funcionalidad real
-                        style=ft.ButtonStyle(color="#AEB6D0"),
+                        style=ft.ButtonStyle(color=tema.BLUE),
                     ),
                 ],
             )
@@ -140,15 +131,15 @@ class frmDiagnostico:
                 d.get("frase_pivote", ""),
                 size=30,
                 weight=ft.FontWeight.BOLD,
-                font_family="Syne",
-                color="#6E8BFF",
+                font_family=tema.FUENTE_DISPLAY,
+                color=tema.BLUE,
             )
         )
 
         # Seccion 3 - Parrafo narrativo intimo
         secciones.append(ft.Container(height=6))
         secciones.append(
-            ft.Text(d.get("parrafo_narrativo", ""), size=16, color="#DDE2F2", font_family="Inter"),
+            ft.Text(d.get("parrafo_narrativo", ""), size=16, color=tema.TEXTO, font_family=tema.FUENTE_BODY),
         )
 
         # Seccion 4 - Retrato en 3 cards
@@ -157,9 +148,9 @@ class frmDiagnostico:
             ft.Row(
                 spacing=14,
                 controls=[
-                    self._card_retrato("LO QUE ERES", retrato.get("lo_que_eres", ""), NAVY),
-                    self._card_retrato("LO QUE TE FRENA", retrato.get("lo_que_te_frena", ""), CORAL),
-                    self._card_retrato("DÓNDE ESTÁ LA BRECHA", retrato.get("donde_esta_la_brecha", ""), AMBAR),
+                    self._card_retrato("LO QUE ERES", retrato.get("lo_que_eres", ""), tema.NAVY),
+                    self._card_retrato("LO QUE TE FRENA", retrato.get("lo_que_te_frena", ""), tema.CORAL),
+                    self._card_retrato("DÓNDE ESTÁ LA BRECHA", retrato.get("donde_esta_la_brecha", ""), tema.AMBAR),
                 ],
             )
         )
@@ -182,9 +173,9 @@ class frmDiagnostico:
         secciones.append(
             ft.Container(
                 padding=20,
-                bgcolor="#101830",
+                bgcolor=tema.SECTION_BG,
                 border_radius=10,
-                border=ft.Border.only(left=ft.BorderSide(5, AZUL_CREENCIA)),
+                border=ft.Border.only(left=ft.BorderSide(5, tema.BLUE)),
                 content=ft.Column(
                     spacing=10,
                     controls=[
@@ -192,10 +183,10 @@ class frmDiagnostico:
                             creencia.get("cita", ""),
                             size=18,
                             italic=True,
-                            font_family="Georgia",
-                            color="#C9D0E6",
+                            font_family=tema.FUENTE_SERIF,
+                            color=tema.TEXTO,
                         ),
-                        ft.Text(creencia.get("reformulacion", ""), size=15, color="#DDE2F2", font_family="Inter"),
+                        ft.Text(creencia.get("reformulacion", ""), size=15, color=tema.TEXTO, font_family=tema.FUENTE_BODY),
                     ],
                 ),
             )
@@ -211,10 +202,10 @@ class frmDiagnostico:
                         estancamiento.get("categoria", ""),
                         size=22,
                         weight=ft.FontWeight.BOLD,
-                        font_family="Syne",
-                        color="#FFFFFF",
+                        font_family=tema.FUENTE_SUBHEADER,
+                        color=tema.TEXTO,
                     ),
-                    ft.Text(estancamiento.get("subtitulo", ""), size=15, color="#AEB6D0"),
+                    ft.Text(estancamiento.get("subtitulo", ""), size=15, color=tema.TEXTO_SUAVE),
                 ],
             )
         )
@@ -224,8 +215,8 @@ class frmDiagnostico:
             "Ver mi plan para los próximos 30 días",
             on_click=self._ver_plan,
             style=ft.ButtonStyle(
-                bgcolor=AMBAR,
-                color="#FFFFFF",
+                bgcolor=tema.AMBAR,
+                color=tema.TEXTO_SOBRE_NAVY,
                 padding=ft.Padding.symmetric(horizontal=30, vertical=20),
                 shape=ft.RoundedRectangleBorder(radius=12),
             ),
@@ -234,13 +225,13 @@ class frmDiagnostico:
         secciones.append(
             ft.Container(
                 padding=28,
-                bgcolor=NAVY,
+                bgcolor=tema.NAVY,
                 border_radius=16,
                 content=ft.Column(
                     spacing=12,
                     controls=[
-                        ft.Text("Tu siguiente paso", size=22, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
-                        ft.Text(proximo.get("parrafo", ""), size=15, color="#DDE2F2"),
+                        ft.Text("Tu siguiente paso", size=22, weight=ft.FontWeight.BOLD, color=tema.TEXTO_SOBRE_NAVY, font_family=tema.FUENTE_SUBHEADER),
+                        ft.Text(proximo.get("parrafo", ""), size=15, color=tema.TEXTO_SOBRE_NAVY),
                         ft.Container(height=4),
                         self.boton_plan,
                     ],

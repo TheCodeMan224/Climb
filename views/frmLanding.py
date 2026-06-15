@@ -1,6 +1,7 @@
 """Pantalla de bienvenida de Climb."""
 
 import flet as ft
+import tema
 
 
 class frmLanding:
@@ -15,7 +16,7 @@ class frmLanding:
             gradient=ft.LinearGradient(
                 begin=ft.Alignment.TOP_CENTER,
                 end=ft.Alignment.BOTTOM_CENTER,
-                colors=["#0B1020", "#141C36"],
+                colors=[tema.OFF_WHITE, tema.SECTION_BG],
             ),
             content=ft.Column(
                 alignment=ft.MainAxisAlignment.CENTER,
@@ -26,22 +27,22 @@ class frmLanding:
                         "Climb",
                         size=84,
                         weight=ft.FontWeight.BOLD,
-                        font_family="Syne",
-                        color="#FFFFFF",
+                        font_family=tema.FUENTE_DISPLAY,
+                        color=tema.TEXTO,
                     ),
                     ft.Text(
                         "La mano derecha de tu carrera profesional",
                         size=20,
-                        color="#AEB6D0",
-                        font_family="Inter",
+                        color=tema.TEXTO_SUAVE,
+                        font_family=tema.FUENTE_BODY,
                     ),
                     ft.Container(height=20),
                     ft.ElevatedButton(
                         "Comenzar",
                         on_click=lambda e: self.router.navegar_a("/pre_onboarding"),
                         style=ft.ButtonStyle(
-                            bgcolor="#BA7517",
-                            color="#FFFFFF",
+                            bgcolor=tema.NAVY,
+                            color=tema.TEXTO_SOBRE_NAVY,
                             padding=ft.Padding.symmetric(horizontal=44, vertical=22),
                             shape=ft.RoundedRectangleBorder(radius=14),
                         ),
@@ -49,7 +50,7 @@ class frmLanding:
                     ft.TextButton(
                         "Ya tengo cuenta — Iniciar sesión",
                         on_click=lambda e: self.router.navegar_a("/login"),
-                        style=ft.ButtonStyle(color="#AEB6D0"),
+                        style=ft.ButtonStyle(color=tema.BLUE),
                     ),
                 ],
             ),

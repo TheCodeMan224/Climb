@@ -1,11 +1,10 @@
 """Dashboard principal de Climb."""
 
 import flet as ft
+import tema
 
 from core import clsAgentes
 from data import clsInteraccionDB
-
-AMBAR = "#BA7517"
 
 # Descripciones breves (texto literal a usar, ver seccion 7.8). No modificar.
 AGENTES = [
@@ -40,20 +39,21 @@ class frmMenuInicio:
         return ft.Container(
             expand=True,
             padding=20,
-            bgcolor="#141C36",
+            bgcolor=tema.SUPERFICIE,
+            border=ft.Border.all(1, tema.BORDER_LIGHT),
             border_radius=14,
             content=ft.Column(
                 spacing=10,
                 controls=[
-                    ft.Text(nombre, size=20, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
-                    ft.Text(descripcion, size=13, color="#AEB6D0"),
+                    ft.Text(nombre, size=20, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_SUBHEADER),
+                    ft.Text(descripcion, size=13, color=tema.TEXTO_SUAVE),
                     ft.Container(height=4),
                     ft.ElevatedButton(
                         "Hablar",
                         on_click=lambda e, t=tipo_agente: self.router.navegar_a(f"/chat/{t}"),
                         style=ft.ButtonStyle(
-                            bgcolor=AMBAR,
-                            color="#FFFFFF",
+                            bgcolor=tema.NAVY,
+                            color=tema.TEXTO_SOBRE_NAVY,
                             padding=ft.Padding.symmetric(horizontal=22, vertical=14),
                             shape=ft.RoundedRectangleBorder(radius=10),
                         ),
@@ -70,7 +70,7 @@ class frmMenuInicio:
         self.boton_refrescar = ft.OutlinedButton(
             "Refrescar Diagnóstico",
             on_click=self._refrescar_diagnostico,
-            style=ft.ButtonStyle(color="#C9D0E6", padding=ft.Padding.symmetric(horizontal=24, vertical=16)),
+            style=ft.ButtonStyle(color=tema.BLUE, padding=ft.Padding.symmetric(horizontal=24, vertical=16)),
         )
 
         # Tarjetas de agentes en dos filas de dos.
@@ -85,7 +85,7 @@ class frmMenuInicio:
 
         seccion_camino = ft.Container(
             padding=24,
-            bgcolor="#1B2A55",
+            bgcolor=tema.NAVY,
             border_radius=16,
             content=ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -95,16 +95,16 @@ class frmMenuInicio:
                         expand=True,
                         spacing=4,
                         controls=[
-                            ft.Text("Tu camino", size=14, color="#AEB6D0"),
-                            ft.Text(nombre_camino, size=20, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
+                            ft.Text("Tu camino", size=14, color=tema.TEXTO_SUAVE_SOBRE_NAVY),
+                            ft.Text(nombre_camino, size=20, weight=ft.FontWeight.BOLD, color=tema.TEXTO_SOBRE_NAVY, font_family=tema.FUENTE_SUBHEADER),
                         ],
                     ),
                     ft.ElevatedButton(
                         "Ver mi misión",
                         on_click=lambda e: self.router.navegar_a("/pacer"),
                         style=ft.ButtonStyle(
-                            bgcolor=AMBAR,
-                            color="#FFFFFF",
+                            bgcolor=tema.AMBAR,
+                            color=tema.TEXTO_SOBRE_NAVY,
                             padding=ft.Padding.symmetric(horizontal=24, vertical=16),
                             shape=ft.RoundedRectangleBorder(radius=10),
                         ),
@@ -114,9 +114,9 @@ class frmMenuInicio:
         )
 
         controles = [
-            ft.Text(f"Hola, {nombre}", size=38, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
+            ft.Text(f"Hola, {nombre}", size=38, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
             ft.Container(height=10),
-            ft.Text("Tus agentes", size=22, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
+            ft.Text("Tus agentes", size=22, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_SUBHEADER),
             ft.Container(height=8),
             fila_agentes_1,
             ft.Container(height=16),

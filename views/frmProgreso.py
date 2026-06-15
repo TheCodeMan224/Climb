@@ -3,6 +3,7 @@
 import asyncio
 
 import flet as ft
+import tema
 
 from core import clsAgentes
 
@@ -21,7 +22,7 @@ class frmProgreso:
         self.router = router
         self.id_usuario = id_usuario if id_usuario is not None else router.id_usuario
         self.texto_estado = ft.Text(
-            MENSAJES[0], size=18, color="#C9D0E6", text_align=ft.TextAlign.CENTER
+            MENSAJES[0], size=18, color=tema.TEXTO, text_align=ft.TextAlign.CENTER
         )
         self.contenedor_error = ft.Column(visible=False, horizontal_alignment=ft.CrossAxisAlignment.CENTER)
 
@@ -57,7 +58,7 @@ class frmProgreso:
             ft.Text(
                 "Tuvimos un problema, intenta de nuevo",
                 size=18,
-                color="#E0633F",
+                color=tema.CORAL,
                 text_align=ft.TextAlign.CENTER,
             ),
             ft.Container(height=12),
@@ -65,8 +66,8 @@ class frmProgreso:
                 "Regresar",
                 on_click=lambda e: self.router.navegar_a("/scout_reflection"),
                 style=ft.ButtonStyle(
-                    bgcolor="#BA7517",
-                    color="#FFFFFF",
+                    bgcolor=tema.NAVY,
+                    color=tema.TEXTO_SOBRE_NAVY,
                     padding=ft.Padding.symmetric(horizontal=30, vertical=16),
                     shape=ft.RoundedRectangleBorder(radius=12),
                 ),
@@ -83,7 +84,7 @@ class frmProgreso:
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=30,
                 controls=[
-                    ft.ProgressRing(width=56, height=56, color="#BA7517", stroke_width=4),
+                    ft.ProgressRing(width=56, height=56, color=tema.AMBAR, stroke_width=4),
                     self.texto_estado,
                     self.contenedor_error,
                 ],

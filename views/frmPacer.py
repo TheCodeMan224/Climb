@@ -1,10 +1,10 @@
 """Superficie propia de Pacer: la mision semanal."""
 
 import flet as ft
+import tema
 
 from core import clsAgentes
-
-AMBAR = "#BA7517"
+from data import clsInteraccionDB
 
 
 class frmPacer:
@@ -21,17 +21,17 @@ class frmPacer:
 
         if not mision:
             self.cuerpo.controls.append(
-                ft.Text("Aún no hay una misión generada.", size=16, color="#AEB6D0")
+                ft.Text("Aún no hay una misión generada.", size=16, color=tema.TEXTO_SUAVE)
             )
             return
 
         acciones = mision.get("acciones", [])[:5]  # maximo 5
         self.cuerpo.controls.extend(
             [
-                ft.Text(mision.get("nombre_mision", ""), size=26, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
-                ft.Text(mision.get("descripcion", ""), size=15, color="#C9D0E6"),
+                ft.Text(mision.get("nombre_mision", ""), size=26, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_SUBHEADER),
+                ft.Text(mision.get("descripcion", ""), size=15, color=tema.TEXTO),
                 ft.Container(height=6),
-                ft.Text("Acciones concretas", size=16, weight=ft.FontWeight.BOLD, color="#BA7517", font_family="Syne"),
+                ft.Text("Acciones concretas", size=16, weight=ft.FontWeight.BOLD, color=tema.AMBAR, font_family=tema.FUENTE_SUBHEADER),
             ]
         )
         for accion in acciones:
@@ -40,8 +40,8 @@ class frmPacer:
                     vertical_alignment=ft.CrossAxisAlignment.START,
                     spacing=10,
                     controls=[
-                        ft.Icon(ft.Icons.CHECK_CIRCLE_OUTLINE, color="#3FB37F", size=18),
-                        ft.Text(accion, size=14, color="#DDE2F2", expand=True),
+                        ft.Icon(ft.Icons.CHECK_CIRCLE_OUTLINE, color=tema.VERDE, size=18),
+                        ft.Text(accion, size=14, color=tema.TEXTO, expand=True),
                     ],
                 )
             )
@@ -49,13 +49,13 @@ class frmPacer:
         self.cuerpo.controls.append(
             ft.Container(
                 padding=18,
-                bgcolor="#1B2A55",
+                bgcolor=tema.NAVY,
                 border_radius=12,
                 content=ft.Column(
                     spacing=4,
                     controls=[
-                        ft.Text("Conexión con tu camino", size=13, color="#AEB6D0"),
-                        ft.Text(mision.get("conexion_camino", ""), size=14, color="#FFFFFF"),
+                        ft.Text("Conexión con tu camino", size=13, color=tema.TEXTO_SUAVE_SOBRE_NAVY),
+                        ft.Text(mision.get("conexion_camino", ""), size=14, color=tema.TEXTO_SOBRE_NAVY),
                     ],
                 ),
             )
@@ -63,9 +63,18 @@ class frmPacer:
 
     # --- Eventos ------------------------------------------------------------
     async def al_cargar(self):
-        # Si no hay mision en memoria (p. ej. tras reabrir la app), generarla.
-        if not self.router.mision_actual:
-            await self._generar()
+        # Si ya esta en memoria, no hacemos nada.
+        if self.router.mision_actual:
+            return
+        # Tras reabrir la app, intentar cargar la mision guardada en la BD.
+        guardada = clsInteraccionDB.obtener_ultima_mision(self.id_usuario)
+        if guardada:
+            self.router.mision_actual = guardada
+            self._render_mision()
+            self.router.page.update()
+            return
+        # Si el usuario nunca ha generado una, la generamos ahora.
+        await self._generar()
 
     async def _generar(self, e=None):
         if self.boton_generar:
@@ -90,8 +99,8 @@ class frmPacer:
             "Generar nueva misión",
             on_click=lambda e: self.router.page.run_task(self._generar),
             style=ft.ButtonStyle(
-                bgcolor=AMBAR,
-                color="#FFFFFF",
+                bgcolor=tema.NAVY,
+                color=tema.TEXTO_SOBRE_NAVY,
                 padding=ft.Padding.symmetric(horizontal=26, vertical=16),
                 shape=ft.RoundedRectangleBorder(radius=12),
             ),
@@ -99,7 +108,7 @@ class frmPacer:
         boton_menu = ft.OutlinedButton(
             "Regresar al menú",
             on_click=lambda e: self.router.navegar_a("/menu_inicio"),
-            style=ft.ButtonStyle(color="#C9D0E6", padding=ft.Padding.symmetric(horizontal=26, vertical=16)),
+            style=ft.ButtonStyle(color=tema.BLUE, padding=ft.Padding.symmetric(horizontal=26, vertical=16)),
         )
 
         return ft.Column(
@@ -113,11 +122,12 @@ class frmPacer:
                     content=ft.Column(
                         spacing=4,
                         controls=[
-                            ft.Text("Tu misión de esta semana", size=32, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
+                            ft.Text("Tu misión de esta semana", size=32, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
                             ft.Container(height=16),
                             ft.Container(
                                 padding=26,
-                                bgcolor="#141C36",
+                                bgcolor=tema.SUPERFICIE,
+                                border=ft.Border.all(1, tema.BORDER_LIGHT),
                                 border_radius=16,
                                 content=self.cuerpo,
                             ),

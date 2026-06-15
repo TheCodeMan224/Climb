@@ -8,3 +8,6 @@ climb.db
 __pycache__/
 *.pyc
 *.pyo
+
+# Config local de Claude Code
+.claude/

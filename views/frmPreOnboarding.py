@@ -1,10 +1,9 @@
 """Registro: captura del nombre y la clave del usuario."""
 
 import flet as ft
+import tema
 
 from data import clsInteraccionDB
-
-AMBAR = "#BA7517"
 
 
 class frmPreOnboarding:
@@ -14,31 +13,31 @@ class frmPreOnboarding:
         self.campo_nombre = ft.TextField(
             label="Tu nombre",
             autofocus=True,
-            border_color="#39406A",
-            focused_border_color=AMBAR,
-            color="#FFFFFF",
-            cursor_color=AMBAR,
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
         )
         self.campo_clave = ft.TextField(
             label="Crea una clave",
             password=True,
             can_reveal_password=True,
-            border_color="#39406A",
-            focused_border_color=AMBAR,
-            color="#FFFFFF",
-            cursor_color=AMBAR,
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
         )
         self.campo_clave2 = ft.TextField(
             label="Confirma tu clave",
             password=True,
             can_reveal_password=True,
-            border_color="#39406A",
-            focused_border_color=AMBAR,
-            color="#FFFFFF",
-            cursor_color=AMBAR,
+            border_color=tema.BORDER_LIGHT,
+            focused_border_color=tema.BLUE,
+            color=tema.TEXTO,
+            cursor_color=tema.BLUE,
             on_submit=self._continuar,
         )
-        self.error = ft.Text("", color="#E0633F", size=13)
+        self.error = ft.Text("", color=tema.CORAL, size=13)
 
     def _continuar(self, e):
         nombre = (self.campo_nombre.value or "").strip()
@@ -71,8 +70,8 @@ class frmPreOnboarding:
 
         dialog = ft.AlertDialog(
             modal=True,
-            bgcolor="#141C36",
-            title=ft.Text("Tu cuenta está lista", color="#FFFFFF", font_family="Syne"),
+            bgcolor=tema.SUPERFICIE,
+            title=ft.Text("Tu cuenta está lista", color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
             content=ft.Column(
                 tight=True,
                 spacing=10,
@@ -80,16 +79,16 @@ class frmPreOnboarding:
                     ft.Text(
                         "Este es tu usuario para iniciar sesión la próxima vez. "
                         "Guárdalo bien:",
-                        color="#C9D0E6",
+                        color=tema.TEXTO_SUAVE,
                     ),
-                    ft.Text(handle, size=26, weight=ft.FontWeight.BOLD, color=AMBAR, selectable=True),
+                    ft.Text(handle, size=26, weight=ft.FontWeight.BOLD, color=tema.AMBAR, selectable=True),
                 ],
             ),
             actions=[
                 ft.ElevatedButton(
                     "Continuar",
                     on_click=ir_onboarding,
-                    style=ft.ButtonStyle(bgcolor=AMBAR, color="#FFFFFF"),
+                    style=ft.ButtonStyle(bgcolor=tema.NAVY, color=tema.TEXTO_SOBRE_NAVY),
                 ),
             ],
         )
@@ -102,7 +101,7 @@ class frmPreOnboarding:
             content=ft.Container(
                 width=480,
                 padding=40,
-                bgcolor="#141C36",
+                bgcolor=tema.SUPERFICIE,
                 border_radius=20,
                 shadow=ft.BoxShadow(blur_radius=40, color="#00000066"),
                 content=ft.Column(
@@ -113,14 +112,14 @@ class frmPreOnboarding:
                             "Crea tu cuenta",
                             size=30,
                             weight=ft.FontWeight.BOLD,
-                            font_family="Syne",
-                            color="#FFFFFF",
+                            font_family=tema.FUENTE_DISPLAY,
+                            color=tema.TEXTO,
                         ),
                         ft.Text(
                             "Elige tu nombre y una clave. Te daremos un usuario único "
                             "para volver a entrar.",
                             size=14,
-                            color="#AEB6D0",
+                            color=tema.TEXTO_SUAVE,
                             text_align=ft.TextAlign.CENTER,
                         ),
                         self.campo_nombre,
@@ -131,8 +130,8 @@ class frmPreOnboarding:
                             "Crear cuenta",
                             on_click=self._continuar,
                             style=ft.ButtonStyle(
-                                bgcolor=AMBAR,
-                                color="#FFFFFF",
+                                bgcolor=tema.NAVY,
+                                color=tema.TEXTO_SOBRE_NAVY,
                                 padding=ft.Padding.symmetric(horizontal=36, vertical=20),
                                 shape=ft.RoundedRectangleBorder(radius=12),
                             ),
@@ -140,7 +139,7 @@ class frmPreOnboarding:
                         ft.TextButton(
                             "¿Ya tienes cuenta? Inicia sesión",
                             on_click=lambda e: self.router.navegar_a("/login"),
-                            style=ft.ButtonStyle(color="#AEB6D0"),
+                            style=ft.ButtonStyle(color=tema.BLUE),
                         ),
                     ],
                 ),

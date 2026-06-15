@@ -3,11 +3,10 @@
 import json
 
 import flet as ft
+import tema
 
 from core import clsAgentes
 from data import clsInteraccionDB
-
-AMBAR = "#BA7517"
 
 
 class frmCaminos:
@@ -52,8 +51,8 @@ class frmCaminos:
             spacing=2,
             expand=True,
             controls=[
-                ft.Text(etiqueta, size=11, weight=ft.FontWeight.BOLD, color="#8C95B8"),
-                ft.Text(valor, size=13, color="#DDE2F2"),
+                ft.Text(etiqueta, size=11, weight=ft.FontWeight.BOLD, color=tema.TEXTO_SUAVE),
+                ft.Text(valor, size=13, color=tema.TEXTO),
             ],
         )
 
@@ -62,8 +61,8 @@ class frmCaminos:
             "Tomar este camino",
             on_click=lambda e, i=indice: self.router.page.run_task(self._tomar_camino, i),
             style=ft.ButtonStyle(
-                bgcolor=AMBAR,
-                color="#FFFFFF",
+                bgcolor=tema.NAVY,
+                color=tema.TEXTO_SOBRE_NAVY,
                 padding=ft.Padding.symmetric(horizontal=28, vertical=16),
                 shape=ft.RoundedRectangleBorder(radius=12),
             ),
@@ -72,15 +71,16 @@ class frmCaminos:
 
         return ft.Container(
             padding=24,
-            bgcolor="#141C36",
+            bgcolor=tema.SUPERFICIE,
+            border=ft.Border.all(1, tema.BORDER_LIGHT),
             border_radius=16,
             shadow=ft.BoxShadow(blur_radius=24, color="#00000044"),
             content=ft.Column(
                 spacing=14,
                 controls=[
-                    ft.Text(camino.get("nombre", ""), size=22, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
-                    ft.Text(camino.get("descripcion", ""), size=14, color="#C9D0E6"),
-                    ft.Divider(height=1, color="#2A3358"),
+                    ft.Text(camino.get("nombre", ""), size=22, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_SUBHEADER),
+                    ft.Text(camino.get("descripcion", ""), size=14, color=tema.TEXTO),
+                    ft.Divider(height=1, color=tema.BORDER_LIGHT),
                     ft.Row(
                         controls=[
                             self._meta("Tradeoff principal", camino.get("tradeoff_principal", "")),
@@ -106,15 +106,15 @@ class frmCaminos:
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=12,
                 controls=[
-                    ft.ProgressRing(width=22, height=22, color=AMBAR, stroke_width=3),
-                    ft.Text("Preparando tu primera misión...", color="#AEB6D0"),
+                    ft.ProgressRing(width=22, height=22, color=tema.AMBAR, stroke_width=3),
+                    ft.Text("Preparando tu primera misión...", color=tema.TEXTO_SUAVE),
                 ],
             ),
         )
 
         controles = [
-            ft.Text("Tu plan para los próximos 30 días", size=34, weight=ft.FontWeight.BOLD, color="#FFFFFF", font_family="Syne"),
-            ft.Text("Tres caminos posibles. Tú decides cuál tomar.", size=16, color="#AEB6D0"),
+            ft.Text("Tu plan para los próximos 30 días", size=34, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
+            ft.Text("Tres caminos posibles. Tú decides cuál tomar.", size=16, color=tema.TEXTO_SUAVE),
             ft.Container(height=16),
         ]
         for indice, camino in enumerate(self.caminos):

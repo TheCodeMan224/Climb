@@ -1,6 +1,7 @@
 """Pantalla narrativa que introduce a Scout. No ejecuta backend."""
 
 import flet as ft
+import tema
 
 
 class frmScoutReflection:
@@ -16,7 +17,7 @@ class frmScoutReflection:
             content=ft.Container(
                 width=560,
                 padding=48,
-                bgcolor="#141C36",
+                bgcolor=tema.SUPERFICIE,
                 border_radius=22,
                 shadow=ft.BoxShadow(blur_radius=50, color="#00000055"),
                 content=ft.Column(
@@ -27,8 +28,8 @@ class frmScoutReflection:
                             "Conoce a Scout",
                             size=32,
                             weight=ft.FontWeight.BOLD,
-                            font_family="Syne",
-                            color="#FFFFFF",
+                            font_family=tema.FUENTE_DISPLAY,
+                            color=tema.TEXTO,
                         ),
                         ft.Text(
                             "Scout es tu explorador. Va a leer con calma todo lo que "
@@ -36,16 +37,16 @@ class frmScoutReflection:
                             "definen tu momento profesional: lo que te impulsa, lo que "
                             "te frena y dónde está la brecha que aún no ves.",
                             size=17,
-                            color="#C9D0E6",
+                            color=tema.TEXTO,
                             text_align=ft.TextAlign.CENTER,
-                            font_family="Inter",
+                            font_family=tema.FUENTE_BODY,
                         ),
                         ft.Text(
                             "Tus respuestas serán analizadas para construir tu "
                             "diagnóstico cualitativo.",
                             size=15,
                             italic=True,
-                            color="#8C95B8",
+                            color=tema.TEXTO_SUAVE,
                             text_align=ft.TextAlign.CENTER,
                         ),
                         ft.Container(height=10),
@@ -53,8 +54,8 @@ class frmScoutReflection:
                             "Iniciar Diagnóstico Cualitativo",
                             on_click=lambda e: self.router.navegar_a("/progreso"),
                             style=ft.ButtonStyle(
-                                bgcolor="#BA7517",
-                                color="#FFFFFF",
+                                bgcolor=tema.NAVY,
+                                color=tema.TEXTO_SOBRE_NAVY,
                                 padding=ft.Padding.symmetric(horizontal=36, vertical=20),
                                 shape=ft.RoundedRectangleBorder(radius=12),
                             ),
