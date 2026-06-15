@@ -1,0 +1,10 @@
+# Secretos y configuración local
+.env
+
+# Base de datos local
+climb.db
+
+# Artefactos de Python
+__pycache__/
+*.pyc
+*.pyo
