@@ -1,8 +1,9 @@
 """Registro: captura del nombre y la clave del usuario."""
 
 import flet as ft
-import tema
 
+import componentes as cmp
+import tema
 from data import clsInteraccionDB
 
 
@@ -10,32 +11,10 @@ class frmPreOnboarding:
     def __init__(self, router, id_usuario=None):
         self.router = router
         self.id_usuario = id_usuario
-        self.campo_nombre = ft.TextField(
-            label="Tu nombre",
-            autofocus=True,
-            border_color=tema.BORDER_LIGHT,
-            focused_border_color=tema.BLUE,
-            color=tema.TEXTO,
-            cursor_color=tema.BLUE,
-        )
-        self.campo_clave = ft.TextField(
-            label="Crea una clave",
-            password=True,
-            can_reveal_password=True,
-            border_color=tema.BORDER_LIGHT,
-            focused_border_color=tema.BLUE,
-            color=tema.TEXTO,
-            cursor_color=tema.BLUE,
-        )
-        self.campo_clave2 = ft.TextField(
-            label="Confirma tu clave",
-            password=True,
-            can_reveal_password=True,
-            border_color=tema.BORDER_LIGHT,
-            focused_border_color=tema.BLUE,
-            color=tema.TEXTO,
-            cursor_color=tema.BLUE,
-            on_submit=self._continuar,
+        self.campo_nombre = cmp.textfield_subrayado("Mike Prueba", autofocus=True)
+        self.campo_clave = cmp.textfield_subrayado("Mínimo 4 caracteres", password=True, can_reveal=True)
+        self.campo_clave2 = cmp.textfield_subrayado(
+            "Repite tu clave", password=True, can_reveal=True, on_submit=self._continuar
         )
         self.error = ft.Text("", color=tema.CORAL, size=13)
 
@@ -71,26 +50,23 @@ class frmPreOnboarding:
         dialog = ft.AlertDialog(
             modal=True,
             bgcolor=tema.SUPERFICIE,
-            title=ft.Text("Tu cuenta está lista", color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
+            title=ft.Text("Tu cuenta está lista", color=tema.NAVY, font_family=tema.FUENTE_DISPLAY),
             content=ft.Column(
                 tight=True,
-                spacing=10,
+                spacing=14,
+                horizontal_alignment=ft.CrossAxisAlignment.START,
                 controls=[
-                    ft.Text(
-                        "Este es tu usuario para iniciar sesión la próxima vez. "
-                        "Guárdalo bien:",
-                        color=tema.TEXTO_SUAVE,
-                    ),
+                    cmp.eyebrow("Tu usuario"),
                     ft.Text(handle, size=26, weight=ft.FontWeight.BOLD, color=tema.AMBAR, selectable=True),
+                    cmp.hairline(width=40),
+                    ft.Text(
+                        "Guárdalo bien: lo necesitarás para iniciar sesión la próxima vez.",
+                        color=tema.MUTED,
+                        font_family=tema.FUENTE_BODY,
+                    ),
                 ],
             ),
-            actions=[
-                ft.ElevatedButton(
-                    "Continuar",
-                    on_click=ir_onboarding,
-                    style=ft.ButtonStyle(bgcolor=tema.NAVY, color=tema.TEXTO_SOBRE_NAVY),
-                ),
-            ],
+            actions=[cmp.boton_primario("Continuar", on_click=ir_onboarding)],
         )
         self.router.page.show_dialog(dialog)
 
@@ -98,48 +74,47 @@ class frmPreOnboarding:
         return ft.Container(
             expand=True,
             alignment=ft.Alignment.CENTER,
+            padding=40,
             content=ft.Container(
                 width=480,
-                padding=40,
-                bgcolor=tema.SUPERFICIE,
-                border_radius=20,
-                shadow=ft.BoxShadow(blur_radius=40, color="#00000066"),
                 content=ft.Column(
-                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                    spacing=20,
+                    horizontal_alignment=ft.CrossAxisAlignment.START,
+                    spacing=0,
                     controls=[
+                        cmp.eyebrow("Crear cuenta"),
+                        ft.Container(height=16),
+                        cmp.hairline(width=40),
+                        ft.Container(height=28),
                         ft.Text(
                             "Crea tu cuenta",
-                            size=30,
-                            weight=ft.FontWeight.BOLD,
+                            size=44,
+                            weight=ft.FontWeight.W_700,
                             font_family=tema.FUENTE_DISPLAY,
-                            color=tema.TEXTO,
+                            color=tema.NAVY,
                         ),
+                        ft.Container(height=12),
                         ft.Text(
-                            "Elige tu nombre y una clave. Te daremos un usuario único "
-                            "para volver a entrar.",
+                            "Elige tu nombre y una clave. Te daremos un usuario único para volver a entrar.",
                             size=14,
-                            color=tema.TEXTO_SUAVE,
-                            text_align=ft.TextAlign.CENTER,
+                            font_family=tema.FUENTE_BODY,
+                            color=tema.MUTED,
                         ),
-                        self.campo_nombre,
-                        self.campo_clave,
-                        self.campo_clave2,
+                        ft.Container(height=44),
+                        cmp.campo_etiquetado("Tu nombre", self.campo_nombre),
+                        ft.Container(height=32),
+                        cmp.campo_etiquetado("Crea una clave", self.campo_clave),
+                        ft.Container(height=32),
+                        cmp.campo_etiquetado("Confirma tu clave", self.campo_clave2),
+                        ft.Container(height=20),
                         self.error,
-                        ft.ElevatedButton(
-                            "Crear cuenta",
-                            on_click=self._continuar,
-                            style=ft.ButtonStyle(
-                                bgcolor=tema.NAVY,
-                                color=tema.TEXTO_SOBRE_NAVY,
-                                padding=ft.Padding.symmetric(horizontal=36, vertical=20),
-                                shape=ft.RoundedRectangleBorder(radius=12),
-                            ),
-                        ),
-                        ft.TextButton(
-                            "¿Ya tienes cuenta? Inicia sesión",
-                            on_click=lambda e: self.router.navegar_a("/login"),
-                            style=ft.ButtonStyle(color=tema.BLUE),
+                        ft.Container(height=24),
+                        ft.Row(
+                            spacing=28,
+                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                            controls=[
+                                cmp.boton_primario("Crear cuenta", on_click=self._continuar),
+                                cmp.enlace("¿Ya tienes cuenta? Inicia sesión", on_click=lambda e: self.router.navegar_a("/login")),
+                            ],
                         ),
                     ],
                 ),

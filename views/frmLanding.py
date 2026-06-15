@@ -1,6 +1,8 @@
 """Pantalla de bienvenida de Climb."""
 
 import flet as ft
+
+import componentes as cmp
 import tema
 
 
@@ -19,38 +21,41 @@ class frmLanding:
                 colors=[tema.OFF_WHITE, tema.SECTION_BG],
             ),
             content=ft.Column(
-                alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=24,
+                spacing=0,
                 controls=[
+                    # Logo Climb en dorado
                     ft.Text(
                         "Climb",
-                        size=84,
-                        weight=ft.FontWeight.BOLD,
+                        size=104,
+                        weight=ft.FontWeight.W_700,
                         font_family=tema.FUENTE_DISPLAY,
-                        color=tema.TEXTO,
+                        color=tema.AMBAR,
                     ),
+                    ft.Container(height=28),
+                    cmp.hairline(width=56),
+                    ft.Container(height=28),
+                    # Tagline en serif italic
                     ft.Text(
                         "La mano derecha de tu carrera profesional",
-                        size=20,
-                        color=tema.TEXTO_SUAVE,
-                        font_family=tema.FUENTE_BODY,
+                        size=19,
+                        italic=True,
+                        font_family=tema.FUENTE_SERIF,
+                        color=tema.MUTED,
+                        text_align=ft.TextAlign.CENTER,
                     ),
-                    ft.Container(height=20),
-                    ft.ElevatedButton(
-                        "Comenzar",
-                        on_click=lambda e: self.router.navegar_a("/pre_onboarding"),
-                        style=ft.ButtonStyle(
-                            bgcolor=tema.NAVY,
-                            color=tema.TEXTO_SOBRE_NAVY,
-                            padding=ft.Padding.symmetric(horizontal=44, vertical=22),
-                            shape=ft.RoundedRectangleBorder(radius=14),
-                        ),
-                    ),
-                    ft.TextButton(
-                        "Ya tengo cuenta — Iniciar sesión",
-                        on_click=lambda e: self.router.navegar_a("/login"),
-                        style=ft.ButtonStyle(color=tema.BLUE),
+                    ft.Container(height=44),
+                    cmp.boton_primario("Comenzar", on_click=lambda e: self.router.navegar_a("/pre_onboarding")),
+                    ft.Container(height=22),
+                    cmp.enlace("Ya tengo cuenta — Iniciar sesión", on_click=lambda e: self.router.navegar_a("/login")),
+                    ft.Container(height=56),
+                    # Keywords footer
+                    ft.Text(
+                        "CONTEXTO  ·  PATRÓN  ·  EJECUCIÓN",
+                        size=11,
+                        weight=ft.FontWeight.W_600,
+                        font_family=tema.FUENTE_SUBHEADER,
+                        color=tema.HINT,
                     ),
                 ],
             ),

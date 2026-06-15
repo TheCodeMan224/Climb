@@ -28,6 +28,7 @@ CORAL = "#712B13"       # estados criticos ("Invisible"), borde de patrones limi
 # ----------------------------------------------------------------------------
 BORDER_LIGHT = "#E5E5E0"  # bordes de cards normales, separadores, divisores sutiles
 SUPERFICIE = "#FFFFFF"    # superficie de cards normales sobre el fondo off-white
+HINT = "#B4B2A9"          # color de placeholders / texto fantasma en inputs
 
 # ----------------------------------------------------------------------------
 # Texto
