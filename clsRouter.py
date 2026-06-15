@@ -18,6 +18,7 @@ from views.frmCaminos import frmCaminos
 from views.frmMenuInicio import frmMenuInicio
 from views.frmAgenteChat import frmAgenteChat
 from views.frmPacer import frmPacer
+from views.frmArchive import frmArchive
 
 
 class Router:
@@ -59,6 +60,9 @@ class Router:
     def _resolver_vista(self, ruta):
         if ruta.startswith("/chat/"):
             tipo_agente = ruta.split("/chat/", 1)[1]
+            # Archive tiene su propia pantalla (chat + panel de logros en vivo).
+            if tipo_agente == "coach_archive":
+                return frmArchive(self, self.id_usuario)
             return frmAgenteChat(self, self.id_usuario, tipo_agente)
 
         vistas = {

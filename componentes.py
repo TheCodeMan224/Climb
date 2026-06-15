@@ -64,6 +64,32 @@ def enlace(texto, on_click=None, color=tema.BLUE):
     )
 
 
+def enlace_cta(texto, on_click=None, color=tema.BLUE):
+    """Link tipo CTA editorial: mayusculas, DM Sans semibold, sin relleno."""
+    return ft.TextButton(
+        content=ft.Text(
+            texto.upper(),
+            size=11,
+            weight=ft.FontWeight.W_600,
+            font_family=tema.FUENTE_SUBHEADER,
+            color=color,
+        ),
+        on_click=on_click,
+        style=ft.ButtonStyle(
+            padding=ft.Padding.symmetric(horizontal=0, vertical=4),
+            overlay_color="transparent",
+        ),
+    )
+
+
+def section_header(texto, contador=None):
+    """Eyebrow de seccion a la izquierda + contador opcional (HINT) a la derecha."""
+    controles = [eyebrow(texto)]
+    if contador is not None:
+        controles.append(eyebrow(contador, color=tema.HINT))
+    return ft.Row(controls=controles, alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+
+
 # ----------------------------------------------------------------------------
 # Inputs con subrayado (sin caja Material)
 # ----------------------------------------------------------------------------

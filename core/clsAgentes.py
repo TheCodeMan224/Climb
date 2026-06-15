@@ -164,7 +164,7 @@ que se sienta interrogado.
 
 Cómo respondes:
 1. Cuando el usuario menciona un logro, pides expansión con preguntas específicas, una a la vez: qué hizo exactamente, cuál fue el impacto medible (en cifras, en tiempo, en personas), quién lo notó, qué cambió en el sistema o en el equipo después, qué evidencia existe del logro (correos, dashboards, documentos).
-2. Cuando el logro queda articulado, lo devuelves al usuario en un bloque listo para copiar, con estructura clara en prosa breve: contexto, acción, impacto y evidencia. No usas viñetas decorativas. Usas frases completas.
+2. Cuando el logro queda articulado, lo devuelves al usuario en un bloque listo para copiar, con estructura clara en prosa breve: contexto, acción, impacto y evidencia. No usas viñetas decorativas. Usas frases completas. Acto seguido, le preguntas explícitamente si quiere que registres ese logro en su archivo.
 3. Mantienes foco en logros concretos. Cuando el usuario deriva a aspiraciones o frustraciones, lo regresas con suavidad al logro que estaban trabajando. Por ejemplo: "Eso suena importante; déjame anotarlo para después. Volviendo al proyecto que mencionaste, ¿qué pasó con el cliente al final?"
 4. No usas emojis.
 5. No prescribes formatos de currículum ni metodologías STAR explícitas; documentas con lenguaje natural.
@@ -249,6 +249,29 @@ Reglas obligatorias:
 4. "conexion_camino" referencia explícitamente el nombre del camino elegido (lo encuentras en el campo "nombre" del JSON que recibes) y explica en una o dos frases cómo esta misión avanza ese camino.
 5. Tono: directo, lúcido, cálido. Sin clichés motivacionales tipo "tú puedes". Sin emojis. Español neutro de Latinoamérica.
 6. Devuelves únicamente el JSON. Cualquier texto fuera del JSON invalida la respuesta."""
+
+PROMPT_EXTRACTOR_LOGRO = """Lees una conversación reciente entre un usuario y Archive, un agente que
+documenta logros profesionales. Tu única tarea: decidir si en la conversación
+YA quedó articulado un logro concreto y completo (con contexto, acción e
+impacto) y Archive acaba de sugerir registrarlo.
+
+Si es así, devuelves un objeto JSON con el logro listo para guardar. Si todavía
+no hay un logro completo, o Archive aún está haciendo preguntas, devuelves
+exactamente: null
+
+Formato (sin texto adicional, sin Markdown, sin backticks):
+{
+  "tipo": "<Proyecto|Impacto|Reconocimiento|Liderazgo|Habilidad>",
+  "logro": "<título breve del logro, máximo 10 palabras>",
+  "descripcion": "<2 a 4 frases en prosa: contexto, acción e impacto>"
+}
+
+Reglas:
+1. "tipo" es exactamente uno de los cinco valores permitidos.
+2. Solo devuelves el logro si está genuinamente completo. Ante la duda, devuelves null.
+3. No inventas datos que el usuario no haya dado.
+4. Español neutro de Latinoamérica. Sin emojis.
+5. Devuelves únicamente el objeto JSON, o la palabra null."""
 
 # Mapeo de tipo_agente (identificador interno) a su system prompt.
 _PROMPTS_CHAT = {
@@ -445,6 +468,33 @@ async def responder_chat_agente(id_chat, tipo_agente, id_usuario):
     mensajes = [{"role": m["rol"], "content": m["contenido"]} for m in historico]
 
     return await _llamar_claude(system_prompt, mensajes, max_tokens=1536)
+
+
+async def extraer_logro_archive(id_chat):
+    """Si la conversacion de Archive ya tiene un logro listo, devuelve su dict.
+
+    Estructura: {"tipo", "logro", "descripcion"}. Devuelve None si aun no hay un
+    logro completo. Se llama tras cada respuesta de Archive para decidir si
+    ofrecer al usuario registrarlo.
+    """
+    historico = clsInteraccionDB.obtener_ultimos_mensajes(id_chat, 10)
+    if not historico:
+        return None
+    conversacion = "\n".join(f"{m['rol']}: {m['contenido']}" for m in historico)
+    try:
+        texto = await _llamar_claude(
+            PROMPT_EXTRACTOR_LOGRO,
+            [{"role": "user", "content": conversacion}],
+            max_tokens=600,
+        )
+        logro = _parsear_json(texto)
+    except ValueError:
+        return None
+    if not isinstance(logro, dict) or not (logro.get("logro") or "").strip():
+        return None
+    if logro.get("tipo") not in clsInteraccionDB.TIPOS_LOGRO:
+        logro["tipo"] = "Impacto"
+    return logro
 
 
 async def procesar_cierre_clarity_async(id_chat, id_usuario):

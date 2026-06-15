@@ -338,22 +338,36 @@ def insertar_camino_elegido(
 # Misiones
 # ----------------------------------------------------------------------------
 def insertar_mision(id_usuario, mision):
-    """Guarda una mision (dict) serializada como JSON."""
+    """Guarda una mision (dict) como JSON, con su progreso inicializado en falso.
+
+    Devuelve el id_mision recien creado.
+    """
+    progreso = [False] * len(mision.get("acciones", []))
     conexion = obtener_conexion()
-    conexion.execute(
-        "INSERT INTO Misiones (id_usuario, contenido_json) VALUES (?, ?)",
-        (id_usuario, json.dumps(mision, ensure_ascii=False)),
+    cursor = conexion.cursor()
+    cursor.execute(
+        "INSERT INTO Misiones (id_usuario, contenido_json, progreso_json) VALUES (?, ?, ?)",
+        (
+            id_usuario,
+            json.dumps(mision, ensure_ascii=False),
+            json.dumps(progreso),
+        ),
     )
+    id_mision = cursor.lastrowid
     conexion.commit()
     conexion.close()
+    return id_mision
 
 
 def obtener_ultima_mision(id_usuario):
-    """Devuelve la mision mas reciente del usuario como dict, o None."""
+    """Devuelve el estado de la mision mas reciente, o None.
+
+    Estructura: {"id_mision", "mision" (dict), "progreso" (list[bool])}.
+    """
     conexion = obtener_conexion()
     fila = conexion.execute(
         """
-        SELECT contenido_json FROM Misiones
+        SELECT id_mision, contenido_json, progreso_json FROM Misiones
         WHERE id_usuario = ?
         ORDER BY id_mision DESC
         LIMIT 1
@@ -361,7 +375,63 @@ def obtener_ultima_mision(id_usuario):
         (id_usuario,),
     ).fetchone()
     conexion.close()
-    return json.loads(fila["contenido_json"]) if fila else None
+    if not fila:
+        return None
+
+    mision = json.loads(fila["contenido_json"])
+    progreso = json.loads(fila["progreso_json"]) if fila["progreso_json"] else []
+    # Alinear el progreso con el numero de acciones (por si falta).
+    n = len(mision.get("acciones", []))
+    if len(progreso) != n:
+        progreso = (progreso + [False] * n)[:n]
+    return {"id_mision": fila["id_mision"], "mision": mision, "progreso": progreso}
+
+
+# ----------------------------------------------------------------------------
+# Logros_Personales (registrados por Archive)
+# ----------------------------------------------------------------------------
+TIPOS_LOGRO = ["Proyecto", "Impacto", "Reconocimiento", "Liderazgo", "Habilidad"]
+
+
+def insertar_logro(id_usuario, tipo, logro, descripcion):
+    """Registra un logro personal del usuario (lo guarda Archive)."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        """
+        INSERT INTO Logros_Personales (usuarioLogro, tipoLogro, logro, descripcionLogro)
+        VALUES (?, ?, ?, ?)
+        """,
+        (id_usuario, tipo, logro, descripcion),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_logros(id_usuario):
+    """Devuelve los logros del usuario (mas recientes primero)."""
+    conexion = obtener_conexion()
+    filas = conexion.execute(
+        """
+        SELECT idRegistro, tipoLogro, logro, descripcionLogro, fechaRegistroLogro
+        FROM Logros_Personales
+        WHERE usuarioLogro = ?
+        ORDER BY idRegistro DESC
+        """,
+        (id_usuario,),
+    ).fetchall()
+    conexion.close()
+    return [dict(f) for f in filas]
+
+
+def guardar_progreso_mision(id_mision, progreso):
+    """Actualiza la lista de acciones completadas (list[bool]) de una mision."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        "UPDATE Misiones SET progreso_json = ? WHERE id_mision = ?",
+        (json.dumps(progreso), id_mision),
+    )
+    conexion.commit()
+    conexion.close()
 
 
 def obtener_camino_elegido(id_usuario):

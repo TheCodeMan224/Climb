@@ -3,6 +3,7 @@
 
 # Base de datos local
 climb.db
+*.bak
 
 # Artefactos de Python
 __pycache__/

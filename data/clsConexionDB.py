@@ -130,10 +130,25 @@ def inicializar_db():
 
     cursor.execute(
         """
+        CREATE TABLE IF NOT EXISTS Logros_Personales (
+            idRegistro INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuarioLogro INTEGER NOT NULL,
+            tipoLogro TEXT,
+            logro TEXT NOT NULL,
+            descripcionLogro TEXT,
+            fechaRegistroLogro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuarioLogro) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS Misiones (
             id_mision INTEGER PRIMARY KEY AUTOINCREMENT,
             id_usuario INTEGER NOT NULL,
             contenido_json TEXT NOT NULL,
+            progreso_json TEXT,
             fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
         );
@@ -145,6 +160,9 @@ def inicializar_db():
     _asegurar_columna(cursor, "Usuarios", "discriminador", "TEXT")
     _asegurar_columna(cursor, "Usuarios", "password_hash", "TEXT")
     _asegurar_columna(cursor, "Usuarios", "password_salt", "TEXT")
+
+    # Progreso de misiones (acciones completadas) sobre la tabla existente.
+    _asegurar_columna(cursor, "Misiones", "progreso_json", "TEXT")
     cursor.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuario_handle "
         "ON Usuarios(nombre, discriminador)"
