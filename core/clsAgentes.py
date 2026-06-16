@@ -513,7 +513,7 @@ async def responder_chat_agente(id_chat, tipo_agente, id_usuario):
     mensajes del chat. El mensaje nuevo del usuario ya fue insertado por la vista.
     """
     nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
-    perfil = clsInteraccionDB.obtener_perfil(id_usuario)
+    perfil = clsInteraccionDB.obtener_perfil(id_usuario) or {}
     contexto_onboarding = _formatear_onboarding(perfil, nombre)
 
     system_prompt = (
@@ -841,6 +841,7 @@ async def actualizar_voice_profile(id_usuario):
     contenido = _parsear_json(texto)
     if not isinstance(contenido, dict):
         raise ValueError("El voice profile no es un objeto JSON")
+    contenido = _normalizar_voice(contenido)
 
     n_total = n_previo + len(textos)
     contenido["meta"] = {
@@ -866,32 +867,63 @@ async def actualizar_voice_profile_si_toca(id_usuario, umbral=8):
         return
 
 
+_VOICE_LISTAS = {"tono", "lexico", "muletillas", "ejemplos_textuales"}
+_VOICE_TEXTOS = {"registro", "formalidad", "estructura", "marcadores", "postura", "como_escribir_como_el", "que_evitar"}
+
+
+def _normalizar_voice(c):
+    """Deja los campos del voice profile en tipos consistentes (listas o textos),
+    sin importar si el modelo los devolvió como str o list."""
+    if not isinstance(c, dict):
+        return c
+    for k in _VOICE_LISTAS:
+        if k in c:
+            c[k] = _voice_lista(c[k])
+    for k in _VOICE_TEXTOS:
+        if k in c:
+            c[k] = _voice_texto(c[k])
+    return c
+
+
+def _voice_lista(v):
+    """Normaliza un campo a lista de strings (tolera str, list o None)."""
+    if isinstance(v, list):
+        return [str(x).strip() for x in v if str(x).strip()]
+    if v:
+        return [str(v).strip()]
+    return []
+
+
+def _voice_texto(v, sep="; "):
+    """Normaliza un campo a texto (une listas; tolera str, list o None)."""
+    return sep.join(_voice_lista(v))
+
+
 def _snippet_voice(id_usuario):
     """Convierte el voice profile en un fragmento de prompt para que un agente
-    escriba con la voz del usuario. Devuelve '' si aún no hay perfil."""
+    escriba con la voz del usuario. Tolera campos como str o list. '' si no hay perfil."""
     vp = clsInteraccionDB.obtener_voice_profile(id_usuario)
     if not vp or not vp.get("contenido"):
         return ""
     c = vp["contenido"]
     partes = []
     if c.get("como_escribir_como_el"):
-        partes.append("Cómo escribe: " + c["como_escribir_como_el"])
+        partes.append("Cómo escribe: " + _voice_texto(c["como_escribir_como_el"]))
     if c.get("que_evitar"):
-        partes.append("Evita (lo haría sonar falso): " + c["que_evitar"])
+        partes.append("Evita (lo haría sonar falso): " + _voice_texto(c["que_evitar"]))
     if c.get("registro"):
-        partes.append("Registro: " + c["registro"])
+        partes.append("Registro: " + _voice_texto(c["registro"], ", "))
     if c.get("tono"):
-        partes.append("Tono: " + ", ".join(c["tono"]))
+        partes.append("Tono: " + ", ".join(_voice_lista(c["tono"])))
     if c.get("muletillas"):
-        partes.append("Expresiones suyas: " + ", ".join(c["muletillas"][:5]))
-    ejemplos = c.get("ejemplos_textuales") or []
+        partes.append("Expresiones suyas: " + ", ".join(_voice_lista(c["muletillas"])[:5]))
+    ejemplos = _voice_lista(c.get("ejemplos_textuales"))
     if ejemplos:
         partes.append("Ejemplos de su voz: " + " | ".join(f'"{e}"' for e in ejemplos[:3]))
     if not partes:
         return ""
-    cautela = ""
-    if c.get("meta", {}).get("confianza") == "baja":
-        cautela = " (Perfil preliminar: respeta su voz pero no fuerces los rasgos.)"
+    meta = c.get("meta") if isinstance(c.get("meta"), dict) else {}
+    cautela = " (Perfil preliminar: respeta su voz pero no fuerces los rasgos.)" if meta.get("confianza") == "baja" else ""
     return (
         "\n\n--- Voz del usuario (escribe como él, sin imitar de más) ---\n"
         + "\n".join(partes) + cautela

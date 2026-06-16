@@ -5,6 +5,7 @@ hairline divisoria. Cuando Archive emite la frase trigger, aparecen dos botones
 ('Sí, generar ficha' / 'Quiero modificar algo').
 """
 
+import traceback
 from datetime import datetime
 
 import flet as ft
@@ -152,6 +153,7 @@ class frmArchiveChat:
         try:
             respuesta = await clsAgentes.responder_archive(self.turns, self.id_usuario)
         except Exception:
+            traceback.print_exc()  # error real en consola para diagnóstico
             respuesta = "Tuvimos un problema generando la respuesta. Intenta de nuevo."
 
         self.turns.append(("archive", respuesta))

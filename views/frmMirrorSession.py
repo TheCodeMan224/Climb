@@ -8,6 +8,7 @@ NOTA(Claude): las preguntas y la detección de boundary son MOCK por ahora; ver
 los TODO marcados (Claude-Q, Claude-B).
 """
 
+import traceback
 from datetime import datetime
 
 import flet as ft
@@ -78,6 +79,7 @@ class frmMirrorSession:
         try:
             es_boundary = await clsAgentes.mirror_es_boundary(texto)
         except Exception:
+            traceback.print_exc()
             es_boundary = False
 
         revelar = None
@@ -87,6 +89,7 @@ class frmMirrorSession:
             try:
                 q = await clsAgentes.mirror_pregunta(self.patron.quote, self.turns, self.id_usuario)
             except Exception:
+                traceback.print_exc()  # error real en consola para diagnóstico
                 q = "Sigamos: ¿qué más notas de cómo este patrón opera en tu trabajo?"
             if "[LISTO]" in q:
                 # Mirror considera que ya tiene suficiente: cierra la conversación.
@@ -136,6 +139,7 @@ class frmMirrorSession:
         try:
             rf = await clsAgentes.mirror_reframe(self.patron.quote, self.turns)
         except Exception:
+            traceback.print_exc()
             self.router.ocultar_carga()
             self.router.page.show_dialog(ft.SnackBar(ft.Text("No pude generar el espejo. Intenta de nuevo.")))
             self.router.page.update()

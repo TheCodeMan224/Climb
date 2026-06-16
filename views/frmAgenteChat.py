@@ -1,5 +1,7 @@
 """Interfaz de chat con Mirror, Editor, Archive o Clarity."""
 
+import traceback
+
 import flet as ft
 
 import componentes as cmp
@@ -112,6 +114,7 @@ class frmAgenteChat:
                 self.id_chat, self.tipo_agente, self.id_usuario
             )
         except Exception:
+            traceback.print_exc()  # error real en consola para diagnóstico
             respuesta = "Tuvimos un problema generando la respuesta. Intenta de nuevo."
 
         clsInteraccionDB.insertar_mensaje(self.id_chat, "assistant", respuesta)
