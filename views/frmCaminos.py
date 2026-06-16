@@ -65,6 +65,18 @@ class frmCaminos:
         )
         self.botones.append(boton)
 
+        por_que = ft.Container(
+            padding=ft.Padding.only(left=14),
+            border=ft.Border.only(left=ft.BorderSide(3, tema.AMBAR)),
+            content=ft.Column(
+                spacing=4,
+                controls=[
+                    ft.Text("POR QUÉ ENCAJA CONTIGO", size=11, weight=ft.FontWeight.BOLD, color=tema.AMBAR),
+                    ft.Text(camino.get("por_que_encaja", ""), size=13, color=tema.TEXTO, font_family=tema.FUENTE_BODY),
+                ],
+            ),
+        )
+
         return ft.Container(
             padding=24,
             bgcolor=tema.SUPERFICIE,
@@ -76,6 +88,7 @@ class frmCaminos:
                 controls=[
                     ft.Text(camino.get("nombre", ""), size=22, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_SUBHEADER),
                     ft.Text(camino.get("descripcion", ""), size=14, color=tema.TEXTO),
+                    por_que,
                     ft.Divider(height=1, color=tema.BORDER_LIGHT),
                     ft.Row(
                         controls=[
@@ -87,6 +100,11 @@ class frmCaminos:
                         controls=[
                             self._meta("Tiempo estimado por semana", camino.get("tiempo_estimado_semanal", "")),
                             self._meta("Patrón que rompe", camino.get("patron_que_rompe", "")),
+                        ]
+                    ),
+                    ft.Row(
+                        controls=[
+                            self._meta("Supuesto que este camino pone a prueba", camino.get("supuesto_que_desafia", "")),
                         ]
                     ),
                     ft.Container(height=4),
@@ -111,6 +129,17 @@ class frmCaminos:
         controles = [
             ft.Text("Tu plan para los próximos 30 días", size=34, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
             ft.Text("Tres caminos posibles. Tú decides cuál tomar.", size=16, color=tema.TEXTO_SUAVE),
+            ft.Container(
+                margin=ft.Margin.only(top=10),
+                padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+                bgcolor=tema.SECTION_BG,
+                border_radius=8,
+                border=ft.Border.only(left=ft.BorderSide(3, tema.AMBAR)),
+                content=ft.Text(
+                    "Climb te muestra opciones con sus costos y riesgos; no elige por ti. "
+                    "Es un insumo para que TÚ decidas, no una respuesta definitiva.",
+                    size=13, italic=True, color=tema.TEXTO_SUAVE, font_family=tema.FUENTE_SERIF),
+            ),
             ft.Container(height=16),
         ]
         for indice, camino in enumerate(self.caminos):

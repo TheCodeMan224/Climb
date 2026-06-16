@@ -110,6 +110,8 @@ sin texto adicional, sin Markdown, sin backticks, sin comentarios:
     {
       "nombre": "<nombre propio memorable>",
       "descripcion": "<40-60 palabras>",
+      "por_que_encaja": "<una frase que conecta este camino con el diagnóstico: a qué versión de la persona apunta o qué de su situación lo hace tener sentido>",
+      "supuesto_que_desafia": "<el supuesto o creencia de la persona que este camino pone a prueba, en una frase>",
       "tradeoff_principal": "<una frase corta>",
       "riesgo_principal": "<una frase corta>",
       "tiempo_estimado_semanal": "<expresión natural, ej: '3 a 5 horas'>",
@@ -125,12 +127,14 @@ Reglas obligatorias:
 2. Los 3 caminos son genuinamente distintos en enfoque y filosofía. No son tres variaciones del mismo camino. Si dos suenan parecidos, reescribe uno.
 3. Cada "nombre" es propio y memorable, con personalidad. Ejemplos del registro esperado: "El camino del arquitecto visible", "El camino de la conversación pendiente", "El camino del portafolio externo", "El camino del límite firme", "El camino del aliado interno", "El camino del registro semanal". Nunca uses nombres genéricos como "Camino 1", "Plan A", "Estrategia de visibilidad".
 4. La "descripcion" de cada camino explica qué supone hacer, qué tipo de usuario lo elegiría, y a qué versión del usuario apunta. Entre 40 y 60 palabras.
-5. "tradeoff_principal" nombra qué se sacrifica al elegir este camino (una frase corta, sin matices).
-6. "riesgo_principal" nombra el principal riesgo si el camino se ejecuta mal (una frase corta).
-7. "tiempo_estimado_semanal" se escribe en lenguaje natural en español: "3 a 5 horas", "6 a 8 horas", "alrededor de 4 horas". No uses formato numérico crudo.
-8. "patron_que_rompe" referencia explícitamente uno de los 3 patrones que aparecen en el diagnóstico recibido, usando el nombre exacto del patrón.
-9. Tono: lúcido, cálido, en español neutro de Latinoamérica. Sin clichés. Sin emojis. Hablas como alguien que respeta la autonomía del usuario y sabe que es él quien va a elegir.
-10. Devuelves únicamente el JSON. Cualquier texto fuera del JSON invalida la respuesta."""
+5. "por_que_encaja" hace VISIBLE el razonamiento: conecta el camino con detalles concretos del diagnóstico (un patrón, la creencia limitante, su tipo de estancamiento, su rol). No es genérico ni motivacional; es "por qué este camino tiene sentido para esta persona en específico".
+6. "supuesto_que_desafia" nombra el supuesto o creencia que la persona da por cierto y que este camino pone a prueba (ej. "que pedir ayuda te hace ver menos capaz", "que tu trabajo debería hablar por sí solo"). Puede apoyarse en la creencia limitante del diagnóstico. Es lo que se cuestiona, no lo que se afirma.
+7. "tradeoff_principal" nombra qué se sacrifica al elegir este camino (una frase corta, sin matices).
+8. "riesgo_principal" nombra el principal riesgo si el camino se ejecuta mal (una frase corta).
+9. "tiempo_estimado_semanal" se escribe en lenguaje natural en español: "3 a 5 horas", "6 a 8 horas", "alrededor de 4 horas". No uses formato numérico crudo.
+10. "patron_que_rompe" referencia explícitamente uno de los 3 patrones que aparecen en el diagnóstico recibido, usando el nombre exacto del patrón.
+11. Tono: lúcido, cálido, en español neutro de Latinoamérica. Sin clichés. Sin emojis. Hablas como alguien que respeta la autonomía del usuario y sabe que es él quien va a elegir.
+12. Devuelves únicamente el JSON. Cualquier texto fuera del JSON invalida la respuesta."""
 
 PROMPT_MIRROR = """Eres Mirror, un agente de Climb especializado en preguntas socráticas. Tu
 trabajo es ayudar al usuario a procesar sus propios patrones limitantes

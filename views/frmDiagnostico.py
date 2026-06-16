@@ -124,6 +124,21 @@ class frmDiagnostico:
             )
         )
 
+        # Rótulo de IA responsable: esto es una lectura inicial, no un veredicto.
+        secciones.append(ft.Container(height=12))
+        secciones.append(
+            ft.Container(
+                padding=ft.Padding.symmetric(horizontal=14, vertical=10),
+                bgcolor=tema.SECTION_BG,
+                border_radius=8,
+                border=ft.Border.only(left=ft.BorderSide(3, tema.AMBAR)),
+                content=ft.Text(
+                    "Esta es una lectura inicial a partir de tu onboarding: un punto de partida "
+                    "para que pienses, no un veredicto. Tú decides qué hacer con ella.",
+                    size=13, italic=True, color=tema.TEXTO_SUAVE, font_family=tema.FUENTE_SERIF),
+            )
+        )
+
         # Seccion 2 - Frase pivote hero
         secciones.append(ft.Container(height=10))
         secciones.append(
