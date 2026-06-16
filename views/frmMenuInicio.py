@@ -84,7 +84,7 @@ class frmMenuInicio:
 
     def _abrir_agente(self, tipo_agente):
         # Archive y Mirror tienen su propio flujo editorial; el resto, chat genérico.
-        rutas = {"coach_archive": "/archive", "coach_mirror": "/mirror"}
+        rutas = {"coach_archive": "/archive", "coach_mirror": "/mirror", "coach_editor": "/editor"}
         self.router.navegar_a(rutas.get(tipo_agente, f"/chat/{tipo_agente}"))
 
     def _ir_patron_mirror(self, nombre, descripcion):

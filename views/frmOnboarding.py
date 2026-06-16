@@ -7,40 +7,40 @@ import tema
 from core import clsAgentes
 from data import clsInteraccionDB
 
-# Textos exactos de las 9 preguntas. No modificar (ver seccion 12).
-# Cada acto: (titulo, intro narrativa, [preguntas]).
+# Cada acto: (titulo, intro narrativa, [preguntas]). Títulos e intros son solo
+# de cara al usuario; el guardado a BD es posicional (no depende de estos textos).
 ACTOS = [
     (
-        "Acto I: Apertura Emocional",
-        "Empezamos por lo que sientes. El resto vendrá después.",
+        "Acto I — Dónde estás hoy",
+        "No hay respuestas correctas aquí. Escríbeme como hablas, aunque salga desordenado. Solo quiero conocerte de verdad.",
         [
-            "¿Cómo te sientes respecto a tu momento profesional actual y qué emociones te genera pensar en tu carrera?",
-            "Cuando experimentas frustración, estancamiento laboral o invisibilidad, ¿cómo lo procesas internamente?",
+            "¿Cómo te sientes con tu carrera en este momento? No la versión de LinkedIn, la de verdad.",
+            "Cuando algo del trabajo te frustra o sientes que no avanzas, ¿qué haces con eso? ¿Lo hablas, te lo guardas, trabajas más horas?",
         ],
     ),
     (
-        "Acto II: Trayectoria y Contexto",
-        "Ahora cuéntanos de dónde vienes y qué haces hoy.",
+        "Acto II — De dónde vienes",
+        "Ahora cuéntame tu historia. Sin currículum y sin formalidades, como si me lo contaras tomando un café.",
         [
-            "Cuéntanos brevemente sobre tu rol actual, tu industria y las responsabilidades principales que manejas.",
-            "Si tuvieras que resumir tu trayectoria o pegar extractos clave de tu currículum, ¿cuál sería tu historia profesional?",
+            "Cuéntame qué haces hoy. ¿En qué trabajas, en qué tipo de empresa, y de qué eres responsable en el día a día?",
+            "Y para llegar ahí, ¿por dónde pasaste? Cuéntame tu camino hasta hoy, como se lo contarías a alguien en una cena, no en una entrevista.",
         ],
     ),
     (
-        "Acto III: Hitos y Presión",
-        "Hablemos de tus logros y de cómo respondes bajo presión.",
+        "Acto III — Lo que has construido",
+        "Hablemos de lo que has logrado, y de cómo lo vives cuando todo depende de ti.",
         [
-            "¿Cuál consideras que ha sido tu mayor logro profesional hasta la fecha y por qué te enorgullece?",
-            "¿Cómo reaccionas cuando tu trabajo es expuesto ante líderes clave o bajo situaciones de alta visibilidad o presión?",
+            "¿Cuál es el logro del que te sientes más orgulloso? Cuéntame qué pasó y por qué ese te importa tanto.",
+            "Cuando te toca presentar tu trabajo frente a gente importante, o todo recae sobre ti, ¿cómo lo vives? ¿Te crece o te pesa?",
         ],
     ),
     (
-        "Acto IV: Brechas y Futuro",
+        "Acto IV — Hacia dónde vas",
         "Y para cerrar, hacia dónde quieres ir desde aquí.",
         [
-            "¿Qué acciones o intentos previos has realizado para acelerar tu crecimiento o posicionamiento, y qué no funcionó?",
-            "Si no tuvieras ninguna limitación de recursos, ¿cómo se ve tu situación profesional ideal a 3 años?",
-            "Este es tu espacio libre de desahogo. ¿Hay algo más que te gustaría liberar sobre tus retos actuales que no hayamos cubierto?",
+            "¿Qué has intentado para crecer o para que te noten más? Cuéntame también lo que probaste y no funcionó, eso me dice mucho de ti.",
+            "Imagina tu carrera en tres años, sin límites de ningún tipo. ¿Cómo se ve? ¿Dónde estás, qué haces, cómo te sientes?",
+            "Antes de cerrar, este espacio es tuyo. ¿Hay algo de tu carrera que traes cargando y que no me has contado todavía?",
         ],
     ),
 ]

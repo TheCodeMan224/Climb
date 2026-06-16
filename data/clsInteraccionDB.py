@@ -706,6 +706,142 @@ def guardar_progreso_mision(id_mision, progreso):
     conexion.close()
 
 
+# ----------------------------------------------------------------------------
+# Editor_Borradores (estudio de redacción)
+# ----------------------------------------------------------------------------
+def _hace(ts):
+    """Devuelve un texto relativo ('hace 5 min', 'hace 2h', 'ayer', 'hace 3 días')."""
+    fecha = _parse_fecha(ts)
+    seg = (datetime.now() - fecha).total_seconds()
+    if seg < 60:
+        return "hace un momento"
+    if seg < 3600:
+        return f"hace {int(seg // 60)} min"
+    if seg < 86400:
+        return f"hace {int(seg // 3600)}h"
+    dias = int(seg // 86400)
+    return "ayer" if dias == 1 else f"hace {dias} días"
+
+
+def _preview_borrador(texto):
+    """Primera línea/recorte del borrador para la lista del home."""
+    t = " ".join((texto or "").split())
+    return (t[:90] + "…") if len(t) > 90 else t
+
+
+def crear_borrador_editor(id_usuario, formato, es_correo, asunto, borrador,
+                          contexto_json=None, turns_json=None, estado="activo"):
+    """Crea un borrador del estudio de Editor. Devuelve idBorrador."""
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute(
+        """
+        INSERT INTO Editor_Borradores
+            (id_usuario, formato, es_correo, asunto, borrador, estado, contexto_json, turns_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (id_usuario, formato, int(bool(es_correo)), asunto, borrador, estado, contexto_json, turns_json),
+    )
+    id_borrador = cursor.lastrowid
+    conexion.commit()
+    conexion.close()
+    return id_borrador
+
+
+def actualizar_borrador_editor(id_borrador, formato, es_correo, asunto, borrador, turns_json):
+    """Actualiza el contenido de un borrador y refresca su marca de tiempo."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        """
+        UPDATE Editor_Borradores
+        SET formato = ?, es_correo = ?, asunto = ?, borrador = ?, turns_json = ?,
+            actualizado = CURRENT_TIMESTAMP
+        WHERE idBorrador = ?
+        """,
+        (formato, int(bool(es_correo)), asunto, borrador, turns_json, id_borrador),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def marcar_borrador_estado(id_borrador, estado):
+    """Cambia el estado de un borrador ('activo' | 'completado')."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        "UPDATE Editor_Borradores SET estado = ?, actualizado = CURRENT_TIMESTAMP WHERE idBorrador = ?",
+        (estado, id_borrador),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def eliminar_borrador_editor(id_borrador):
+    """Elimina un borrador definitivamente."""
+    conexion = obtener_conexion()
+    conexion.execute("DELETE FROM Editor_Borradores WHERE idBorrador = ?", (id_borrador,))
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_borrador_editor(id_borrador):
+    """Devuelve un borrador completo como dict, o None."""
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        """
+        SELECT idBorrador, formato, es_correo, asunto, borrador, estado,
+               contexto_json, turns_json, actualizado
+        FROM Editor_Borradores WHERE idBorrador = ?
+        """,
+        (id_borrador,),
+    ).fetchone()
+    conexion.close()
+    if not fila:
+        return None
+    d = dict(fila)
+    d["id"] = d["idBorrador"]
+    d["es_correo"] = bool(d["es_correo"])
+    return d
+
+
+def obtener_borradores_editor(id_usuario, estado=None):
+    """Lista los borradores del usuario (más recientes primero) para el home.
+
+    Cada dict trae: id, formato, es_correo, asunto, estado, preview, hace.
+    """
+    conexion = obtener_conexion()
+    if estado:
+        filas = conexion.execute(
+            """
+            SELECT idBorrador, formato, es_correo, asunto, borrador, estado, actualizado
+            FROM Editor_Borradores WHERE id_usuario = ? AND estado = ?
+            ORDER BY actualizado DESC, idBorrador DESC
+            """,
+            (id_usuario, estado),
+        ).fetchall()
+    else:
+        filas = conexion.execute(
+            """
+            SELECT idBorrador, formato, es_correo, asunto, borrador, estado, actualizado
+            FROM Editor_Borradores WHERE id_usuario = ?
+            ORDER BY actualizado DESC, idBorrador DESC
+            """,
+            (id_usuario,),
+        ).fetchall()
+    conexion.close()
+    resultado = []
+    for f in filas:
+        resultado.append({
+            "id": f["idBorrador"],
+            "formato": f["formato"] or "",
+            "es_correo": bool(f["es_correo"]),
+            "asunto": f["asunto"] or "",
+            "estado": f["estado"] or "activo",
+            "preview": _preview_borrador(f["asunto"] if f["es_correo"] and f["asunto"] else f["borrador"]),
+            "hace": _hace(f["actualizado"]),
+        })
+    return resultado
+
+
 def obtener_camino_elegido(id_usuario):
     """Devuelve el camino elegido del usuario como dict, o None."""
     conexion = obtener_conexion()

@@ -26,6 +26,8 @@ from views.frmMirrorHub import frmMirrorHub
 from views.frmMirrorEntry import frmMirrorEntry
 from views.frmMirrorSession import frmMirrorSession
 from views.frmMirrorEspejo import frmMirrorEspejo
+from views.frmEditor import frmEditor
+from views.frmEditorHome import frmEditorHome
 
 
 class Router:
@@ -44,6 +46,8 @@ class Router:
         self.mirror_patron = None  # patrón seleccionado para una sesión de Mirror
         self.mirror_reframe = None  # reframe generado al cerrar la sesión
         self.mirror_minutos = 0
+        self.editor_contexto = None  # logro que viaja de Archive a Editor
+        self.editor_borrador_id = None  # borrador a retomar en el estudio (None = nuevo)
 
         # Chip fijo (esquina superior derecha) con el handle del usuario, para
         # que tenga su codigo de acceso siempre presente. Vive en el overlay, asi
@@ -156,6 +160,8 @@ class Router:
             "/mirror/entry": frmMirrorEntry,
             "/mirror/session": frmMirrorSession,
             "/mirror/espejo": frmMirrorEspejo,
+            "/editor": frmEditorHome,
+            "/editor/estudio": frmEditor,
         }
         clase = vistas.get(ruta, frmLanding)
         return clase(self, self.id_usuario)

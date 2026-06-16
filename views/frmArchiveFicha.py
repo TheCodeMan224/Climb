@@ -65,6 +65,19 @@ class frmArchiveFicha:
             content=ft.Column(spacing=0, controls=cuerpo),
         )
 
+    def _redactar(self, e):
+        # Pasa este logro a Editor para redactar (correo / LinkedIn) con tu voz.
+        self.router.editor_contexto = self.ficha
+        self.router.editor_borrador_id = None  # sesión nueva enfocada en el logro
+        self.router.navegar_a("/editor/estudio")
+
+    def _boton_redactar(self):
+        return ft.ElevatedButton(
+            content=ft.Text("REDACTAR CON EDITOR  →", size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+            on_click=self._redactar,
+            style=ft.ButtonStyle(bgcolor=tema.NAVY, shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.symmetric(horizontal=28, vertical=16), elevation=0),
+        )
+
     # --- Construcción -------------------------------------------------------
     def construir(self):
         if not self.ficha:
@@ -83,27 +96,24 @@ class frmArchiveFicha:
 
         if self.recien_generado:
             intro_eyebrow, intro_texto = "Logro archivado", "Tu logro quedó documentado. Así lo registramos."
-            boton_archivo = ft.ElevatedButton(
-                content=ft.Text("VER MI ARCHIVO  →", size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
-                on_click=lambda e: self.router.navegar_a("/archive"),
-                style=ft.ButtonStyle(
-                    bgcolor=tema.NAVY,
-                    shape=ft.RoundedRectangleBorder(radius=4),
-                    padding=ft.Padding.symmetric(horizontal=28, vertical=16),
-                    elevation=0,
-                ),
-            )
             acciones = ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    cmp.enlace_cta("← Volver al chat de Archive", on_click=lambda e: self.router.navegar_a("/chat/coach_archive")),
-                    boton_archivo,
+                    cmp.enlace_cta("← Volver al archivo", on_click=lambda e: self.router.navegar_a("/archive")),
+                    self._boton_redactar(),
                 ],
             )
         else:
             intro_eyebrow, intro_texto = "Del archivo", "Un logro que documentaste con Archive."
-            acciones = ft.Row(controls=[cmp.enlace_cta("← Volver al archivo", on_click=lambda e: self.router.navegar_a("/archive"))])
+            acciones = ft.Row(
+                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    cmp.enlace_cta("← Volver al archivo", on_click=lambda e: self.router.navegar_a("/archive")),
+                    self._boton_redactar(),
+                ],
+            )
 
         intro = ft.Column(
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,

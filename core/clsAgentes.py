@@ -147,7 +147,12 @@ Cómo respondes:
 6. No usas emojis.
 7. Respetas la voz del usuario. Si el usuario tiene un tono directo y seco, no lo suavices artificialmente. Si tiene un tono más narrativo, no lo recortes en bullets.
 8. Hablas en español neutro de Latinoamérica.
-9. Tu respuesta no es JSON. Respondes en prosa, natural, como un editor experimentado que respeta la voz de quien escribe."""
+9. Tu respuesta no es JSON. Respondes en prosa, natural, como un editor experimentado que respeta la voz de quien escribe.
+
+Formatos que ayudas a redactar (úsalos según lo que pida el usuario):
+- CORREOS: con asunto claro, primer párrafo al grano, cifras/impacto al frente y una llamada a la acción concreta. Pregunta para quién es y el objetivo si no está claro.
+- POSTS DE LOGRO PARA LINKEDIN: en primera persona, con gancho en la primera línea, el impacto medible visible, y un cierre con aprendizaje o agradecimiento. Tono profesional pero humano; sin hashtags excesivos.
+Cuando el usuario aún no dijo qué quiere, ofrécele brevemente: "¿un correo o un post de LinkedIn?" y para quién. Si recibes un logro como contexto, parte de ahí: úsalo como materia prima y no inventes datos que no estén en él."""
 
 PROMPT_ARCHIVE = """Eres Archive, un agente de Climb especializado en documentar los logros
 profesionales del usuario para que estén disponibles cuando importan: una
@@ -506,11 +511,12 @@ async def generar_tres_caminos(id_usuario, diagnostico=None):
 # ============================================================================
 # Agentes conversacionales: Mirror, Editor, Archive, Clarity
 # ============================================================================
-async def responder_chat_agente(id_chat, tipo_agente, id_usuario):
+async def responder_chat_agente(id_chat, tipo_agente, id_usuario, contexto_extra=""):
     """Genera la respuesta del agente conversacional.
 
     Lee las 9 respuestas del Usuario_Perfil (contexto estatico) y los ultimos 10
     mensajes del chat. El mensaje nuevo del usuario ya fue insertado por la vista.
+    `contexto_extra` permite inyectar contexto puntual (p. ej. un logro a redactar).
     """
     nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
     perfil = clsInteraccionDB.obtener_perfil(id_usuario) or {}
@@ -524,11 +530,74 @@ async def responder_chat_agente(id_chat, tipo_agente, id_usuario):
     # Editor escribe con la voz del usuario.
     if tipo_agente == "coach_editor":
         system_prompt += _snippet_voice(id_usuario)
+    if contexto_extra:
+        system_prompt += "\n\n--- Contexto puntual de esta sesión ---\n" + contexto_extra
 
     historico = clsInteraccionDB.obtener_ultimos_mensajes(id_chat, 10)
     mensajes = [{"role": m["rol"], "content": m["contenido"]} for m in historico]
 
     return await _llamar_claude(system_prompt, mensajes, max_tokens=1536)
+
+
+# --- Editor estudio: borrador (entregable) + chat + sugerencias --------------
+_EDITOR_JSON = """Devuelves EXCLUSIVAMENTE un objeto JSON válido, sin texto fuera de él, sin
+backticks ni Markdown:
+{
+  "borrador": "<el entregable COMPLETO, listo para copiar y pegar>",
+  "asunto": "<solo si es un correo; si no, cadena vacía>",
+  "comentario": "<1 o 2 frases para el chat: qué hiciste o qué necesitas saber>",
+  "sugerencias": ["<ajuste corto y accionable>", "...entre 3 y 5"]
+}
+El "borrador" respeta la voz del usuario y el formato pedido; no inventes datos
+que no estén en el logro. "sugerencias" son posibles próximos ajustes cortos
+(ej: "Más corto", "Más directo", "Quitar CTA", "Cambiar apertura", "Más formal")."""
+
+
+def _fmt_desc(formato):
+    """Describe el formato pedido para el prompt. Acepta etiquetas libres del usuario."""
+    f = (formato or "").strip().lower()
+    if f == "linkedin":
+        return "un post de logro para LinkedIn"
+    if f in ("correo", "email", "mail") or "correo" in f or "email" in f:
+        return "un correo profesional"
+    return f"contenido con el formato que pidió el usuario: «{formato}»"
+
+
+async def editor_estudio(id_usuario, formato, contexto_logro, borrador_actual, turns):
+    """Genera/edita el entregable. Devuelve dict {borrador, asunto, comentario, sugerencias}."""
+    fmt = _fmt_desc(formato)
+    system = (
+        PROMPT_EDITOR
+        + _snippet_voice(id_usuario)
+        + (("\n\n--- Logro (materia prima, no inventes nada) ---\n" + contexto_logro) if contexto_logro else "")
+        + f"\n\n--- Tarea ---\nEstás ayudando a redactar {fmt}.\n"
+        + (("Borrador actual:\n" + borrador_actual) if borrador_actual else "Aún no hay borrador; redacta el primero.")
+        + "\n\n" + _EDITOR_JSON
+    )
+    mensajes = [{"role": "assistant" if s == "editor" else "user", "content": t} for s, t in turns]
+    if not mensajes or mensajes[0]["role"] == "assistant":
+        mensajes.insert(0, {"role": "user", "content": "Redacta el borrador."})
+    texto = await _llamar_claude(system, mensajes, max_tokens=1500)
+    try:
+        data = _parsear_json(texto)
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):
+        # El modelo respondió en prosa (p. ej. una pregunta aclaratoria cuando aún
+        # no tiene material). No es un error: lo mostramos en el chat y conservamos
+        # el borrador actual sin tocarlo.
+        return {
+            "borrador": (borrador_actual or "").strip(),
+            "asunto": "",
+            "comentario": (texto or "").strip() or "¿Me das un poco más de contexto para redactarlo?",
+            "sugerencias": [],
+        }
+    return {
+        "borrador": (data.get("borrador") or borrador_actual or "").strip(),
+        "asunto": (data.get("asunto") or "").strip(),
+        "comentario": (data.get("comentario") or "Listo.").strip(),
+        "sugerencias": [str(x).strip() for x in (data.get("sugerencias") or []) if str(x).strip()][:5],
+    }
 
 
 PROMPT_FICHA_LOGRO = """Eres un agente estructurador del sistema Climb. Tu trabajo es tomar una

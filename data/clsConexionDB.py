@@ -198,6 +198,25 @@ def inicializar_db():
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS Editor_Borradores (
+            idBorrador INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER NOT NULL,
+            formato TEXT,                 -- 'correo' | 'linkedin' | etiqueta libre del usuario
+            es_correo INTEGER DEFAULT 0,  -- 1 si se renderiza como correo (asunto + cuerpo)
+            asunto TEXT,
+            borrador TEXT,
+            estado TEXT DEFAULT 'activo', -- 'activo' | 'completado'
+            contexto_json TEXT,           -- ficha de logro de Archive, si aplica
+            turns_json TEXT,              -- historial del chat para retomar
+            creado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            actualizado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
+        );
+        """
+    )
+
     # Migracion de autenticacion: handle (Nombre#numero) + clave hasheada.
     # Las columnas se agregan sobre la tabla Usuarios existente sin perder datos.
     _asegurar_columna(cursor, "Usuarios", "discriminador", "TEXT")
