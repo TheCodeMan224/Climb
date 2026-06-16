@@ -4,6 +4,7 @@ import flet as ft
 
 import componentes as cmp
 import tema
+from core import clsAgentes
 from data import clsInteraccionDB
 
 # Textos exactos de las 9 preguntas. No modificar (ver seccion 12).
@@ -154,6 +155,10 @@ class frmOnboarding:
             contexto_profesional,
             p5, p6, p7, p8, p9,
         )
+        # Primera muestra para el voice profile (y siembra inicial del perfil).
+        for respuesta in self.respuestas:
+            clsInteraccionDB.registrar_texto_usuario(self.id_usuario, "onboarding", respuesta)
+        self.router.page.run_task(clsAgentes.actualizar_voice_profile, self.id_usuario)
         self.router.navegar_a("/scout_reflection")
 
     # --- Construccion -------------------------------------------------------

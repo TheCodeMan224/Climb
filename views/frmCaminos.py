@@ -32,12 +32,8 @@ class frmCaminos:
             json.dumps(alternativos, ensure_ascii=False),
         )
 
-        # Loader breve mientras Pacer genera la primera mision.
-        self.overlay.visible = True
-        for b in self.botones:
-            b.disabled = True
-        self.router.page.update()
-
+        # Overlay de carga mientras Pacer genera la primera mision.
+        self.router.mostrar_carga("Preparando tu primera misión…")
         try:
             mision = await clsAgentes.generar_mision_pacer(self.id_usuario)
             self.router.mision_actual = mision

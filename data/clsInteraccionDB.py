@@ -350,6 +350,71 @@ def insertar_camino_elegido(
 
 
 # ----------------------------------------------------------------------------
+# Voice Profile: captura de textos del usuario y perfil de voz
+# ----------------------------------------------------------------------------
+def registrar_texto_usuario(id_usuario, fuente, texto):
+    """Registra un texto escrito por el usuario (para construir su voice profile)."""
+    if not texto or not texto.strip():
+        return
+    conexion = obtener_conexion()
+    conexion.execute(
+        "INSERT INTO Textos_Usuario (id_usuario, fuente, texto) VALUES (?, ?, ?)",
+        (id_usuario, fuente, texto.strip()),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_textos_usuario(id_usuario, desde_id=0):
+    """Devuelve los textos del usuario con idTexto > desde_id (orden cronológico)."""
+    conexion = obtener_conexion()
+    filas = conexion.execute(
+        """
+        SELECT idTexto, fuente, texto FROM Textos_Usuario
+        WHERE id_usuario = ? AND idTexto > ?
+        ORDER BY idTexto ASC
+        """,
+        (id_usuario, desde_id),
+    ).fetchall()
+    conexion.close()
+    return [dict(f) for f in filas]
+
+
+def obtener_voice_profile(id_usuario):
+    """Devuelve el voice profile del usuario como dict, o None.
+
+    Estructura: {"contenido" (dict|None), "n_muestras", "ultimo_texto_id"}.
+    """
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        "SELECT contenido_json, n_muestras, ultimo_texto_id FROM Voice_Profile WHERE id_usuario = ?",
+        (id_usuario,),
+    ).fetchone()
+    conexion.close()
+    if not fila:
+        return None
+    return {
+        "contenido": json.loads(fila["contenido_json"]) if fila["contenido_json"] else None,
+        "n_muestras": fila["n_muestras"] or 0,
+        "ultimo_texto_id": fila["ultimo_texto_id"] or 0,
+    }
+
+
+def guardar_voice_profile(id_usuario, contenido, n_muestras, ultimo_texto_id):
+    """Inserta o reemplaza el voice profile del usuario (contenido = dict)."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        """
+        INSERT OR REPLACE INTO Voice_Profile (id_usuario, contenido_json, n_muestras, ultimo_texto_id, fecha)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """,
+        (id_usuario, json.dumps(contenido, ensure_ascii=False), n_muestras, ultimo_texto_id),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+# ----------------------------------------------------------------------------
 # Mirror_Patrones
 # ----------------------------------------------------------------------------
 def insertar_patron_usuario(id_usuario, quote):

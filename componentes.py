@@ -4,9 +4,33 @@ Centraliza la firma visual (hairline dorada, eyebrows, botones de esquina
 recta, inputs con subrayado) para que las pantallas se vean consistentes.
 """
 
+import asyncio
+
 import flet as ft
 
 import tema
+
+
+async def revelar_texto(control, texto, delay=0.02):
+    """Revela 'texto' en un Text control palabra por palabra (rápido y fluido).
+
+    El control debe estar ya montado en la página. Silencia errores de update
+    por si el control deja de existir (p. ej. el usuario navega a otra vista)."""
+    palabras = (texto or "").split(" ")
+    acumulado = ""
+    for i, palabra in enumerate(palabras):
+        acumulado = palabra if i == 0 else f"{acumulado} {palabra}"
+        control.value = acumulado
+        try:
+            control.update()
+        except Exception:
+            return
+        await asyncio.sleep(delay)
+    control.value = texto
+    try:
+        control.update()
+    except Exception:
+        pass
 
 
 # ----------------------------------------------------------------------------
@@ -47,6 +71,8 @@ def _estilo_boton(bg, fg, radius=4):
         bgcolor=bg,
         color=fg,
         elevation=0,
+        # Realce sutil (blanco) al pasar el mouse y más fuerte al presionar.
+        overlay_color=ft.Colors.with_opacity(0.14, fg),
         shape=ft.RoundedRectangleBorder(radius=radius),
         padding=ft.Padding.symmetric(horizontal=40, vertical=18),
         text_style=ft.TextStyle(
@@ -54,6 +80,20 @@ def _estilo_boton(bg, fg, radius=4):
             weight=ft.FontWeight.W_600,
             size=14,
         ),
+        mouse_cursor=ft.MouseCursor.CLICK,
+        animation_duration=150,
+    )
+
+
+def _estilo_enlace(color):
+    """Estilo de link con hover/clic visibles: realce tenue del color + cursor."""
+    return ft.ButtonStyle(
+        color=color,
+        overlay_color=ft.Colors.with_opacity(0.12, color),
+        shape=ft.RoundedRectangleBorder(radius=4),
+        padding=ft.Padding.symmetric(horizontal=8, vertical=6),
+        mouse_cursor=ft.MouseCursor.CLICK,
+        animation_duration=150,
     )
 
 
@@ -72,11 +112,12 @@ def enlace(texto, on_click=None, color=tema.BLUE):
     return ft.TextButton(
         content=ft.Text(texto, size=13, font_family=tema.FUENTE_BODY, color=color),
         on_click=on_click,
+        style=_estilo_enlace(color),
     )
 
 
 def enlace_cta(texto, on_click=None, color=tema.BLUE):
-    """Link tipo CTA editorial: mayusculas, DM Sans semibold, sin relleno."""
+    """Link tipo CTA editorial: mayusculas, DM Sans semibold, con hover/clic."""
     return ft.TextButton(
         content=ft.Text(
             texto.upper(),
@@ -86,10 +127,7 @@ def enlace_cta(texto, on_click=None, color=tema.BLUE):
             color=color,
         ),
         on_click=on_click,
-        style=ft.ButtonStyle(
-            padding=ft.Padding.symmetric(horizontal=0, vertical=4),
-            overlay_color="transparent",
-        ),
+        style=_estilo_enlace(color),
     )
 
 

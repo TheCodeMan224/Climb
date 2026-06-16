@@ -32,6 +32,11 @@ class frmMenuInicio:
             mensaje = "Diagnóstico actualizado"
         except Exception:
             mensaje = "No se pudo actualizar el diagnóstico"
+        # Aprovechar el refresco para actualizar también el voice profile.
+        try:
+            await clsAgentes.actualizar_voice_profile(self.id_usuario)
+        except Exception:
+            pass
         self.router.page.show_dialog(ft.SnackBar(ft.Text(mensaje)))
         self.router.page.update()
 

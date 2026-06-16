@@ -66,6 +66,35 @@ class Router:
         )
         self.page.overlay.append(self.chip_handle)
 
+        # Overlay de carga: cubre la pantalla y bloquea clics durante operaciones
+        # pesadas (generación con Claude antes de navegar). Vive en el overlay.
+        self._carga_texto = ft.Text("Cargando…", size=14, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.NAVY)
+        self.overlay_carga = ft.Container(
+            visible=False,
+            left=0, top=0, right=0, bottom=0,
+            bgcolor=ft.Colors.with_opacity(0.78, tema.OFF_WHITE),
+            alignment=ft.Alignment.CENTER,
+            content=ft.Column(
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=18,
+                controls=[
+                    ft.ProgressRing(width=44, height=44, color=tema.AMBAR, stroke_width=4),
+                    self._carga_texto,
+                ],
+            ),
+        )
+        self.page.overlay.append(self.overlay_carga)
+
+    def mostrar_carga(self, mensaje="Cargando…"):
+        self._carga_texto.value = mensaje
+        self.overlay_carga.visible = True
+        self.page.update()
+
+    def ocultar_carga(self):
+        self.overlay_carga.visible = False
+        self.page.update()
+
     # Rutas sin sesion donde el chip no debe mostrarse.
     _RUTAS_SIN_CHIP = {"/landing", "/login", "/pre_onboarding"}
 
@@ -95,6 +124,7 @@ class Router:
 
         self.page.add(vista.construir())
         self._actualizar_chip(ruta)
+        self.overlay_carga.visible = False  # toda navegación limpia el cargando
         self.page.update()
 
         # Hook opcional que se ejecuta cuando la vista termina de montarse.

@@ -15,12 +15,12 @@ class frmDiagnostico:
 
     # --- Evento: generar los tres caminos -----------------------------------
     async def _ver_plan(self, e):
-        self.boton_plan.text = "Generando tu plan..."
         self.boton_plan.disabled = True
-        self.router.page.update()
+        self.router.mostrar_carga("Generando tu plan…")
         try:
             caminos = await clsAgentes.generar_tres_caminos(self.id_usuario, self.diag)
         except Exception:
+            self.router.ocultar_carga()
             self.boton_plan.text = "Hubo un problema, intenta de nuevo"
             self.boton_plan.disabled = False
             self.router.page.update()

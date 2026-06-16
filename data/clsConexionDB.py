@@ -130,6 +130,32 @@ def inicializar_db():
 
     cursor.execute(
         """
+        CREATE TABLE IF NOT EXISTS Textos_Usuario (
+            idTexto INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER NOT NULL,
+            fuente TEXT,            -- 'onboarding' | 'editor' | 'clarity' | 'archive' | 'mirror'
+            texto TEXT NOT NULL,
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS Voice_Profile (
+            id_usuario INTEGER PRIMARY KEY,
+            contenido_json TEXT,
+            n_muestras INTEGER DEFAULT 0,
+            ultimo_texto_id INTEGER DEFAULT 0,
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
+        );
+        """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS Logros_Personales (
             idRegistro INTEGER PRIMARY KEY AUTOINCREMENT,
             usuarioLogro INTEGER NOT NULL,

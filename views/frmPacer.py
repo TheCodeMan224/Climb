@@ -104,10 +104,9 @@ class frmPacer:
             await self._generar()
 
     async def _generar(self, e=None):
+        self.router.mostrar_carga("Generando tu misión…")
         if self.boton_generar:
             self.boton_generar.disabled = True
-            self.boton_generar.content = "Generando..."
-            self.router.page.update()
         try:
             await clsAgentes.generar_mision_pacer(self.id_usuario)
         except Exception:
@@ -117,6 +116,7 @@ class frmPacer:
         if self.boton_generar:
             self.boton_generar.disabled = False
             self.boton_generar.content = "Generar nueva misión"
+        self.router.ocultar_carga()
         self.router.page.update()
 
     # --- Construccion -------------------------------------------------------

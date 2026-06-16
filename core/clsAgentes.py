@@ -521,6 +521,9 @@ async def responder_chat_agente(id_chat, tipo_agente, id_usuario):
         + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n"
         + contexto_onboarding
     )
+    # Editor escribe con la voz del usuario.
+    if tipo_agente == "coach_editor":
+        system_prompt += _snippet_voice(id_usuario)
 
     historico = clsInteraccionDB.obtener_ultimos_mensajes(id_chat, 10)
     mensajes = [{"role": m["rol"], "content": m["contenido"]} for m in historico]
@@ -568,6 +571,7 @@ async def responder_archive(turns, id_usuario):
         PROMPT_ARCHIVE
         + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n"
         + _formatear_onboarding(perfil, nombre)
+        + _snippet_voice(id_usuario)
     )
 
     # Construir mensajes; la API debe empezar en 'user', asi que saltamos el
@@ -749,6 +753,149 @@ async def mirror_reframe(patron_quote, turns):
         "manifestacion": data.get("manifestacion") or "",
         "recomendaciones": [str(x) for x in recs if str(x).strip()],
     }
+
+
+# ============================================================================
+# Voice Profile: análisis de cómo escribe el usuario
+# ============================================================================
+PROMPT_VOICE_PROFILE = """Eres un analista de estilo de escritura de Climb. Tu trabajo es construir el
+"voice profile" de un profesional: una huella accionable de CÓMO escribe y se
+comunica, para que otros agentes puedan sonar como él sin imitar a un robot.
+
+Recibes dos cosas:
+1. El voice profile ANTERIOR (puede ser "ninguno" la primera vez).
+2. NUEVOS textos escritos por el usuario, cada uno etiquetado con su fuente
+   entre corchetes, p. ej. [onboarding], [editor], [mirror], [clarity].
+
+Devuelves el voice profile ACTUALIZADO: integras la evidencia nueva, afinas lo
+que ya era estable y corriges lo que el nuevo texto contradiga.
+
+Tu salida es exclusivamente un objeto JSON válido, sin texto adicional, sin
+Markdown, sin backticks:
+{
+  "registro": "<ej: técnico-coloquial, ejecutivo seco, narrativo cálido>",
+  "tono": ["<2-4 adjetivos: directo, autocrítico, pragmático, etc.>"],
+  "formalidad": "<baja|media|alta>",
+  "estructura": "<frases cortas y entrecortadas | párrafos largos | mezcla>",
+  "lexico": ["<palabras/expresiones que repite, anglicismos, jerga de su industria>"],
+  "muletillas": ["<conectores o muletillas que usa: 'o sea', 'al final', etc.>"],
+  "marcadores": "<hábitos: uso de '...', mayúsculas, emojis sí/no, cómo abre y cierra>",
+  "postura": "<asertivo en 1ª persona | tentativo (creo que, tal vez) | mezcla>",
+  "como_escribir_como_el": "<3 a 5 reglas concretas para imitar su voz>",
+  "que_evitar": "<qué lo haría sonar falso: corporativo vacío, demasiado pulido, etc.>",
+  "ejemplos_textuales": ["<2-3 frases reales suyas, representativas de su estilo>"]
+}
+
+Reglas obligatorias:
+1. PRIVACIDAD: los textos marcados [clarity] vienen de un espacio de desahogo
+   emocional. Analiza SOLO el estilo (tono, léxico, ritmo). NUNCA cites su
+   contenido en "ejemplos_textuales" ni en ningún otro campo.
+2. "ejemplos_textuales" son frases textuales del usuario (de fuentes que no sean
+   clarity), no inventadas ni parafraseadas.
+3. Describes estilo, no personalidad ni juicios de valor. Nada de psicología.
+4. Si hay poca evidencia, sé conservador (no exageres rasgos con una sola muestra).
+5. Español neutro de Latinoamérica. Sin emojis.
+6. Devuelves únicamente el objeto JSON."""
+
+
+def _confianza_voice(n_muestras):
+    if n_muestras < 5:
+        return "baja"
+    if n_muestras < 15:
+        return "media"
+    return "alta"
+
+
+async def actualizar_voice_profile(id_usuario):
+    """Recalcula el voice profile de forma incremental con los textos nuevos.
+
+    Toma el perfil anterior + los textos desde el último offset, llama a Claude
+    y guarda el perfil actualizado. Devuelve el dict del perfil, o None si no hay
+    nada nuevo que analizar.
+    """
+    previo = clsInteraccionDB.obtener_voice_profile(id_usuario)
+    desde = previo["ultimo_texto_id"] if previo else 0
+    n_previo = previo["n_muestras"] if previo else 0
+
+    textos = clsInteraccionDB.obtener_textos_usuario(id_usuario, desde_id=desde)
+    if not textos:
+        return previo["contenido"] if previo else None
+
+    # Acotar tokens: tomar los textos más recientes hasta ~6000 caracteres.
+    seleccion, total = [], 0
+    for t in reversed(textos):
+        linea = f"[{t['fuente']}] {t['texto']}"
+        if seleccion and total + len(linea) > 6000:
+            break
+        seleccion.append(linea)
+        total += len(linea)
+    seleccion.reverse()
+
+    anterior = json.dumps(previo["contenido"], ensure_ascii=False, indent=2) if previo and previo.get("contenido") else "ninguno"
+    entrada = (
+        "VOICE PROFILE ANTERIOR:\n" + anterior
+        + "\n\nNUEVOS TEXTOS DEL USUARIO:\n" + "\n".join(seleccion)
+    )
+
+    texto = await _llamar_claude(PROMPT_VOICE_PROFILE, [{"role": "user", "content": entrada}], max_tokens=900)
+    contenido = _parsear_json(texto)
+    if not isinstance(contenido, dict):
+        raise ValueError("El voice profile no es un objeto JSON")
+
+    n_total = n_previo + len(textos)
+    contenido["meta"] = {
+        "n_muestras": n_total,
+        "confianza": _confianza_voice(n_total),
+        "fecha": datetime.now().isoformat(),
+    }
+    clsInteraccionDB.guardar_voice_profile(id_usuario, contenido, n_total, textos[-1]["idTexto"])
+    return contenido
+
+
+async def actualizar_voice_profile_si_toca(id_usuario, umbral=8):
+    """Fire-and-forget: actualiza el voice profile solo si hay >= umbral textos
+    nuevos desde la última vez. Barato si no toca (solo una consulta); silencia
+    errores para no afectar la UI."""
+    try:
+        previo = clsInteraccionDB.obtener_voice_profile(id_usuario)
+        desde = previo["ultimo_texto_id"] if previo else 0
+        nuevos = clsInteraccionDB.obtener_textos_usuario(id_usuario, desde_id=desde)
+        if len(nuevos) >= umbral:
+            await actualizar_voice_profile(id_usuario)
+    except Exception:
+        return
+
+
+def _snippet_voice(id_usuario):
+    """Convierte el voice profile en un fragmento de prompt para que un agente
+    escriba con la voz del usuario. Devuelve '' si aún no hay perfil."""
+    vp = clsInteraccionDB.obtener_voice_profile(id_usuario)
+    if not vp or not vp.get("contenido"):
+        return ""
+    c = vp["contenido"]
+    partes = []
+    if c.get("como_escribir_como_el"):
+        partes.append("Cómo escribe: " + c["como_escribir_como_el"])
+    if c.get("que_evitar"):
+        partes.append("Evita (lo haría sonar falso): " + c["que_evitar"])
+    if c.get("registro"):
+        partes.append("Registro: " + c["registro"])
+    if c.get("tono"):
+        partes.append("Tono: " + ", ".join(c["tono"]))
+    if c.get("muletillas"):
+        partes.append("Expresiones suyas: " + ", ".join(c["muletillas"][:5]))
+    ejemplos = c.get("ejemplos_textuales") or []
+    if ejemplos:
+        partes.append("Ejemplos de su voz: " + " | ".join(f'"{e}"' for e in ejemplos[:3]))
+    if not partes:
+        return ""
+    cautela = ""
+    if c.get("meta", {}).get("confianza") == "baja":
+        cautela = " (Perfil preliminar: respeta su voz pero no fuerces los rasgos.)"
+    return (
+        "\n\n--- Voz del usuario (escribe como él, sin imitar de más) ---\n"
+        + "\n".join(partes) + cautela
+    )
 
 
 async def procesar_cierre_clarity_async(id_chat, id_usuario):

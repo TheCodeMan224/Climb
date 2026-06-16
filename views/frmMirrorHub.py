@@ -28,6 +28,7 @@ class frmMirrorHub:
         if not quote:
             return
         idp = clsInteraccionDB.insertar_patron_usuario(self.id_usuario, quote)
+        clsInteraccionDB.registrar_texto_usuario(self.id_usuario, "mirror", quote)
         self._empezar(clsMirror.Patron(
             id=f"db:{idp}", quote=quote, source="user", detected_at=datetime.now(), status="pending",
         ))

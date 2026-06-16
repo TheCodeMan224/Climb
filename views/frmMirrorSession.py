@@ -15,6 +15,7 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes, clsMirror
+from data import clsInteraccionDB
 
 _PREGUNTA_CARGANDO = "Mirror está preparando tu primera pregunta..."
 
@@ -58,8 +59,7 @@ class frmMirrorSession:
         except Exception:
             q = "Cuéntame: ¿cuándo aparece este patrón en tu trabajo, concretamente?"
         self.current_question = q
-        self.txt_pregunta.value = q
-        self.router.page.update()
+        await cmp.revelar_texto(self.txt_pregunta, q)
 
     # --- Eventos ------------------------------------------------------------
     async def _enviar(self, e):
@@ -68,8 +68,11 @@ class frmMirrorSession:
             return
         self.turns.append(("mirror", self.current_question))
         self.turns.append(("user", texto))
+        clsInteraccionDB.registrar_texto_usuario(self.id_usuario, "mirror", texto)
+        self.router.page.run_task(clsAgentes.actualizar_voice_profile_si_toca, self.id_usuario)
         self.campo.value = ""
         self.campo.disabled = True
+        self.txt_pregunta.value = "Mirror está escribiendo…"
         self.router.page.update()
 
         try:
@@ -77,6 +80,7 @@ class frmMirrorSession:
         except Exception:
             es_boundary = False
 
+        revelar = None
         if es_boundary:
             self.boundary_triggered = True
         else:
@@ -91,14 +95,16 @@ class frmMirrorSession:
             else:
                 self.question_number += 1
                 self.current_question = q
-                self.txt_pregunta.value = q
                 self.lbl_num.value = f"PREGUNTA {self.question_number:02d}"
+                revelar = q
 
         self.campo.disabled = False
         self._render_centro()
         self.footer.visible = not (self.boundary_triggered or self.cierre)
         self._render_historial()
         self.router.page.update()
+        if revelar is not None:
+            await cmp.revelar_texto(self.txt_pregunta, revelar)
 
     def _cerrar_boundary(self, e):
         # El patrón queda guardado (pending) para retomarlo cuando quiera.
@@ -106,17 +112,19 @@ class frmMirrorSession:
 
     async def _continuar_boundary(self, e):
         self.boundary_triggered = False
+        self.txt_pregunta.value = "Mirror está escribiendo…"
+        self._render_centro()
+        self.footer.visible = True
+        self.router.page.update()
         try:
             q = await clsAgentes.mirror_pregunta(self.patron.quote, self.turns, self.id_usuario, reanclar=True)
         except Exception:
             q = "Volvamos a tu trabajo. ¿Cómo aparece este patrón en una situación laboral concreta?"
         self.question_number += 1
         self.current_question = q
-        self.txt_pregunta.value = q
         self.lbl_num.value = f"PREGUNTA {self.question_number:02d}"
-        self._render_centro()
-        self.footer.visible = True
         self.router.page.update()
+        await cmp.revelar_texto(self.txt_pregunta, q)
 
     def _toggle_historial(self, e):
         self.historial_visible = not self.historial_visible
@@ -124,11 +132,11 @@ class frmMirrorSession:
         self.router.page.update()
 
     async def _terminar(self, e):
-        self.router.page.show_dialog(ft.SnackBar(ft.Text("Generando el espejo...")))
-        self.router.page.update()
+        self.router.mostrar_carga("Generando el espejo…")
         try:
             rf = await clsAgentes.mirror_reframe(self.patron.quote, self.turns)
         except Exception:
+            self.router.ocultar_carga()
             self.router.page.show_dialog(ft.SnackBar(ft.Text("No pude generar el espejo. Intenta de nuevo.")))
             self.router.page.update()
             return

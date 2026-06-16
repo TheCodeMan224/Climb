@@ -74,6 +74,19 @@ class frmArchiveChat:
             ],
         )
 
+    def _turno_ref(self):
+        """Turno de Archive con un Text referenciable (para 'escribiendo' + revelado)."""
+        txt = ft.Text("Escribiendo…", size=16, color=tema.MUTED, italic=True, font_family=tema.FUENTE_BODY)
+        col = ft.Column(spacing=0, controls=[
+            cmp.eyebrow("Archive", color=tema.AMBAR),
+            ft.Container(height=10),
+            ft.Container(width=600, content=txt),
+            ft.Container(height=24),
+            ft.Container(width=24, height=1, bgcolor=tema.BORDER_LIGHT),
+            ft.Container(height=24),
+        ])
+        return col, txt
+
     def _render_turnos(self):
         self.turnos_col.controls = [self._turno(s, t) for s, t in self.turns]
         self.lbl_sesion.value = f"SESIÓN · {len(self.turns)} TURNOS  ·  RECOLECTANDO CONTEXTO"
@@ -126,7 +139,14 @@ class frmArchiveChat:
         if self.boton_enviar:
             self.boton_enviar.disabled = True
         self.turns.append(("user", texto))
+        clsInteraccionDB.registrar_texto_usuario(self.id_usuario, "archive", texto)
+        self.router.page.run_task(clsAgentes.actualizar_voice_profile_si_toca, self.id_usuario)
         self._render_turnos()
+        self.router.page.update()
+
+        # Turno "Escribiendo…" mientras esperamos.
+        col_live, txt_live = self._turno_ref()
+        self.turnos_col.controls.append(col_live)
         self.router.page.update()
 
         try:
@@ -135,6 +155,12 @@ class frmArchiveChat:
             respuesta = "Tuvimos un problema generando la respuesta. Intenta de nuevo."
 
         self.turns.append(("archive", respuesta))
+        # Revelar gradualmente en el turno en vivo.
+        txt_live.value = ""
+        txt_live.italic = False
+        txt_live.color = tema.NAVY
+        await cmp.revelar_texto(txt_live, respuesta)
+
         self.campo.disabled = False
         if self.boton_enviar:
             self.boton_enviar.disabled = False
@@ -151,12 +177,11 @@ class frmArchiveChat:
 
     async def _si_generar(self, e):
         self._ocultar_panel()
-        self.lbl_sesion.value = "GENERANDO FICHA..."
-        self.router.page.update()
+        self.router.mostrar_carga("Generando tu ficha…")
         try:
             ficha = await clsAgentes.generar_ficha_logro(self.turns, self.id_usuario)
         except Exception:
-            self._render_turnos()
+            self.router.ocultar_carga()
             self.router.page.show_dialog(ft.SnackBar(ft.Text("No pude generar la ficha. Intenta de nuevo.")))
             self.router.page.update()
             return

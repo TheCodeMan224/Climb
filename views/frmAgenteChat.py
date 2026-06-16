@@ -1,8 +1,9 @@
 """Interfaz de chat con Mirror, Editor, Archive o Clarity."""
 
 import flet as ft
-import tema
 
+import componentes as cmp
+import tema
 from core import clsAgentes
 from data import clsInteraccionDB
 
@@ -64,6 +65,23 @@ class frmAgenteChat:
             ],
         )
 
+    def _burbuja_respuesta(self):
+        """Burbuja del asistente con un Text referenciable (para 'escribiendo' + revelado)."""
+        txt = ft.Text("Escribiendo…", size=14, color=tema.MUTED, italic=True, selectable=True)
+        fila = ft.Row(
+            alignment=ft.MainAxisAlignment.START,
+            controls=[
+                ft.Container(
+                    padding=ft.Padding.symmetric(horizontal=16, vertical=12),
+                    bgcolor=tema.SECTION_BG,
+                    border_radius=14,
+                    width=520,
+                    content=txt,
+                )
+            ],
+        )
+        return fila, txt
+
     def _cargar_historial(self):
         for mensaje in clsInteraccionDB.obtener_mensajes(self.id_chat):
             self.lista_mensajes.controls.append(self._burbuja(mensaje["rol"], mensaje["contenido"]))
@@ -80,7 +98,13 @@ class frmAgenteChat:
 
         # Insertar y renderizar el mensaje del usuario.
         clsInteraccionDB.insertar_mensaje(self.id_chat, "user", texto)
+        fuente = {"coach_editor": "editor", "clarity_session": "clarity", "coach_mirror": "mirror"}.get(self.tipo_agente, self.tipo_agente)
+        clsInteraccionDB.registrar_texto_usuario(self.id_usuario, fuente, texto)
+        self.router.page.run_task(clsAgentes.actualizar_voice_profile_si_toca, self.id_usuario)
         self.lista_mensajes.controls.append(self._burbuja("user", texto))
+        # Burbuja "Escribiendo…" mientras esperamos.
+        fila_resp, txt_resp = self._burbuja_respuesta()
+        self.lista_mensajes.controls.append(fila_resp)
         self.router.page.update()
 
         try:
@@ -91,7 +115,11 @@ class frmAgenteChat:
             respuesta = "Tuvimos un problema generando la respuesta. Intenta de nuevo."
 
         clsInteraccionDB.insertar_mensaje(self.id_chat, "assistant", respuesta)
-        self.lista_mensajes.controls.append(self._burbuja("assistant", respuesta))
+        # Revelar la respuesta de forma gradual en la misma burbuja.
+        txt_resp.value = ""
+        txt_resp.italic = False
+        txt_resp.color = tema.TEXTO
+        await cmp.revelar_texto(txt_resp, respuesta)
 
         self.campo.disabled = False
         self.boton_enviar.disabled = False
@@ -104,6 +132,8 @@ class frmAgenteChat:
             self.router.page.run_task(
                 clsAgentes.procesar_cierre_clarity_async, self.id_chat, self.id_usuario
             )
+            # Consolidar el voice profile al cerrar la sesión (aunque no llegue al umbral).
+            self.router.page.run_task(clsAgentes.actualizar_voice_profile, self.id_usuario)
         self.router.navegar_a("/menu_inicio")
 
     # --- Construccion -------------------------------------------------------
