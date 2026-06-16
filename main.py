@@ -1,5 +1,7 @@
 """Punto de entrada de Climb. Inicializa Flet, la base de datos y el router."""
 
+import os
+
 import flet as ft
 from dotenv import load_dotenv
 
@@ -26,4 +28,10 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    # En un host como Render existe la variable PORT: corremos como servidor web.
+    # En local (sin PORT) abrimos la app de escritorio como siempre.
+    port = os.getenv("PORT")
+    if port:
+        ft.run(main, view=ft.AppView.WEB_BROWSER, host="0.0.0.0", port=int(port))
+    else:
+        ft.run(main)

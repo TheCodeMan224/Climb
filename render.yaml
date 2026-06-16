@@ -1,0 +1,16 @@
+# Infraestructura como código para desplegar Climb en Render.
+# Render detecta este archivo al conectar el repo (Blueprints).
+services:
+  - type: web
+    name: climb
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py"
+    envVars:
+      # Render lo lee como PORT; main.py arranca en modo web cuando existe.
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      # La API key NO va en el repo: se define en el panel de Render (Secret).
+      - key: ANTHROPIC_API_KEY
+        sync: false
