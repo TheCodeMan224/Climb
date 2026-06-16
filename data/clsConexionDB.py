@@ -225,6 +225,9 @@ def inicializar_db():
 
     # Progreso de misiones (acciones completadas) sobre la tabla existente.
     _asegurar_columna(cursor, "Misiones", "progreso_json", "TEXT")
+    # Ciclo de vida de la mision: 'activa' | 'completada' + fecha de cierre.
+    _asegurar_columna(cursor, "Misiones", "estado", "TEXT DEFAULT 'activa'")
+    _asegurar_columna(cursor, "Misiones", "fecha_completada", "TIMESTAMP")
 
     # Modelo enriquecido de logros para Archive (sobre la tabla existente).
     _asegurar_columna(cursor, "Logros_Personales", "mi_rol", "TEXT")

@@ -17,8 +17,8 @@ from views.frmProgreso import frmProgreso
 from views.frmDiagnostico import frmDiagnostico
 from views.frmCaminos import frmCaminos
 from views.frmMenuInicio import frmMenuInicio
-from views.frmAgenteChat import frmAgenteChat
 from views.frmPacer import frmPacer
+from views.frmPacerCompletada import frmPacerCompletada
 from views.frmArchiveChat import frmArchiveChat
 from views.frmArchiveFicha import frmArchiveFicha
 from views.frmArchiveTimeline import frmArchiveTimeline
@@ -28,6 +28,9 @@ from views.frmMirrorSession import frmMirrorSession
 from views.frmMirrorEspejo import frmMirrorEspejo
 from views.frmEditor import frmEditor
 from views.frmEditorHome import frmEditorHome
+from views.frmClarityEspejo import frmClarityEspejo
+from views.frmClarityConversacion import frmClarityConversacion
+from views.frmClarityPuertas import frmClarityPuertas
 
 
 class Router:
@@ -48,6 +51,10 @@ class Router:
         self.mirror_minutos = 0
         self.editor_contexto = None  # logro que viaja de Archive a Editor
         self.editor_borrador_id = None  # borrador a retomar en el estudio (None = nuevo)
+        self.clarity_inicial = None  # primer mensaje que arranca la conversación de Clarity
+        self.clarity_turns = None  # turnos de la sesión de Clarity (para las puertas)
+        self.clarity_cierre = None  # síntesis + clasificación de puertas de Clarity
+        self.pacer_completada = None  # misión recién completada (para su pantalla de cierre)
 
         # Chip fijo (esquina superior derecha) con el handle del usuario, para
         # que tenga su codigo de acceso siempre presente. Vive en el overlay, asi
@@ -141,7 +148,8 @@ class Router:
             # Archive usa su propio flujo editorial (chat → ficha → timeline).
             if tipo_agente == "coach_archive":
                 return frmArchiveChat(self, self.id_usuario)
-            return frmAgenteChat(self, self.id_usuario, tipo_agente)
+            # El resto de los agentes ya no usan el chat genérico.
+            return frmMenuInicio(self, self.id_usuario)
 
         vistas = {
             "/landing": frmLanding,
@@ -154,6 +162,7 @@ class Router:
             "/caminos": frmCaminos,
             "/menu_inicio": frmMenuInicio,
             "/pacer": frmPacer,
+            "/pacer/completada": frmPacerCompletada,
             "/archive": frmArchiveTimeline,
             "/archive/ficha": frmArchiveFicha,
             "/mirror": frmMirrorHub,
@@ -162,6 +171,9 @@ class Router:
             "/mirror/espejo": frmMirrorEspejo,
             "/editor": frmEditorHome,
             "/editor/estudio": frmEditor,
+            "/clarity": frmClarityEspejo,
+            "/clarity/conversacion": frmClarityConversacion,
+            "/clarity/puertas": frmClarityPuertas,
         }
         clase = vistas.get(ruta, frmLanding)
         return clase(self, self.id_usuario)

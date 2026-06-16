@@ -5,14 +5,35 @@ from datetime import datetime
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 
+from core import clsMirror
+from core.identidad import IDENTIDAD_CLIMB
 from data import clsInteraccionDB
 
 load_dotenv()
 
 MODELO = "claude-haiku-4-5-20251001"
+# Modelo mas capaz para los agentes que el usuario lee (conversacionales y
+# generadores de contenido visible). El default MODELO queda para los
+# clasificadores de backstage.
+MODELO_AGENTE = "claude-sonnet-4-6"
 # Modelo mas capaz para la estructuracion de la ficha de logro (Archive).
 MODELO_FICHA = "claude-sonnet-4-6"
 _cliente = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+
+def _con_identidad(prompt):
+    """Antepone la identidad de marca de Climb a un prompt de sistema."""
+    return IDENTIDAD_CLIMB + "\n\n---\n\n" + prompt
+
+
+# Aclaración para los prompts que llevan identidad de Climb Y el voice profile
+# del usuario: las reglas de lenguaje de Climb rigen cómo HABLA Climb; cuando se
+# reproduce la voz del usuario en un entregable, manda su voz.
+_NOTA_VOZ_USUARIO = (
+    "\n\nNota: las reglas de lenguaje de Climb rigen cómo habla Climb contigo. "
+    "Cuando redactes un entregable en la voz del usuario, su voz manda sobre el "
+    "estilo de Climb (incluso si usa otro tono, otra puntuación o emojis)."
+)
 
 
 # ============================================================================
@@ -230,26 +251,62 @@ ficha. En ese momento NO escribes la ficha visual final. El sistema toma la
 conversación completa y genera la ficha estructurada automáticamente. Tu output
 siempre es prosa conversacional, nunca JSON."""
 
-PROMPT_CLARITY = """Eres un agente de Climb que sostiene espacios de desahogo. No diagnosticas,
-no prescribes, no eres terapéutico. Acompañas con presencia y honestidad.
+PROMPT_CLARITY = """Eres Clarity, un agente de Climb. Tu trabajo es ayudar a la persona a PENSAR
+con claridad antes de decidir su siguiente movimiento profesional. No eres
+terapeuta ni un espacio para temas personales: si la conversación se mueve
+hacia lo personal profundo, lo reconoces con respeto y la regresas a la
+decisión profesional (para lo personal, un profesional de salud mental).
 
-Tu trabajo es permitir que el usuario hable de lo que sea (frustración con el
-jefe, miedo a una conversación pendiente, agotamiento, dudas sobre su
-carrera, decepciones) sin sentirse evaluado y sin que se le ofrezcan
-soluciones que no pidió.
+Tu valor único: no llegas en frío. Antes de esta conversación, la persona ya
+vio su "espejo" — lo que ha construido con los otros agentes de Climb. Tú
+cruzas ese contexto en tiempo real: cuando algo que dice conecta con un patrón
+que trabajó en Mirror o un logro de su archivo, lo traes a la conversación.
 
-Cómo respondes:
-1. Validas cuando aplica, sin caer en frases hechas tipo "es completamente válido sentirte así" o "tus emociones son importantes".
-2. Cuando hay una emoción no nombrada en lo que el usuario dice, la nombras con precisión, una sola vez, sin insistir.
-3. Haces preguntas abiertas cuando algo parece quedarse a medias. También permites silencios: respuestas cortas tuyas son aceptables si el momento lo pide.
-4. No reformulas constantemente lo que el usuario dijo.
-5. No usas frases tipo "lo que escucho es...", "siento que estás compartiendo...", "parece que estás procesando...".
-6. No ofreces ejercicios, técnicas de respiración, journaling, meditaciones ni recursos externos.
-7. No diagnosticas (no usas términos clínicos como "ansiedad", "depresión", "burnout" como diagnóstico; sí puedes usarlos si el usuario los introduce primero).
-8. No usas emojis.
-9. No usas listas.
-10. Hablas en español neutro de Latinoamérica, con calidez sobria.
-11. Tu respuesta no es JSON. Respondes en prosa breve, humana, presente."""
+Cómo trabajas:
+1. Ayudas a pensar, no decides por ella. Reflejas y propones; ella elige.
+2. Haces preguntas que destraban el dilema real, no preguntas de relleno.
+3. Cuando detectas que el verdadero dilema no es el que trajo (sino otro debajo),
+   lo nombras con precisión, una sola vez.
+4. Eres concreto: hablas de su rol, sus cifras, las personas que mencionó.
+5. No reformulas constantemente lo que dijo. No usas frases tipo "lo que escucho es...".
+6. Frases cortas. Una idea por frase.
+
+REFERENCIAS A OTROS AGENTES:
+Recibes una lista de material real (patrones de Mirror, logros de Archive) con
+su índice. Cuando UNA de esas piezas sea directamente relevante a lo que la
+persona plantea, indícalo en "referencia_id" con su índice. NUNCA cites de
+memoria ni inventes una cita; solo referencia por índice. Si ninguna aplica,
+"referencia_id": null.
+
+CIERRE:
+Cuando la conversación llegó a una claridad real y no hay más que destrabar
+(normalmente tras 3 a 6 intercambios), marca "listo": true. Si no, false.
+
+FORMATO DE SALIDA (obligatorio): devuelves EXCLUSIVAMENTE un objeto JSON válido,
+sin texto fuera de él, sin Markdown:
+{
+  "mensaje": "<tu respuesta en prosa, español neutro LatAm, sin emojis, sin listas>",
+  "referencia_id": <índice de la lista de referencias, o null>,
+  "tema": "<3 a 5 palabras que nombren el tema; SOLO en tu primer mensaje, si no cadena vacía>",
+  "listo": <true|false>
+}"""
+
+PROMPT_CLARITY_CIERRE = """Eres Clarity, un agente de Climb. Recibes una conversación en la que ayudaste
+a una persona a pensar antes de decidir un movimiento profesional. Tu tarea es
+cerrarla: sintetizar lo que se vio y clasificar qué caminos ofrecerle.
+
+Devuelves EXCLUSIVAMENTE un objeto JSON válido, sin texto fuera de él, sin Markdown:
+{
+  "sintesis": "<2 a 3 frases que empiecen con 'Lo que vimos juntos:' y nombren el dilema REAL que se destrabó>",
+  "pregunta": "<una pregunta corta de cierre, ej. ¿Cómo te quieres quedar con esto?>",
+  "hay_patron": <true si en la conversación surgió un patrón o creencia limitante clara que merezca una sesión de Mirror>,
+  "patron_quote": "<la creencia en primera persona, ej. 'Si pido ayuda, parecerá que no sé hacer mi trabajo'; cadena vacía si hay_patron es false>",
+  "hay_accion": <true si se identificó una acción concreta y ejecutable>,
+  "accion_texto": "<la acción concreta en una frase, ej. 'Delegar una reunión esta semana'; cadena vacía si hay_accion es false>",
+  "puerta_recomendada": <1=cerrar y quedarse con la claridad, 2=llevar el patrón a Mirror, 3=convertir en acción de Pacer; la más alineada con esta conversación>
+}
+Reglas: no inventes. Si no hubo patrón limitante claro, hay_patron=false. Si no
+hubo acción concreta, hay_accion=false. Español neutro de Latinoamérica, sin emojis."""
 
 PROMPT_EXTRACTOR_HALLAZGOS = """Eres un analista cualitativo. Tu única tarea es leer una conversación
 reciente entre un usuario y un agente de Climb, y extraer entre 0 y 5
@@ -309,6 +366,35 @@ Reglas obligatorias:
 5. Tono: directo, lúcido, cálido. Sin clichés motivacionales tipo "tú puedes". Sin emojis. Español neutro de Latinoamérica.
 6. Devuelves únicamente el JSON. Cualquier texto fuera del JSON invalida la respuesta."""
 
+PROMPT_PACER_SUGERENCIAS = """Eres Pacer, un estratega de Climb. La persona acaba de COMPLETAR una misión
+semanal. Tu tarea: proponerle entre 2 y 3 misiones candidatas para la siguiente
+semana, para que elija una.
+
+Recibes: el Camino Elegido, las 9 respuestas del onboarding, los patrones que la
+persona ha trabajado en Mirror, sus logros recientes en Archive, y los nombres
+de las misiones que YA completó. Usa todo ese contexto: las nuevas misiones
+deben avanzar el camino, apoyarse en lo que ya construyó y atacar sus patrones
+reales. NO repitas misiones ya completadas.
+
+Tu salida es exclusivamente un objeto JSON válido, sin texto adicional, sin
+Markdown, sin backticks:
+{
+  "misiones": [
+    {
+      "nombre_mision": "<nombre propio y memorable, nunca genérico>",
+      "descripcion": "<60-90 palabras; por qué importa para SU camino y SU realidad actual>",
+      "acciones": ["<acción concreta y verificable>", "<...>", "<...>"],
+      "conexion_camino": "<una o dos frases referenciando el nombre exacto del camino>"
+    }
+  ]
+}
+
+Reglas: entre 2 y 3 misiones, claramente distintas entre sí (distinto ángulo).
+Cada misión sigue las mismas reglas de calidad de una misión normal: nombre con
+personalidad, 3 a 5 acciones concretas y ejecutables en una semana, nada
+aspiracional ni indefinido. Sin emojis. Español neutro de Latinoamérica.
+Devuelves únicamente el JSON."""
+
 PROMPT_EXTRACTOR_LOGRO = """Lees una conversación reciente entre un usuario y Archive, un agente que
 documenta logros profesionales. Tu única tarea: decidir si en la conversación
 YA quedó articulado un logro concreto y completo (con contexto, acción e
@@ -358,8 +444,23 @@ def _parsear_json(texto):
         limpio = limpio.strip().rstrip("`").strip()
     try:
         return json.loads(limpio)
-    except json.JSONDecodeError as error:
-        raise ValueError("JSON malformado en respuesta de Claude") from error
+    except json.JSONDecodeError:
+        pass
+    # El modelo a veces antepone/agrega prosa o fences alrededor del JSON. Como
+    # respaldo, extraemos el objeto {...} o arreglo [...] balanceado. Probamos
+    # primero el delimitador que aparece ANTES en el texto (para no confundir un
+    # objeto dentro de un arreglo, p. ej. en el extractor de hallazgos).
+    candidatos = []
+    for abre, cierra in (("{", "}"), ("[", "]")):
+        ini, fin = limpio.find(abre), limpio.rfind(cierra)
+        if ini != -1 and fin > ini:
+            candidatos.append((ini, limpio[ini:fin + 1]))
+    for _, fragmento in sorted(candidatos):
+        try:
+            return json.loads(fragmento)
+        except json.JSONDecodeError:
+            continue
+    raise ValueError("JSON malformado en respuesta de Claude")
 
 
 def _formatear_onboarding(perfil, nombre):
@@ -387,6 +488,46 @@ def _formatear_onboarding(perfil, nombre):
         f"Pregunta 8: {perfil.get('vision_futuro') or ''}\n"
         f"Pregunta 9: {perfil.get('desahogo_libre') or ''}\n"
     )
+
+
+def _formatear_mision_activa(id_usuario, ligero=False):
+    """Bloque de texto con la misión activa del usuario para inyectar a un agente.
+
+    ligero=True devuelve solo nombre + patrón que rompe (para Mirror, que debe
+    mantener foco). Devuelve "" si no hay misión activa.
+    """
+    estado = clsInteraccionDB.obtener_ultima_mision(id_usuario)
+    if not estado:
+        return ""
+    mision = estado["mision"]
+    progreso = estado["progreso"]
+    camino = clsInteraccionDB.obtener_camino_elegido(id_usuario) or {}
+    patron = camino.get("patron_que_rompe") or ""
+
+    if ligero:
+        partes = [f"Misión activa de la persona: «{mision.get('nombre_mision', '')}»."]
+        if patron:
+            partes.append(f"Esta misión busca romper el patrón: «{patron}».")
+        partes.append("No desvíes la sesión hacia la misión; úsala solo si conecta de forma natural con el patrón que trabajan.")
+        return "\n\n--- Foco actual de la persona ---\n" + " ".join(partes)
+
+    acciones = mision.get("acciones", [])
+    lineas = []
+    for i, a in enumerate(acciones):
+        hecha = progreso[i] if i < len(progreso) else False
+        lineas.append(f"  [{'x' if hecha else ' '}] {a}")
+    bloque = [
+        "--- Misión activa de la persona (su foco de esta semana) ---",
+        f"Camino: {camino.get('nombre_camino', '') or '—'}",
+        f"Misión: {mision.get('nombre_mision', '')}",
+    ]
+    if mision.get("descripcion"):
+        bloque.append(f"Descripción: {mision['descripcion']}")
+    if lineas:
+        bloque.append("Acciones (x = hecha):\n" + "\n".join(lineas))
+    if patron:
+        bloque.append(f"Patrón que esta misión busca romper: «{patron}».")
+    return "\n\n" + "\n".join(bloque)
 
 
 async def _llamar_claude(system_prompt, mensajes, max_tokens=4096, modelo=None):
@@ -459,9 +600,10 @@ async def generar_diagnostico_cualitativo(id_usuario):
     entrada = _formatear_onboarding(perfil, nombre)
 
     texto = await _llamar_claude(
-        PROMPT_DIAGNOSTICO,
+        _con_identidad(PROMPT_DIAGNOSTICO),
         [{"role": "user", "content": entrada}],
         max_tokens=4096,
+        modelo=MODELO_AGENTE,
     )
     diagnostico = _parsear_json(texto)
 
@@ -494,16 +636,18 @@ async def generar_tres_caminos(id_usuario, diagnostico=None):
         perfil = clsInteraccionDB.obtener_perfil(id_usuario)
         entrada = _formatear_onboarding(perfil, nombre)
         texto_diag = await _llamar_claude(
-            PROMPT_DIAGNOSTICO,
+            _con_identidad(PROMPT_DIAGNOSTICO),
             [{"role": "user", "content": entrada}],
             max_tokens=4096,
+            modelo=MODELO_AGENTE,
         )
         diagnostico = _parsear_json(texto_diag)
 
     texto = await _llamar_claude(
-        PROMPT_CAMINOS,
+        _con_identidad(PROMPT_CAMINOS),
         [{"role": "user", "content": json.dumps(diagnostico, ensure_ascii=False)}],
         max_tokens=3072,
+        modelo=MODELO_AGENTE,
     )
     return _parsear_json(texto)
 
@@ -530,13 +674,14 @@ async def responder_chat_agente(id_chat, tipo_agente, id_usuario, contexto_extra
     # Editor escribe con la voz del usuario.
     if tipo_agente == "coach_editor":
         system_prompt += _snippet_voice(id_usuario)
+        system_prompt += _NOTA_VOZ_USUARIO
     if contexto_extra:
         system_prompt += "\n\n--- Contexto puntual de esta sesión ---\n" + contexto_extra
 
     historico = clsInteraccionDB.obtener_ultimos_mensajes(id_chat, 10)
     mensajes = [{"role": m["rol"], "content": m["contenido"]} for m in historico]
 
-    return await _llamar_claude(system_prompt, mensajes, max_tokens=1536)
+    return await _llamar_claude(_con_identidad(system_prompt), mensajes, max_tokens=1536, modelo=MODELO_AGENTE)
 
 
 # --- Editor estudio: borrador (entregable) + chat + sugerencias --------------
@@ -641,6 +786,7 @@ async def responder_archive(turns, id_usuario):
         + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n"
         + _formatear_onboarding(perfil, nombre)
         + _snippet_voice(id_usuario)
+        + _NOTA_VOZ_USUARIO
     )
 
     # Construir mensajes; la API debe empezar en 'user', asi que saltamos el
@@ -656,7 +802,7 @@ async def responder_archive(turns, id_usuario):
 
     if not mensajes:
         return ""
-    return await _llamar_claude(system_prompt, mensajes, max_tokens=1024)
+    return await _llamar_claude(_con_identidad(system_prompt), mensajes, max_tokens=1024, modelo=MODELO_AGENTE)
 
 
 async def generar_ficha_logro(turns, id_usuario):
@@ -780,6 +926,7 @@ async def mirror_pregunta(patron_quote, turns, id_usuario, reanclar=False):
         PROMPT_MIRROR + extra
         + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n"
         + _formatear_onboarding(perfil, nombre)
+        + _formatear_mision_activa(id_usuario, ligero=True)
     )
 
     # Las preguntas de Mirror son turnos 'assistant'. Anteponemos un mensaje
@@ -789,7 +936,7 @@ async def mirror_pregunta(patron_quote, turns, id_usuario, reanclar=False):
     if not mensajes or mensajes[0]["role"] == "assistant":
         mensajes.insert(0, {"role": "user", "content": f'Quiero trabajar este patrón: "{patron_quote}". Acompáñame con preguntas.'})
 
-    return (await _llamar_claude(system_prompt, mensajes, max_tokens=300)).strip()
+    return (await _llamar_claude(_con_identidad(system_prompt), mensajes, max_tokens=300, modelo=MODELO_AGENTE)).strip()
 
 
 async def mirror_es_boundary(texto):
@@ -805,9 +952,10 @@ async def mirror_reframe(patron_quote, turns):
     """Genera el reframe final del patrón. Devuelve dict con los 5 campos."""
     conversacion = "\n".join(f"{'Mirror' if s == 'mirror' else 'Usuario'}: {t}" for s, t in turns)
     texto = await _llamar_claude(
-        PROMPT_MIRROR_REFRAME,
+        _con_identidad(PROMPT_MIRROR_REFRAME),
         [{"role": "user", "content": f'Patrón: "{patron_quote}"\n\nConversación:\n{conversacion}'}],
         max_tokens=700,
+        modelo=MODELO_AGENTE,
     )
     data = _parsear_json(texto)
     if not isinstance(data, dict):
@@ -821,6 +969,96 @@ async def mirror_reframe(patron_quote, turns):
         "lo_que_vimos": data.get("lo_que_vimos") or "",
         "manifestacion": data.get("manifestacion") or "",
         "recomendaciones": [str(x) for x in recs if str(x).strip()],
+    }
+
+
+# ============================================================================
+# Clarity: conversación para pensar + cierre con puertas
+# ============================================================================
+def _ref_campo(r, campo):
+    """Lee un campo de una referencia, tolere dataclass o dict."""
+    return getattr(r, campo, None) if not isinstance(r, dict) else r.get(campo)
+
+
+def _formatear_referencias(referencias):
+    """Lista numerada del material real que Clarity puede citar (Mirror/Archive)."""
+    if not referencias:
+        return "\n\n(No hay material previo para citar en esta sesión.)"
+    filas = [
+        f'[{i}] {_ref_campo(r, "agente")} · {_ref_campo(r, "fecha")} · "{_ref_campo(r, "cita")}"'
+        for i, r in enumerate(referencias)
+    ]
+    return (
+        "\n\n--- Material real disponible para citar (usa SOLO esto, por su índice) ---\n"
+        + "\n".join(filas)
+    )
+
+
+async def responder_clarity(turns, id_usuario, referencias=None, primer_turno=False):
+    """Un turno de Clarity. Devuelve dict {mensaje, referencia_id, tema, listo}.
+
+    turns: list[(speaker, texto)] con speaker en {"clarity", "user"}.
+    referencias: list[{"agente","fecha","cita"}] (material real, por índice).
+    """
+    nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
+    perfil = clsInteraccionDB.obtener_perfil(id_usuario) or {}
+    system = (
+        PROMPT_CLARITY
+        + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n"
+        + _formatear_onboarding(perfil, nombre)
+        + _formatear_mision_activa(id_usuario)
+        + _formatear_referencias(referencias or [])
+    )
+    mensajes = [{"role": "assistant" if s == "clarity" else "user", "content": t} for s, t in turns]
+    if not mensajes or mensajes[0]["role"] == "assistant":
+        mensajes.insert(0, {"role": "user", "content": "Quiero pensar algo antes de decidir."})
+
+    texto = await _llamar_claude(_con_identidad(system), mensajes, max_tokens=700, modelo=MODELO_AGENTE)
+    try:
+        data = _parsear_json(texto)
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):
+        # Respuesta en prosa: la tratamos como mensaje sin referencia ni cierre.
+        return {"mensaje": (texto or "").strip(), "referencia_id": None, "tema": "", "listo": False}
+
+    ref_id = data.get("referencia_id")
+    if not isinstance(ref_id, int) or not (0 <= ref_id < len(referencias or [])):
+        ref_id = None
+    return {
+        "mensaje": (data.get("mensaje") or "").strip(),
+        "referencia_id": ref_id,
+        "tema": (data.get("tema") or "").strip(),
+        "listo": bool(data.get("listo")),
+    }
+
+
+async def clarity_cierre(turns, id_usuario):
+    """Sintetiza la conversación y clasifica qué puertas mostrar. Devuelve dict."""
+    conversacion = "\n".join(f"{'Clarity' if s == 'clarity' else 'Usuario'}: {t}" for s, t in turns)
+    texto = await _llamar_claude(
+        _con_identidad(PROMPT_CLARITY_CIERRE),
+        [{"role": "user", "content": conversacion}],
+        max_tokens=600,
+        modelo=MODELO_AGENTE,
+    )
+    try:
+        data = _parsear_json(texto)
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):
+        data = {}
+    rec = data.get("puerta_recomendada")
+    if rec not in (1, 2, 3):
+        rec = 1
+    return {
+        "sintesis": (data.get("sintesis") or "Lo que vimos juntos: llegaste a una decisión más clara.").strip(),
+        "pregunta": (data.get("pregunta") or "¿Cómo te quieres quedar con esto?").strip(),
+        "hay_patron": bool(data.get("hay_patron")),
+        "patron_quote": (data.get("patron_quote") or "").strip(),
+        "hay_accion": bool(data.get("hay_accion")),
+        "accion_texto": (data.get("accion_texto") or "").strip(),
+        "puerta_recomendada": rec,
     }
 
 
@@ -1052,13 +1290,61 @@ async def generar_mision_pacer(id_usuario):
     )
 
     texto = await _llamar_claude(
-        PROMPT_PACER,
+        _con_identidad(PROMPT_PACER),
         [{"role": "user", "content": entrada}],
         max_tokens=2048,
+        modelo=MODELO_AGENTE,
     )
     mision = _parsear_json(texto)
     clsInteraccionDB.insertar_mision(id_usuario, mision)
     return mision
+
+
+async def sugerir_misiones_pacer(id_usuario, n=3):
+    """Sugiere 2-3 misiones nuevas tras completar una, con contexto cruzado.
+
+    Lee camino + onboarding + patrones de Mirror + logros de Archive + misiones
+    completadas (para no repetir). Devuelve list[dict] (cada dict es una misión
+    lista para insertar con insertar_mision).
+    """
+    perfil = clsInteraccionDB.obtener_perfil(id_usuario)
+    nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
+    camino = clsInteraccionDB.obtener_camino_elegido(id_usuario)
+
+    camino_json = {
+        "nombre": camino.get("nombre_camino") if camino else "",
+        "descripcion": camino.get("descripcion_camino") if camino else "",
+        "tradeoff_principal": camino.get("tradeoff_principal") if camino else "",
+        "riesgo_principal": camino.get("riesgo_principal") if camino else "",
+        "tiempo_estimado_semanal": camino.get("tiempo_estimado_semanal") if camino else "",
+        "patron_que_rompe": camino.get("patron_que_rompe") if camino else "",
+    }
+
+    # Contexto cruzado: patrones de Mirror, logros de Archive, misiones hechas.
+    _, observando = clsMirror.cargar_hub(id_usuario)
+    patrones = [p.reframe.old_quote if p.reframe else p.quote for p in observando][:5]
+    logros = [l["titulo"] for l in clsInteraccionDB.obtener_logros_completos(id_usuario)[:5]]
+    completadas = [m["nombre"] for m in clsInteraccionDB.obtener_misiones_completadas(id_usuario)]
+
+    entrada = (
+        "Camino Elegido (JSON):\n" + json.dumps(camino_json, ensure_ascii=False)
+        + "\n\nPatrones trabajados en Mirror:\n" + ("\n".join(f"- {p}" for p in patrones) or "(ninguno)")
+        + "\n\nLogros recientes en Archive:\n" + ("\n".join(f"- {t}" for t in logros) or "(ninguno)")
+        + "\n\nMisiones ya completadas (NO repetir):\n" + ("\n".join(f"- {c}" for c in completadas) or "(ninguna)")
+        + "\n\nRespuestas del onboarding:\n" + _formatear_onboarding(perfil, nombre)
+        + f"\n\nDevuelve entre 2 y {n} misiones."
+    )
+
+    texto = await _llamar_claude(
+        _con_identidad(PROMPT_PACER_SUGERENCIAS),
+        [{"role": "user", "content": entrada}],
+        max_tokens=2048,
+        modelo=MODELO_AGENTE,
+    )
+    data = _parsear_json(texto)
+    misiones = data.get("misiones") if isinstance(data, dict) else (data if isinstance(data, list) else [])
+    # Filtra a las que tengan al menos nombre y acciones.
+    return [m for m in (misiones or []) if isinstance(m, dict) and m.get("nombre_mision") and m.get("acciones")][:n]
 
 
 # ============================================================================

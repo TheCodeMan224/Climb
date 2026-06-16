@@ -14,7 +14,7 @@ AGENTES = [
     ("Mirror", "coach_mirror", "Te ayuda a procesar tus patrones limitantes con preguntas socráticas."),
     ("Editor", "coach_editor", "Traduce tu impacto técnico a lenguaje ejecutivo sin perder tu voz."),
     ("Archive", "coach_archive", "Documenta tus logros profesionales para cuando importen."),
-    ("Clarity", "clarity_session", "Tu espacio para desahogarte y procesar lo que sea."),
+    ("Clarity", "clarity_session", "Te devuelve perspectiva y te ayuda a pensar antes de decidir tu siguiente movimiento."),
 ]
 
 _DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
@@ -84,7 +84,7 @@ class frmMenuInicio:
 
     def _abrir_agente(self, tipo_agente):
         # Archive y Mirror tienen su propio flujo editorial; el resto, chat genérico.
-        rutas = {"coach_archive": "/archive", "coach_mirror": "/mirror", "coach_editor": "/editor"}
+        rutas = {"coach_archive": "/archive", "coach_mirror": "/mirror", "coach_editor": "/editor", "clarity_session": "/clarity"}
         self.router.navegar_a(rutas.get(tipo_agente, f"/chat/{tipo_agente}"))
 
     def _ir_patron_mirror(self, nombre, descripcion):

@@ -61,6 +61,13 @@ class frmPacer:
             )
         )
 
+        # Cuando todas las acciones están hechas, se puede cerrar la misión.
+        if acciones and completadas >= len(acciones):
+            self.cuerpo.controls.append(ft.Container(height=16))
+            self.cuerpo.controls.append(
+                ft.Row(controls=[cmp.boton_primario("Completar misión  →", on_click=self._completar)])
+            )
+
     def _fila_accion(self, indice, accion, hecha):
         # Fila completa clickeable; el texto envuelve y ocupa todo el ancho.
         return ft.Container(
@@ -97,6 +104,13 @@ class frmPacer:
         clsInteraccionDB.guardar_progreso_mision(self.estado["id_mision"], self.estado["progreso"])
         self._render_mision()
         self.router.page.update()
+
+    def _completar(self, e=None):
+        if not self.estado:
+            return
+        clsInteraccionDB.completar_mision(self.estado["id_mision"])
+        self.router.pacer_completada = self.estado["mision"]
+        self.router.navegar_a("/pacer/completada")
 
     async def al_cargar(self):
         # La mision ya se carga en construir(); aqui solo generamos si no existe.

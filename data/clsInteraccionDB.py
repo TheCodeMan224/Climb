@@ -499,15 +499,16 @@ def insertar_mision(id_usuario, mision):
 
 
 def obtener_ultima_mision(id_usuario):
-    """Devuelve el estado de la mision mas reciente, o None.
+    """Devuelve el estado de la mision ACTIVA mas reciente, o None.
 
     Estructura: {"id_mision", "mision" (dict), "progreso" (list[bool])}.
+    Las misiones ya completadas no se consideran activas.
     """
     conexion = obtener_conexion()
     fila = conexion.execute(
         """
         SELECT id_mision, contenido_json, progreso_json FROM Misiones
-        WHERE id_usuario = ?
+        WHERE id_usuario = ? AND (estado = 'activa' OR estado IS NULL)
         ORDER BY id_mision DESC
         LIMIT 1
         """,
@@ -704,6 +705,40 @@ def guardar_progreso_mision(id_mision, progreso):
     )
     conexion.commit()
     conexion.close()
+
+
+def completar_mision(id_mision):
+    """Marca una mision como completada con su fecha de cierre."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        "UPDATE Misiones SET estado = 'completada', fecha_completada = CURRENT_TIMESTAMP WHERE id_mision = ?",
+        (id_mision,),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_misiones_completadas(id_usuario):
+    """Devuelve las misiones completadas (mas recientes primero) como dicts:
+    {"nombre", "fecha"}. Útil para el historial y para alimentar a Pacer."""
+    conexion = obtener_conexion()
+    filas = conexion.execute(
+        """
+        SELECT contenido_json, fecha_completada FROM Misiones
+        WHERE id_usuario = ? AND estado = 'completada'
+        ORDER BY fecha_completada DESC, id_mision DESC
+        """,
+        (id_usuario,),
+    ).fetchall()
+    conexion.close()
+    resultado = []
+    for f in filas:
+        try:
+            mision = json.loads(f["contenido_json"])
+        except (ValueError, TypeError):
+            mision = {}
+        resultado.append({"nombre": mision.get("nombre_mision", ""), "fecha": f["fecha_completada"]})
+    return resultado
 
 
 # ----------------------------------------------------------------------------
