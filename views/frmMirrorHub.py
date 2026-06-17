@@ -7,9 +7,11 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsMirror
+from core.textos import TEXTOS
 from data import clsInteraccionDB
 
-_MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+_T = TEXTOS["mirror"]
+_MESES = TEXTOS["comun"]["meses"]
 
 
 class frmMirrorHub:
@@ -54,7 +56,7 @@ class frmMirrorHub:
                         ]),
                     ),
                     ft.Container(width=16),
-                    cmp.eyebrow("Empezar sesión  →", color=tema.BLUE, size=11),
+                    cmp.eyebrow(_T["empezar_sesion_card"], color=tema.BLUE, size=11),
                 ],
             ),
         )
@@ -73,8 +75,8 @@ class frmMirrorHub:
                 ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
-                        cmp.eyebrow(f"Procesado {procesado}  ·  {patron.observed_meta}", color=tema.HINT, size=10),
-                        cmp.enlace_cta("Retomar  →", on_click=lambda e, p=patron: self._empezar(p)),
+                        cmp.eyebrow(_T["procesado_meta"].format(fecha=procesado, observado=patron.observed_meta), color=tema.HINT, size=10),
+                        cmp.enlace_cta(_T["retomar"], on_click=lambda e, p=patron: self._empezar(p)),
                     ],
                 ),
                 ft.Row(
@@ -107,15 +109,15 @@ class frmMirrorHub:
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=14,
                 controls=[
-                    ft.Container(width=480, content=ft.Text("Scout no tiene patrones nuevos esta semana.\nBuena señal.", size=19, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY, text_align=ft.TextAlign.CENTER)),
-                    cmp.eyebrow("Sigue observando en background  ·  Avisará cuando aparezca algo", color=tema.HINT, size=10),
+                    ft.Container(width=480, content=ft.Text(_T["vacio_titulo"], size=19, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY, text_align=ft.TextAlign.CENTER)),
+                    cmp.eyebrow(_T["vacio_sub"], color=tema.HINT, size=10),
                 ],
             ),
         )
 
     def _bloque_propio(self):
         self.campo_propio = ft.TextField(
-            hint_text='Ej: "Si digo que no a esta junta, van a pensar que no me importa..."',
+            hint_text=_T["propio_hint"],
             multiline=True,
             min_lines=2,
             max_lines=5,
@@ -132,9 +134,9 @@ class frmMirrorHub:
             border_radius=6,
             padding=ft.Padding.symmetric(horizontal=30, vertical=28),
             content=ft.Column(spacing=0, controls=[
-                cmp.eyebrow("Tu propio patrón", color=tema.AMBAR),
+                cmp.eyebrow(_T["propio_eyebrow"], color=tema.AMBAR),
                 ft.Container(height=10),
-                ft.Text("¿Hay algo que estás sintiendo operando en tu trabajo que Scout aún no ha detectado? Escríbelo como lo escuchas en tu cabeza.", size=15, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED),
+                ft.Text(_T["propio_intro"], size=15, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED),
                 ft.Container(height=22),
                 ft.Container(
                     border=ft.Border.only(bottom=ft.BorderSide(1, tema.NAVY)),
@@ -146,9 +148,9 @@ class frmMirrorHub:
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                     controls=[
-                        cmp.eyebrow("Mirror te llevará a una sesión con este patrón", color=tema.HINT, size=10),
+                        cmp.eyebrow(_T["propio_aviso"], color=tema.HINT, size=10),
                         ft.ElevatedButton(
-                            content=ft.Text("EMPEZAR SESIÓN  →", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+                            content=ft.Text(_T["propio_boton"], size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
                             on_click=self._empezar_propio,
                             style=ft.ButtonStyle(bgcolor=tema.NAVY, shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.symmetric(horizontal=24, vertical=14), elevation=0),
                         ),
@@ -167,25 +169,25 @@ class frmMirrorHub:
             controls=[
                 ft.Text("01", size=56, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
                 ft.Column(expand=True, spacing=10, controls=[
-                    ft.Text("Mirror", size=44, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
-                    ft.Container(width=520, content=ft.Text("Trabaja patrones limitantes en tu carrera profesional. A través de preguntas, te ayuda a verlos desde fuera para que dejen de operar en automático.", size=14, font_family=tema.FUENTE_BODY, color=tema.MUTED)),
+                    ft.Text(_T["nombre"], size=44, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                    ft.Container(width=520, content=ft.Text(_T["descripcion"], size=14, font_family=tema.FUENTE_BODY, color=tema.MUTED)),
                     ft.Container(height=8),
                     ft.Container(
                         width=520,
                         padding=ft.Padding.only(left=16),
                         border=ft.Border.only(left=ft.BorderSide(2, tema.AMBAR)),
-                        content=ft.Text("Trabajo contigo solo en lo profesional. Si la conversación se mueve hacia lo personal profundo, te redirijo con respeto.", size=13, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED),
+                        content=ft.Text(_T["boundary_hero"], size=13, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED),
                     ),
                 ]),
             ],
         )
 
         controles = [
-            cmp.topbar("Mirror", derecha="← Volver al dashboard", on_back=lambda e: self.router.navegar_a("/menu_inicio")),
+            cmp.topbar(_T["topbar"], derecha=TEXTOS["comun"]["volver_dashboard"], on_back=lambda e: self.router.navegar_a("/menu_inicio")),
             ft.Container(height=36),
             hero,
             cmp.section_divider(),
-            cmp.section_head("Patrones pendientes", contador=f"{len(pendientes)} detectado{'s' if len(pendientes) != 1 else ''} por Scout"),
+            cmp.section_head(_T["h_pendientes"], contador=_T["pendientes_contador"].format(n=len(pendientes), s="s" if len(pendientes) != 1 else "")),
         ]
         if pendientes:
             for i, p in enumerate(pendientes, start=1):
@@ -194,12 +196,12 @@ class frmMirrorHub:
             controles.append(self._bloque_vacio())
 
         controles.append(cmp.section_divider())
-        controles.append(cmp.section_head("En observación", contador=f"{len(observando)} patrones procesados"))
+        controles.append(cmp.section_head(_T["h_observacion"], contador=_T["observacion_contador"].format(n=len(observando))))
         for p in observando:
             controles.append(self._card_observando(p))
 
         controles.append(cmp.section_divider())
-        controles.append(cmp.section_head("Trabajar un patrón nuevo"))
+        controles.append(cmp.section_head(_T["h_nuevo"]))
         controles.append(self._bloque_propio())
         controles.append(ft.Container(height=40))
 

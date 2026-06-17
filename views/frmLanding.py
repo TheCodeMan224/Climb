@@ -4,6 +4,7 @@ import flet as ft
 
 import componentes as cmp
 import tema
+from core.textos import TEXTOS
 
 
 class frmLanding:
@@ -26,7 +27,7 @@ class frmLanding:
                 controls=[
                     # Logo Climb en dorado
                     ft.Text(
-                        "Climb",
+                        TEXTOS["comun"]["marca"],
                         size=104,
                         weight=ft.FontWeight.W_700,
                         font_family=tema.FUENTE_DISPLAY,
@@ -37,7 +38,7 @@ class frmLanding:
                     ft.Container(height=28),
                     # Tagline en serif italic
                     ft.Text(
-                        "La mano derecha de tu carrera profesional",
+                        TEXTOS["landing"]["tagline"],
                         size=19,
                         italic=True,
                         font_family=tema.FUENTE_SERIF,
@@ -45,13 +46,13 @@ class frmLanding:
                         text_align=ft.TextAlign.CENTER,
                     ),
                     ft.Container(height=44),
-                    cmp.boton_primario("Comenzar", on_click=lambda e: self.router.navegar_a("/pre_onboarding")),
+                    cmp.boton_primario(TEXTOS["landing"]["comenzar"], on_click=lambda e: self.router.navegar_a("/pre_onboarding")),
                     ft.Container(height=22),
-                    cmp.enlace("Ya tengo cuenta — Iniciar sesión", on_click=lambda e: self.router.navegar_a("/login")),
+                    cmp.enlace(TEXTOS["landing"]["ya_tengo_cuenta"], on_click=lambda e: self.router.navegar_a("/login")),
                     ft.Container(height=56),
                     # Keywords footer
                     ft.Text(
-                        "CONTEXTO  ·  PATRÓN  ·  EJECUCIÓN",
+                        TEXTOS["landing"]["keywords"],
                         size=11,
                         weight=ft.FontWeight.W_600,
                         font_family=tema.FUENTE_SUBHEADER,

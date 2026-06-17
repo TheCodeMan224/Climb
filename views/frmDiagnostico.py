@@ -4,6 +4,9 @@ import flet as ft
 import tema
 
 from core import clsAgentes
+from core.textos import TEXTOS
+
+_T = TEXTOS["diagnostico"]
 
 
 class frmDiagnostico:
@@ -16,12 +19,12 @@ class frmDiagnostico:
     # --- Evento: generar los tres caminos -----------------------------------
     async def _ver_plan(self, e):
         self.boton_plan.disabled = True
-        self.router.mostrar_carga("Generando tu plan…")
+        self.router.mostrar_carga(_T["generando_plan"])
         try:
             caminos = await clsAgentes.generar_tres_caminos(self.id_usuario, self.diag)
         except Exception:
             self.router.ocultar_carga()
-            self.boton_plan.text = "Hubo un problema, intenta de nuevo"
+            self.boton_plan.text = _T["error"]
             self.boton_plan.disabled = False
             self.router.page.update()
             return
@@ -106,17 +109,17 @@ class frmDiagnostico:
                         spacing=4,
                         controls=[
                             ft.Text(
-                                f"Esto es lo que vi en ti, {nombre}",
+                                _T["saludo"].format(nombre=nombre),
                                 size=36,
                                 weight=ft.FontWeight.BOLD,
                                 font_family=tema.FUENTE_DISPLAY,
                                 color=tema.TEXTO,
                             ),
-                            ft.Text("Tu diagnóstico cualitativo", size=15, italic=True, color=tema.TEXTO_SUAVE),
+                            ft.Text(_T["subtitulo"], size=15, italic=True, color=tema.TEXTO_SUAVE),
                         ],
                     ),
                     ft.OutlinedButton(
-                        "Descargar PDF",
+                        _T["descargar_pdf"],
                         on_click=lambda e: None,  # mockup, sin funcionalidad real
                         style=ft.ButtonStyle(color=tema.BLUE),
                     ),
@@ -133,8 +136,7 @@ class frmDiagnostico:
                 border_radius=8,
                 border=ft.Border.only(left=ft.BorderSide(3, tema.AMBAR)),
                 content=ft.Text(
-                    "Esta es una lectura inicial a partir de tu onboarding: un punto de partida "
-                    "para que pienses, no un veredicto. Tú decides qué hacer con ella.",
+                    _T["rotulo"],
                     size=13, italic=True, color=tema.TEXTO_SUAVE, font_family=tema.FUENTE_SERIF),
             )
         )
@@ -163,22 +165,22 @@ class frmDiagnostico:
             ft.Row(
                 spacing=14,
                 controls=[
-                    self._card_retrato("LO QUE ERES", retrato.get("lo_que_eres", ""), tema.NAVY),
-                    self._card_retrato("LO QUE TE FRENA", retrato.get("lo_que_te_frena", ""), tema.CORAL),
-                    self._card_retrato("DÓNDE ESTÁ LA BRECHA", retrato.get("donde_esta_la_brecha", ""), tema.AMBAR),
+                    self._card_retrato(_T["retrato_eres"], retrato.get("lo_que_eres", ""), tema.NAVY),
+                    self._card_retrato(_T["retrato_frena"], retrato.get("lo_que_te_frena", ""), tema.CORAL),
+                    self._card_retrato(_T["retrato_brecha"], retrato.get("donde_esta_la_brecha", ""), tema.AMBAR),
                 ],
             )
         )
 
         # Seccion 5 - Visibilidad en 4 dimensiones
         secciones.append(ft.Container(height=24))
-        secciones.append(self._subheader("Tu visibilidad estratégica hoy"))
+        secciones.append(self._subheader(_T["h_visibilidad"]))
         for dim in d.get("visibilidad", []):
             secciones.append(self._fila_visibilidad(dim))
 
         # Seccion 6 - Tres patrones detectados
         secciones.append(ft.Container(height=24))
-        secciones.append(self._subheader("Los patrones que Scout detectó en tu voz"))
+        secciones.append(self._subheader(_T["h_patrones"]))
         for patron in d.get("patrones", []):
             secciones.append(ft.Container(height=8))
             secciones.append(self._card_patron(patron))
@@ -227,7 +229,7 @@ class frmDiagnostico:
 
         # Seccion 9 - Proximo paso con CTA
         self.boton_plan = ft.ElevatedButton(
-            "Ver mi plan para los próximos 30 días",
+            _T["ver_plan"],
             on_click=self._ver_plan,
             style=ft.ButtonStyle(
                 bgcolor=tema.AMBAR,
@@ -245,7 +247,7 @@ class frmDiagnostico:
                 content=ft.Column(
                     spacing=12,
                     controls=[
-                        ft.Text("Tu siguiente paso", size=22, weight=ft.FontWeight.BOLD, color=tema.TEXTO_SOBRE_NAVY, font_family=tema.FUENTE_SUBHEADER),
+                        ft.Text(_T["h_siguiente"], size=22, weight=ft.FontWeight.BOLD, color=tema.TEXTO_SOBRE_NAVY, font_family=tema.FUENTE_SUBHEADER),
                         ft.Text(proximo.get("parrafo", ""), size=15, color=tema.TEXTO_SOBRE_NAVY),
                         ft.Container(height=4),
                         self.boton_plan,

@@ -10,6 +10,9 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsClarity
+from core.textos import TEXTOS
+
+_T = TEXTOS["clarity"]
 
 
 class frmClarityEspejo:
@@ -97,13 +100,13 @@ class frmClarityEspejo:
             padding=ft.Padding.symmetric(horizontal=30, vertical=26),
             margin=ft.Margin.only(top=8, bottom=8),
             content=ft.Column(spacing=0, controls=[
-                cmp.eyebrow("Camino activo", color=tema.AMBAR),
+                cmp.eyebrow(_T["camino_activo"], color=tema.AMBAR),
                 ft.Container(height=12),
                 ft.Text(pacer.nombre, size=24, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.TEXTO_SOBRE_NAVY),
                 ft.Container(height=20),
                 ft.Row(spacing=18, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
                     self._barra_progreso(pacer.hechas, pacer.total),
-                    cmp.eyebrow(f"{pacer.hechas} / {pacer.total} acciones", color=tema.TEXTO_SUAVE_SOBRE_NAVY, size=11),
+                    cmp.eyebrow(_T["acciones_pacer"].format(hechas=pacer.hechas, total=pacer.total), color=tema.TEXTO_SUAVE_SOBRE_NAVY, size=11),
                 ]),
             ]),
         )
@@ -115,15 +118,15 @@ class frmClarityEspejo:
         hero = ft.Row(spacing=22, vertical_alignment=ft.CrossAxisAlignment.START, controls=[
             ft.Text("04", size=56, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
             ft.Column(expand=True, spacing=14, controls=[
-                ft.Text(f"Esto es lo que llevas construido, {espejo.nombre}", size=38, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                ft.Text(_T["saludo"].format(nombre=espejo.nombre), size=38, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
                 ft.Container(width=540, content=ft.Text(
-                    "A veces, metido en el día a día, no ves cuánto has avanzado. Yo sí lo veo. Te muestro lo que llevas antes de que abramos la conversación.",
+                    _T["encuadre"],
                     size=16, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED)),
                 ft.Container(
                     width=520, padding=ft.Padding.only(left=14),
                     border=ft.Border.only(left=ft.BorderSide(2, tema.AMBAR)),
                     content=ft.Text(
-                        "Te ayudo a pensar antes de decidir tu siguiente movimiento profesional. No soy espacio para temas personales — para eso, un profesional.",
+                        _T["boundary"],
                         size=13, italic=True, font_family=tema.FUENTE_SERIF, color=tema.HINT)),
             ]),
         ])
@@ -139,7 +142,7 @@ class frmClarityEspejo:
         )
 
         self.campo = ft.TextField(
-            hint_text="Lo que tengas en la cabeza...",
+            hint_text=_T["hint_espejo"],
             expand=True, multiline=True, min_lines=2, max_lines=6,
             border=ft.InputBorder.NONE, bgcolor="transparent", cursor_color=tema.NAVY,
             text_style=ft.TextStyle(font_family=tema.FUENTE_BODY, size=16, color=tema.NAVY),
@@ -150,10 +153,10 @@ class frmClarityEspejo:
         transicion = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0, controls=[
             cmp.hairline(width=56),
             ft.Container(height=18),
-            cmp.eyebrow("Ahora tú", color=tema.MUTED),
+            cmp.eyebrow(_T["ahora_tu"], color=tema.MUTED),
             ft.Container(height=22),
             ft.Container(width=540, content=ft.Text(
-                "Ya que viste dónde estás, ¿qué traes en la cabeza hoy? Cuéntame qué situación quieres pensar antes de decidir tu siguiente movimiento.",
+                _T["invitacion"],
                 size=22, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY, text_align=ft.TextAlign.CENTER)),
         ])
 
@@ -164,7 +167,7 @@ class frmClarityEspejo:
                 content=ft.Row(vertical_alignment=ft.CrossAxisAlignment.END, controls=[
                     self.campo,
                     ft.ElevatedButton(
-                        content=ft.Text("EMPEZAR  →", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+                        content=ft.Text(_T["empezar"], size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
                         on_click=self._empezar,
                         style=ft.ButtonStyle(bgcolor=tema.NAVY, shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.symmetric(horizontal=24, vertical=16), elevation=0)),
                 ]),
@@ -173,7 +176,7 @@ class frmClarityEspejo:
         ])
 
         controles = [
-            cmp.topbar("Clarity", derecha="← Volver al dashboard", on_back=lambda e: self.router.navegar_a("/menu_inicio")),
+            cmp.topbar(_T["topbar"], derecha=TEXTOS["comun"]["volver_dashboard"], on_back=lambda e: self.router.navegar_a("/menu_inicio")),
             ft.Container(height=36),
             hero,
         ]

@@ -10,9 +10,10 @@ import flet as ft
 
 import componentes as cmp
 import tema
+from core.textos import TEXTOS
 
-_MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+_T = TEXTOS["archive"]
+_MESES = TEXTOS["comun"]["meses_largo"]
 
 
 class frmArchiveFicha:
@@ -44,16 +45,16 @@ class frmArchiveFicha:
             ft.Container(height=22),
             ft.Text(f.get("titulo", ""), size=32, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
             ft.Container(height=28),
-            cmp.field_block("Contexto", f.get("contexto", "")),
-            cmp.field_block("Mi rol específico", f.get("mi_rol", "") or "—"),
+            cmp.field_block(_T["ficha_contexto"], f.get("contexto", "")),
+            cmp.field_block(_T["ficha_mi_rol"], f.get("mi_rol", "") or "—"),
         ]
         if f.get("metrics"):
             cuerpo.append(cmp.metrics_row(f["metrics"]))
         if f.get("aprendizaje"):
-            cuerpo.append(cmp.field_block("Aprendizaje", f["aprendizaje"]))
+            cuerpo.append(cmp.field_block(_T["ficha_aprendizaje"], f["aprendizaje"]))
         if f.get("tags"):
             cuerpo.extend([
-                cmp.eyebrow("Tags", size=10),
+                cmp.eyebrow(_T["ficha_tags"], size=10),
                 ft.Container(height=10),
                 ft.Row(wrap=True, spacing=8, run_spacing=8, controls=[cmp.tag_pill(t) for t in f["tags"]]),
             ])
@@ -73,7 +74,7 @@ class frmArchiveFicha:
 
     def _boton_redactar(self):
         return ft.ElevatedButton(
-            content=ft.Text("REDACTAR CON EDITOR  →", size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+            content=ft.Text(_T["redactar_editor"], size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
             on_click=self._redactar,
             style=ft.ButtonStyle(bgcolor=tema.NAVY, shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.symmetric(horizontal=28, vertical=16), elevation=0),
         )
@@ -88,29 +89,29 @@ class frmArchiveFicha:
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                     spacing=16,
                     controls=[
-                        ft.Text("No hay una ficha para mostrar.", size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
-                        cmp.boton_primario("Ir a Archive", on_click=lambda e: self.router.navegar_a("/archive")),
+                        ft.Text(_T["ficha_vacia"], size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
+                        cmp.boton_primario(_T["ir_archive"], on_click=lambda e: self.router.navegar_a("/archive")),
                     ],
                 ),
             )
 
         if self.recien_generado:
-            intro_eyebrow, intro_texto = "Logro archivado", "Tu logro quedó documentado. Así lo registramos."
+            intro_eyebrow, intro_texto = _T["recien_eyebrow"], _T["recien_texto"]
             acciones = ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    cmp.enlace_cta("← Volver al archivo", on_click=lambda e: self.router.navegar_a("/archive")),
+                    cmp.enlace_cta(_T["volver_archivo"], on_click=lambda e: self.router.navegar_a("/archive")),
                     self._boton_redactar(),
                 ],
             )
         else:
-            intro_eyebrow, intro_texto = "Del archivo", "Un logro que documentaste con Archive."
+            intro_eyebrow, intro_texto = _T["del_archivo_eyebrow"], _T["del_archivo_texto"]
             acciones = ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    cmp.enlace_cta("← Volver al archivo", on_click=lambda e: self.router.navegar_a("/archive")),
+                    cmp.enlace_cta(_T["volver_archivo"], on_click=lambda e: self.router.navegar_a("/archive")),
                     self._boton_redactar(),
                 ],
             )
@@ -138,7 +139,7 @@ class frmArchiveFicha:
                     content=ft.Column(
                         spacing=0,
                         controls=[
-                            cmp.topbar("Archive", derecha="← Volver al dashboard", on_back=lambda e: self.router.navegar_a("/menu_inicio")),
+                            cmp.topbar(_T["topbar"], derecha=TEXTOS["comun"]["volver_dashboard"], on_back=lambda e: self.router.navegar_a("/menu_inicio")),
                             ft.Container(height=44),
                             intro,
                             ft.Container(height=36),

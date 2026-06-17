@@ -5,45 +5,10 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes
+from core.textos import ACTOS, TEXTOS
 from data import clsInteraccionDB
 
-# Cada acto: (titulo, intro narrativa, [preguntas]). Títulos e intros son solo
-# de cara al usuario; el guardado a BD es posicional (no depende de estos textos).
-ACTOS = [
-    (
-        "Acto I — Dónde estás hoy",
-        "No hay respuestas correctas aquí. Escríbeme como hablas, aunque salga desordenado. Solo quiero conocerte de verdad.",
-        [
-            "¿Cómo te sientes con tu carrera en este momento? No la versión de LinkedIn, la de verdad.",
-            "Cuando algo del trabajo te frustra o sientes que no avanzas, ¿qué haces con eso? ¿Lo hablas, te lo guardas, trabajas más horas?",
-        ],
-    ),
-    (
-        "Acto II — De dónde vienes",
-        "Ahora cuéntame tu historia. Sin currículum y sin formalidades, como si me lo contaras tomando un café.",
-        [
-            "Cuéntame qué haces hoy. ¿En qué trabajas, en qué tipo de empresa, y de qué eres responsable en el día a día?",
-            "Y para llegar ahí, ¿por dónde pasaste? Cuéntame tu camino hasta hoy, como se lo contarías a alguien en una cena, no en una entrevista.",
-        ],
-    ),
-    (
-        "Acto III — Lo que has construido",
-        "Hablemos de lo que has logrado, y de cómo lo vives cuando todo depende de ti.",
-        [
-            "¿Cuál es el logro del que te sientes más orgulloso? Cuéntame qué pasó y por qué ese te importa tanto.",
-            "Cuando te toca presentar tu trabajo frente a gente importante, o todo recae sobre ti, ¿cómo lo vives? ¿Te crece o te pesa?",
-        ],
-    ),
-    (
-        "Acto IV — Hacia dónde vas",
-        "Y para cerrar, hacia dónde quieres ir desde aquí.",
-        [
-            "¿Qué has intentado para crecer o para que te noten más? Cuéntame también lo que probaste y no funcionó, eso me dice mucho de ti.",
-            "Imagina tu carrera en tres años, sin límites de ningún tipo. ¿Cómo se ve? ¿Dónde estás, qué haces, cómo te sientes?",
-            "Antes de cerrar, este espacio es tuyo. ¿Hay algo de tu carrera que traes cargando y que no me has contado todavía?",
-        ],
-    ),
-]
+_T = TEXTOS["onboarding"]
 
 
 class frmOnboarding:
@@ -104,11 +69,11 @@ class frmOnboarding:
         ]
 
     def _texto_progreso(self):
-        return f"PREGUNTA {self.indice + 1:02d} / {len(self.preguntas):02d}"
+        return _T["progreso"].format(n=self.indice + 1, total=len(self.preguntas))
 
     def _btn_anterior_contenido(self):
         color = tema.HINT if self.indice == 0 else tema.NAVY
-        return ft.Text("← ANTERIOR", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=color)
+        return ft.Text(_T["anterior"], size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=color)
 
     # --- Estado/navegacion --------------------------------------------------
     def _guardar_actual(self):
@@ -122,7 +87,7 @@ class frmOnboarding:
         self.error.value = ""
         self.boton_anterior.disabled = self.indice == 0
         self.boton_anterior.content = self._btn_anterior_contenido()
-        self.boton_siguiente.content = "Llegar a la cima  →" if es_ultima else "Siguiente  →"
+        self.boton_siguiente.content = _T["ultima"] if es_ultima else _T["siguiente"]
         self.fila_segmentos.controls = self._segmentos()
         self.lbl_progreso.value = self._texto_progreso()
         self.router.page.update()
@@ -130,7 +95,7 @@ class frmOnboarding:
     def _siguiente(self, e):
         self._guardar_actual()
         if not self.respuestas[self.indice].strip():
-            self.error.value = "Escribe tu respuesta para continuar."
+            self.error.value = _T["err_vacio"]
             self.router.page.update()
             return
         if self.indice == len(self.preguntas) - 1:
@@ -177,7 +142,7 @@ class frmOnboarding:
         # Campo persistente: ancho completo y expande para llenar el alto sobrante.
         self.campo = ft.TextField(
             value=self.respuestas[self.indice],
-            hint_text="Escribe lo que te venga, sin filtro...",
+            hint_text=_T["hint"],
             multiline=True,
             expand=True,
             autofocus=True,
@@ -200,11 +165,11 @@ class frmOnboarding:
                 padding=ft.Padding.symmetric(horizontal=24, vertical=18),
             ),
         )
-        self.boton_siguiente = cmp.boton_primario("Siguiente  →", on_click=self._siguiente)
+        self.boton_siguiente = cmp.boton_primario(_T["siguiente"], on_click=self._siguiente)
 
         topbar = ft.Row(
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            controls=[cmp.eyebrow("Climb", color=tema.AMBAR), cmp.eyebrow("Diagnóstico inicial", color=tema.HINT)],
+            controls=[cmp.eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR), cmp.eyebrow(_T["subtitulo"], color=tema.HINT)],
         )
 
         # Columna que llena el viewport; el campo (expand) absorbe el alto sobrante,

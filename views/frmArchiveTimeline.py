@@ -4,9 +4,11 @@ import flet as ft
 
 import componentes as cmp
 import tema
+from core.textos import TEXTOS
 from data import clsInteraccionDB
 
-_PERIODOS = ["Todos", "Este mes", "Trimestre", "Año"]
+_T = TEXTOS["archive"]
+_PERIODOS = _T["periodos"]
 
 
 class frmArchiveTimeline:
@@ -31,7 +33,7 @@ class frmArchiveTimeline:
             spacing=2,
             controls=[
                 ft.Text(metric["value"] if metric else "—", size=22, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR if metric else tema.HINT),
-                cmp.eyebrow(metric["label"] if metric else "Sin métrica", color=tema.HINT, size=9),
+                cmp.eyebrow(metric["label"] if metric else _T["sin_metrica"], color=tema.HINT, size=9),
             ],
         )
 
@@ -74,7 +76,7 @@ class frmArchiveTimeline:
         agrupado = clsInteraccionDB.archivo_agrupado_por_mes(self.id_usuario)
 
         boton_doc = ft.ElevatedButton(
-            content=ft.Text("+ DOCUMENTAR LOGRO", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+            content=ft.Text(_T["documentar"], size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
             on_click=self._documentar,
             style=ft.ButtonStyle(
                 bgcolor=tema.NAVY,
@@ -89,8 +91,8 @@ class frmArchiveTimeline:
             vertical_alignment=ft.CrossAxisAlignment.END,
             controls=[
                 ft.Column(spacing=10, controls=[
-                    cmp.eyebrow("Bitácora de logros"),
-                    ft.Text("Tu archivo", size=48, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                    cmp.eyebrow(_T["bitacora"]),
+                    ft.Text(_T["tu_archivo"], size=48, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
                 ]),
                 boton_doc,
             ],
@@ -101,10 +103,10 @@ class frmArchiveTimeline:
             margin=ft.Margin.symmetric(vertical=20),
             border=ft.Border.symmetric(vertical=ft.BorderSide(1, tema.BORDER_LIGHT)),
             content=ft.Row(spacing=56, controls=[
-                cmp.stat_block(str(stats["total"]), "Logros totales"),
-                cmp.stat_block(str(stats["este_trimestre"]), "Este trimestre"),
-                cmp.stat_block(stats["impacto"], "Impacto registrado"),
-                cmp.stat_block(str(stats["tags"]), "Tags activos"),
+                cmp.stat_block(str(stats["total"]), _T["stat_total"]),
+                cmp.stat_block(str(stats["este_trimestre"]), _T["stat_trimestre"]),
+                cmp.stat_block(stats["impacto"], _T["stat_impacto"]),
+                cmp.stat_block(str(stats["tags"]), _T["stat_tags"]),
             ]),
         )
 
@@ -116,7 +118,7 @@ class frmArchiveTimeline:
             content=ft.Row(spacing=8, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
                 ft.Icon(ft.Icons.SEARCH, color=tema.HINT, size=14),
                 ft.TextField(
-                    hint_text="Buscar en el archivo...",
+                    hint_text=_T["buscar"],
                     border=ft.InputBorder.NONE, bgcolor="transparent", expand=True,
                     text_style=ft.TextStyle(font_family=tema.FUENTE_BODY, size=13, color=tema.NAVY),
                     hint_style=ft.TextStyle(font_family=tema.FUENTE_BODY, size=13, color=tema.HINT),
@@ -134,15 +136,14 @@ class frmArchiveTimeline:
         )
 
         controles = [
-            cmp.topbar(f"El Archivo  ·  {stats['total']} logros documentados", derecha="← Volver al dashboard", on_back=lambda e: self.router.navegar_a("/menu_inicio")),
+            cmp.topbar(_T["timeline_topbar"].format(n=stats['total']), derecha=TEXTOS["comun"]["volver_dashboard"], on_back=lambda e: self.router.navegar_a("/menu_inicio")),
             ft.Container(height=32),
             hero,
             ft.Container(
                 margin=ft.Margin.only(top=12),
                 width=480,
                 content=ft.Text(
-                    "Todo lo que documentaste con Archive. Búscalo cuando lo necesites — "
-                    "entrevistas, reviews, propuestas.",
+                    _T["timeline_intro"],
                     size=14, font_family=tema.FUENTE_BODY, color=tema.MUTED,
                 ),
             ),
@@ -155,7 +156,7 @@ class frmArchiveTimeline:
             controles.append(
                 ft.Container(
                     padding=ft.Padding.symmetric(vertical=40),
-                    content=ft.Text("Aún no has documentado logros. Empieza con “+ Documentar logro”.", size=15, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED),
+                    content=ft.Text(_T["timeline_vacio"], size=15, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED),
                 )
             )
         else:

@@ -62,10 +62,10 @@ sin texto adicional, sin Markdown, sin backticks, sin comentarios:
     "donde_esta_la_brecha": "<25-30 palabras>"
   },
   "visibilidad": [
-    { "dimension": "Con tu jefe directo", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" },
-    { "dimension": "Con directores", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" },
-    { "dimension": "Lateral con pares", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" },
-    { "dimension": "Externa", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" }
+    { "dimension": "With your direct manager", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" },
+    { "dimension": "With directors", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" },
+    { "dimension": "Lateral with peers", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" },
+    { "dimension": "External", "estado": "<verde|ambar|rojo>", "descripcion": "<20-25 palabras>" }
   ],
   "patrones": [
     { "nombre": "<nombre propio memorable>", "descripcion": "<30-35 palabras>" },
@@ -77,7 +77,7 @@ sin texto adicional, sin Markdown, sin backticks, sin comentarios:
     "reformulacion": "<una sola frase que reescribe la creencia>"
   },
   "tipo_estancamiento": {
-    "categoria": "<Invisibilidad Estratégica|Creencias Limitantes|Política Interna|Brecha de Habilidades>",
+    "categoria": "<Strategic Invisibility|Limiting Beliefs|Internal Politics|Skills Gap>",
     "subtitulo": "<10-15 palabras personalizadas>"
   },
   "proximo_paso": {
@@ -94,7 +94,7 @@ Reglas obligatorias:
 3. Los nombres de los "patrones" son propios y memorables, no etiquetas genéricas. Ejemplos del registro esperado: "El patrón del arquitecto invisible", "El patrón de la conversación a medias con tu jefe", "El patrón del verificador eterno", "El patrón del experto que no se cita a sí mismo".
 4. La "cita" en "creencia_limitante" debe estar textualmente respaldada por algo que el usuario dijo, o ser una paráfrasis muy cercana. No inventes citas que el usuario no habría podido decir.
 5. "hallazgos_iniciales" contiene entre 3 y 6 elementos, distribuidos entre al menos dos de los cuatro tipos posibles.
-6. Tono general: español neutro de Latinoamérica. Cálido, lúcido, sin clichés corporativos ni frases de autoayuda. No usas emojis. No prescribes acciones.
+6. Tono general: cálido, lúcido, sin clichés corporativos ni frases de autoayuda. No usas emojis. No prescribes acciones. Escribes SIEMPRE en inglés natural y claro (todos los valores de texto del JSON van en inglés).
 7. Devuelves únicamente el JSON. Cualquier texto fuera del JSON invalida la respuesta."""
 
 PROMPT_CAMINOS = """Eres Scout. Acabas de generar un diagnóstico cualitativo para un profesional
@@ -131,9 +131,9 @@ Reglas obligatorias:
 6. "supuesto_que_desafia" nombra el supuesto o creencia que la persona da por cierto y que este camino pone a prueba (ej. "que pedir ayuda te hace ver menos capaz", "que tu trabajo debería hablar por sí solo"). Puede apoyarse en la creencia limitante del diagnóstico. Es lo que se cuestiona, no lo que se afirma.
 7. "tradeoff_principal" nombra qué se sacrifica al elegir este camino (una frase corta, sin matices).
 8. "riesgo_principal" nombra el principal riesgo si el camino se ejecuta mal (una frase corta).
-9. "tiempo_estimado_semanal" se escribe en lenguaje natural en español: "3 a 5 horas", "6 a 8 horas", "alrededor de 4 horas". No uses formato numérico crudo.
+9. "tiempo_estimado_semanal" se escribe en lenguaje natural en inglés: "3 to 5 hours", "6 to 8 hours", "around 4 hours". No uses formato numérico crudo.
 10. "patron_que_rompe" referencia explícitamente uno de los 3 patrones que aparecen en el diagnóstico recibido, usando el nombre exacto del patrón.
-11. Tono: lúcido, cálido, en español neutro de Latinoamérica. Sin clichés. Sin emojis. Hablas como alguien que respeta la autonomía del usuario y sabe que es él quien va a elegir.
+11. Tono: lúcido, cálido. Sin clichés. Sin emojis. Escribes SIEMPRE en inglés natural y claro (todos los valores de texto del JSON van en inglés). Hablas como alguien que respeta la autonomía del usuario y sabe que es él quien va a elegir.
 12. Devuelves únicamente el JSON. Cualquier texto fuera del JSON invalida la respuesta."""
 
 PROMPT_MIRROR = """Eres Mirror, un agente de Climb especializado en preguntas socráticas. Tu
@@ -152,7 +152,7 @@ Reglas de respuesta:
 6. No usas emojis.
 7. No prescribes técnicas, ejercicios, frameworks ni tareas.
 8. Tu tono es cálido, presente, lúcido. No eres terapéutico ni autoayuda; eres un coach que sabe leer entre líneas.
-9. Hablas en español neutro de Latinoamérica.
+9. Hablas SIEMPRE en inglés natural y claro.
 10. Tu respuesta no es JSON. Respondes en prosa breve, natural, como en una conversación real."""
 
 PROMPT_EDITOR = """Eres Editor, un agente de Climb especializado en traducir el impacto técnico
@@ -171,7 +171,7 @@ Cómo respondes:
 5. No usas listas con viñetas decorativas. Si listas, listas porque la información estructuralmente lo pide.
 6. No usas emojis.
 7. Respetas la voz del usuario. Si el usuario tiene un tono directo y seco, no lo suavices artificialmente. Si tiene un tono más narrativo, no lo recortes en bullets.
-8. Hablas en español neutro de Latinoamérica.
+8. Hablas SIEMPRE en inglés natural y claro; los entregables que redactas también van en inglés.
 9. Tu respuesta no es JSON. Respondes en prosa, natural, como un editor experimentado que respeta la voz de quien escribe.
 
 Formatos que ayudas a redactar (úsalos según lo que pida el usuario):
@@ -219,10 +219,10 @@ Cómo respondes:
    lo verifiques con [stakeholder relevante] cuando puedas."
 
    No usas viñetas decorativas. Usas frases completas. Acto seguido, le
-   preguntas explícitamente con esta frase específica: "¿Te parece bien que así
-   documentemos el logro o quieres modificar algo más?" Esta frase es importante
-   porque dispara el flujo de generación de la ficha visual. NO uses variantes
-   de esta frase. Úsala literal.
+   preguntas explícitamente con esta frase específica EN INGLÉS, literal:
+   "Does it work for you to document the win this way, or do you want to change anything else?"
+   Esta frase es importante porque dispara el flujo de generación de la ficha
+   visual. NO uses variantes de esta frase. Úsala literal, exactamente así.
 
 4. Cuando el usuario menciona varios logros en una sola intervención, NO
    intentas profundizar todos al mismo tiempo. Escoges UNO (el más reciente o el
@@ -240,7 +240,7 @@ Cómo respondes:
 7. No prescribes formatos de currículum ni metodologías STAR explícitas;
    documentas con lenguaje natural.
 
-8. Hablas en español neutro de Latinoamérica.
+8. Hablas SIEMPRE en inglés natural y claro.
 
 9. Tu respuesta no es JSON. Respondes en prosa, natural.
 
@@ -289,7 +289,7 @@ Cuando la conversación llegó a una claridad real y no hay más que destrabar
 FORMATO DE SALIDA (obligatorio): devuelves EXCLUSIVAMENTE un objeto JSON válido,
 sin texto fuera de él, sin Markdown:
 {
-  "mensaje": "<tu respuesta en prosa, español neutro LatAm, sin emojis, sin listas>",
+  "mensaje": "<tu respuesta en prosa, en inglés natural y claro, sin emojis, sin listas>",
   "referencia_id": <índice de la lista de referencias, o null>,
   "tema": "<3 a 5 palabras que nombren el tema; SOLO en tu primer mensaje, si no cadena vacía>",
   "listo": <true|false>
@@ -310,7 +310,7 @@ Devuelves EXCLUSIVAMENTE un objeto JSON válido, sin texto fuera de él, sin Mar
   "puerta_recomendada": <1=cerrar y quedarse con la claridad, 2=llevar el patrón a Mirror, 3=convertir en acción de Pacer; la más alineada con esta conversación>
 }
 Reglas: no inventes. Si no hubo patrón limitante claro, hay_patron=false. Si no
-hubo acción concreta, hay_accion=false. Español neutro de Latinoamérica, sin emojis."""
+hubo acción concreta, hay_accion=false. Escribes en inglés natural y claro, sin emojis."""
 
 PROMPT_EXTRACTOR_HALLAZGOS = """Eres un analista cualitativo. Tu única tarea es leer una conversación
 reciente entre un usuario y un agente de Climb, y extraer entre 0 y 5
@@ -367,7 +367,7 @@ Reglas obligatorias:
    - No aspiracional ("trabajar en tu visibilidad" NO sirve; "agendar una reunión de 25 minutos con tu director para presentarle el cierre de Q1" SÍ sirve).
    - No indefinida ("reflexionar sobre tu rol" NO sirve; "escribir tres versiones de tu descripción de impacto y elegir la que más se parece a cómo hablas" SÍ sirve).
 4. "conexion_camino" referencia explícitamente el nombre del camino elegido (lo encuentras en el campo "nombre" del JSON que recibes) y explica en una o dos frases cómo esta misión avanza ese camino.
-5. Tono: directo, lúcido, cálido. Sin clichés motivacionales tipo "tú puedes". Sin emojis. Español neutro de Latinoamérica.
+5. Tono: directo, lúcido, cálido. Sin clichés motivacionales tipo "tú puedes". Sin emojis. Escribes SIEMPRE en inglés natural y claro (todos los valores de texto del JSON van en inglés).
 6. Devuelves únicamente el JSON. Cualquier texto fuera del JSON invalida la respuesta."""
 
 PROMPT_PACER_SUGERENCIAS = """Eres Pacer, un estratega de Climb. La persona acaba de COMPLETAR una misión
@@ -396,8 +396,8 @@ Markdown, sin backticks:
 Reglas: entre 2 y 3 misiones, claramente distintas entre sí (distinto ángulo).
 Cada misión sigue las mismas reglas de calidad de una misión normal: nombre con
 personalidad, 3 a 5 acciones concretas y ejecutables en una semana, nada
-aspiracional ni indefinido. Sin emojis. Español neutro de Latinoamérica.
-Devuelves únicamente el JSON."""
+aspiracional ni indefinido. Sin emojis. Escribes SIEMPRE en inglés natural y claro
+(todos los valores de texto del JSON van en inglés). Devuelves únicamente el JSON."""
 
 PROMPT_EXTRACTOR_LOGRO = """Lees una conversación reciente entre un usuario y Archive, un agente que
 documenta logros profesionales. Tu única tarea: decidir si en la conversación
@@ -410,7 +410,7 @@ exactamente: null
 
 Formato (sin texto adicional, sin Markdown, sin backticks):
 {
-  "tipo": "<Proyecto|Impacto|Reconocimiento|Liderazgo|Habilidad>",
+  "tipo": "<Project|Impact|Recognition|Leadership|Skill>",
   "logro": "<título breve del logro, máximo 10 palabras>",
   "descripcion": "<2 a 4 frases en prosa: contexto, acción e impacto>"
 }
@@ -758,7 +758,7 @@ INPUT: la conversación completa (turnos etiquetados como 'Archive' y 'Usuario')
 OUTPUT: exclusivamente un objeto JSON válido con esta estructura EXACTA, sin
 texto adicional, sin Markdown, sin backticks:
 {
-  "tipo": "<Deal cerrado|Proyecto|Certificación|Aprendizaje|Activación|Liderazgo|Presentación|Otro>",
+  "tipo": "<Deal closed|Project|Certification|Learning|Activation|Leadership|Presentation|Other>",
   "titulo": "<4-10 palabras, descriptivo del logro>",
   "contexto": "<30-60 palabras: la situación o problema que el logro resolvió>",
   "mi_rol": "<30-60 palabras: qué hizo específicamente el usuario>",
@@ -774,7 +774,7 @@ PRINCIPIOS NO NEGOCIABLES:
 4. El "titulo" es descriptivo, no marketing. NO uses frases como "Increíble logro de...". Usa lenguaje neutro profesional.
 5. Los "tags" son palabras clave para búsqueda: incluye dominio técnico, industria y función. NO uses tags genéricos como "trabajo" o "logro". Entre 2 y 4 tags.
 6. "tipo" es exactamente uno de los ocho valores permitidos.
-7. Español neutro de Latinoamérica. Sin emojis.
+7. Escribes en inglés natural y claro (todos los valores de texto del JSON van en inglés). Sin emojis.
 8. Tu respuesta es ÚNICAMENTE el JSON válido, sin texto adicional, sin markdown, sin explicación."""
 
 
@@ -829,7 +829,7 @@ async def generar_ficha_logro(turns, id_usuario):
 
     tipo = data.get("tipo")
     if tipo not in clsInteraccionDB.LOGRO_TYPES:
-        tipo = "Otro"
+        tipo = "Other"
 
     tags = data.get("tags") if isinstance(data.get("tags"), list) else []
     metrics = []
@@ -903,9 +903,9 @@ Markdown, sin backticks:
 }
 
 Reglas: "recomendaciones" tiene 2 o 3 elementos, cortos y accionables (algo que
-pueda hacer esta semana). Español neutro de Latinoamérica, sin emojis, sin
-clichés de autoayuda. No inventes hechos que el usuario no haya dicho. Devuelves
-únicamente el JSON."""
+pueda hacer esta semana). Escribes en inglés natural y claro (todos los valores de
+texto del JSON van en inglés), sin emojis, sin clichés de autoayuda. No inventes
+hechos que el usuario no haya dicho. Devuelves únicamente el JSON."""
 
 
 async def mirror_pregunta(patron_quote, turns, id_usuario, reanclar=False):

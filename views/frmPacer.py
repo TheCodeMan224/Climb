@@ -5,7 +5,10 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["pacer"]
 
 
 class frmPacer:
@@ -22,7 +25,7 @@ class frmPacer:
 
         if not self.estado:
             self.cuerpo.controls.append(
-                ft.Text("Aún no hay una misión generada.", size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED)
+                ft.Text(_T["sin_mision"], size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED)
             )
             return
 
@@ -32,12 +35,12 @@ class frmPacer:
         completadas = sum(1 for p in progreso if p)
 
         self.cuerpo.controls.extend([
-            cmp.eyebrow(f"{completadas} de {len(acciones)} acciones completadas", color=tema.AMBAR),
+            cmp.eyebrow(_T["acciones_completadas"].format(completadas=completadas, total=len(acciones)), color=tema.AMBAR),
             ft.Container(height=8),
             ft.Text(mision.get("nombre_mision", ""), size=26, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
             ft.Text(mision.get("descripcion", ""), size=15, font_family=tema.FUENTE_BODY, color=tema.TEXTO),
             ft.Container(height=10),
-            cmp.eyebrow("Acciones concretas"),
+            cmp.eyebrow(_T["h_acciones"]),
             ft.Container(height=4),
         ])
 
@@ -54,7 +57,7 @@ class frmPacer:
                 content=ft.Column(
                     spacing=4,
                     controls=[
-                        cmp.eyebrow("Conexión con tu camino", color=tema.TEXTO_SUAVE_SOBRE_NAVY),
+                        cmp.eyebrow(_T["conexion"], color=tema.TEXTO_SUAVE_SOBRE_NAVY),
                         ft.Text(mision.get("conexion_camino", ""), size=14, font_family=tema.FUENTE_BODY, color=tema.TEXTO_SOBRE_NAVY),
                     ],
                 ),
@@ -65,7 +68,7 @@ class frmPacer:
         if acciones and completadas >= len(acciones):
             self.cuerpo.controls.append(ft.Container(height=16))
             self.cuerpo.controls.append(
-                ft.Row(controls=[cmp.boton_primario("Completar misión  →", on_click=self._completar)])
+                ft.Row(controls=[cmp.boton_primario(_T["completar"], on_click=self._completar)])
             )
 
     def _fila_accion(self, indice, accion, hecha):
@@ -118,7 +121,7 @@ class frmPacer:
             await self._generar()
 
     async def _generar(self, e=None):
-        self.router.mostrar_carga("Generando tu misión…")
+        self.router.mostrar_carga(_T["generando"])
         if self.boton_generar:
             self.boton_generar.disabled = True
         try:
@@ -129,7 +132,7 @@ class frmPacer:
         self._render_mision()
         if self.boton_generar:
             self.boton_generar.disabled = False
-            self.boton_generar.content = "Generar nueva misión"
+            self.boton_generar.content = _T["generar_nueva"]
         self.router.ocultar_carga()
         self.router.page.update()
 
@@ -138,8 +141,8 @@ class frmPacer:
         self.estado = clsInteraccionDB.obtener_ultima_mision(self.id_usuario)
         self._render_mision()
 
-        self.boton_generar = cmp.boton_primario("Generar nueva misión", on_click=lambda e: self.router.page.run_task(self._generar))
-        boton_menu = cmp.enlace("‹ Regresar al menú", on_click=lambda e: self.router.navegar_a("/menu_inicio"))
+        self.boton_generar = cmp.boton_primario(_T["generar_nueva"], on_click=lambda e: self.router.page.run_task(self._generar))
+        boton_menu = cmp.enlace(_T["regresar_menu"], on_click=lambda e: self.router.navegar_a("/menu_inicio"))
 
         return ft.Column(
             expand=True,
@@ -152,11 +155,11 @@ class frmPacer:
                     content=ft.Column(
                         spacing=0,
                         controls=[
-                            cmp.eyebrow("Pacer · Tu semana"),
+                            cmp.eyebrow(_T["eyebrow"]),
                             ft.Container(height=12),
                             cmp.hairline(width=40),
                             ft.Container(height=20),
-                            ft.Text("Tu misión de esta semana", size=40, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                            ft.Text(_T["titulo"], size=40, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
                             ft.Container(height=24),
                             ft.Container(
                                 padding=30,

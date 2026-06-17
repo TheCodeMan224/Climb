@@ -13,14 +13,17 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["editor"]
 
 
 class frmEditor:
     def __init__(self, router, id_usuario=None):
         self.router = router
         self.id_usuario = id_usuario if id_usuario is not None else router.id_usuario
-        self.nombre = clsInteraccionDB.obtener_nombre_usuario(self.id_usuario) or router.nombre or "Tú"
+        self.nombre = clsInteraccionDB.obtener_nombre_usuario(self.id_usuario) or router.nombre or TEXTOS["comun"]["tu"]
 
         # Borrador a retomar (None = nuevo). Se consume del router.
         self.borrador_id = router.editor_borrador_id
@@ -55,9 +58,9 @@ class frmEditor:
         self.panel_izq = ft.Container(expand=True)
         self.chat_list = ft.ListView(expand=True, spacing=18, padding=ft.Padding.symmetric(horizontal=24, vertical=20), auto_scroll=True)
         self.chips_row = ft.Row(wrap=True, spacing=8, run_spacing=8)
-        self.lbl_formato = cmp.eyebrow("Editor", color=tema.HINT)
+        self.lbl_formato = cmp.eyebrow(_T["lbl_default"], color=tema.HINT)
         self.campo = ft.TextField(
-            hint_text="Pídele a Editor un ajuste...",
+            hint_text=_T["hint_ajuste"],
             expand=True, multiline=True, min_lines=1, max_lines=4,
             border=ft.InputBorder.NONE, bgcolor="transparent", cursor_color=tema.NAVY,
             text_style=ft.TextStyle(font_family=tema.FUENTE_BODY, size=14, color=tema.NAVY),
@@ -91,7 +94,7 @@ class frmEditor:
                 self._avatar(),
                 ft.Column(spacing=2, controls=[
                     ft.Text(self.nombre, size=15, weight=ft.FontWeight.W_700, color=tema.NAVY, font_family=tema.FUENTE_SUBHEADER),
-                    cmp.eyebrow("Hace unos segundos · 🌐", color=tema.HINT, size=10),
+                    cmp.eyebrow(_T["preview_hace"], color=tema.HINT, size=10),
                 ]),
             ]),
             ft.Container(height=18),
@@ -102,17 +105,17 @@ class frmEditor:
             ft.Container(height=1, bgcolor=tema.BORDER_LIGHT),
             ft.Container(height=12),
             ft.Row(spacing=24, controls=[
-                cmp.eyebrow("👍 Me gusta", color=tema.HINT, size=10),
-                cmp.eyebrow("💬 Comentar", color=tema.HINT, size=10),
-                cmp.eyebrow("↗ Compartir", color=tema.HINT, size=10),
+                cmp.eyebrow(_T["preview_like"], color=tema.HINT, size=10),
+                cmp.eyebrow(_T["preview_comentar"], color=tema.HINT, size=10),
+                cmp.eyebrow(_T["preview_compartir"], color=tema.HINT, size=10),
             ]),
         ])
 
     def _preview_correo(self):
         return ft.Column(spacing=0, controls=[
-            cmp.eyebrow("Asunto", color=tema.MUTED, size=10),
+            cmp.eyebrow(_T["preview_asunto"], color=tema.MUTED, size=10),
             ft.Container(height=6),
-            ft.Text(self.asunto or "(sin asunto)", size=18, weight=ft.FontWeight.W_700, color=tema.NAVY, font_family=tema.FUENTE_SUBHEADER),
+            ft.Text(self.asunto or _T["preview_sin_asunto"], size=18, weight=ft.FontWeight.W_700, color=tema.NAVY, font_family=tema.FUENTE_SUBHEADER),
             ft.Container(height=18),
             ft.Container(height=1, bgcolor=tema.BORDER_LIGHT),
             ft.Container(height=18),
@@ -123,15 +126,15 @@ class frmEditor:
         if not self.borrador:
             self.panel_izq.content = ft.Container(
                 alignment=ft.Alignment.CENTER, padding=40,
-                content=ft.Text("Tu borrador aparecerá aquí, listo para copiar." if self.formato
-                                else "Elige un formato en el chat para empezar a redactar.",
+                content=ft.Text(_T["preview_vacio_con_formato"] if self.formato
+                                else _T["preview_vacio_sin_formato"],
                                 size=15, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED, text_align=ft.TextAlign.CENTER),
             )
             return
         cuerpo = self._preview_correo() if self.es_correo else self._preview_linkedin()
         self.panel_izq.content = ft.Column(spacing=14, controls=[
             ft.Row(alignment=ft.MainAxisAlignment.END, controls=[
-                cmp.enlace_cta("📋 Copiar", on_click=self._copiar),
+                cmp.enlace_cta(_T["copiar"], on_click=self._copiar),
             ]),
             ft.Container(
                 bgcolor=tema.SUPERFICIE, border=ft.Border.all(1, tema.BORDER_LIGHT), border_radius=8,
@@ -143,8 +146,8 @@ class frmEditor:
     def _render_chat(self):
         filas = []
         if not self.turns:
-            saludo = (f"Veo tu logro «{self.contexto.get('titulo','')}». ¿Lo quieres como correo o como post de LinkedIn?"
-                      if self.contexto else "¿Qué quieres redactar? Elige un formato para empezar.")
+            saludo = (_T["saludo_contexto"].format(titulo=self.contexto.get('titulo', ''))
+                      if self.contexto else _T["saludo_sin_contexto"])
             filas.append(self._turno_chat("editor", saludo))
         for s, t in self.turns:
             filas.append(self._turno_chat(s, t))
@@ -153,7 +156,7 @@ class frmEditor:
     def _turno_chat(self, speaker, texto):
         es_editor = speaker == "editor"
         return ft.Column(spacing=6, controls=[
-            cmp.eyebrow("Editor" if es_editor else "Tú", color=tema.AMBAR if es_editor else tema.MUTED, size=10),
+            cmp.eyebrow(_T["speaker_editor"] if es_editor else TEXTOS["comun"]["tu"], color=tema.AMBAR if es_editor else tema.MUTED, size=10),
             ft.Text(texto, size=14, color=tema.NAVY if es_editor else tema.MUTED,
                     italic=not es_editor, font_family=tema.FUENTE_BODY if es_editor else tema.FUENTE_SERIF),
         ])
@@ -169,9 +172,9 @@ class frmEditor:
     def _render_chips(self):
         if not self.formato:
             self.chips_row.controls = [
-                self._chip("✍  Correo", lambda e: self.router.page.run_task(self._set_formato, "correo")),
-                self._chip("💼  Post de LinkedIn", lambda e: self.router.page.run_task(self._set_formato, "linkedin")),
-                self._chip("✎  Otro formato", lambda e: self._pedir_formato_custom()),
+                self._chip(_T["chip_correo"], lambda e: self.router.page.run_task(self._set_formato, "correo")),
+                self._chip(_T["chip_linkedin"], lambda e: self.router.page.run_task(self._set_formato, "linkedin")),
+                self._chip(_T["chip_otro"], lambda e: self._pedir_formato_custom()),
             ]
         else:
             self.chips_row.controls = [
@@ -186,16 +189,16 @@ class frmEditor:
     def _label_formato(self, formato):
         f = (formato or "").strip().lower()
         if f == "linkedin":
-            return "POST · LINKEDIN"
+            return _T["lbl_linkedin"]
         if self._es_correo(formato):
-            return "CORREO"
-        return (formato or "EDITOR").upper()[:28]
+            return _T["lbl_correo"]
+        return (formato or _T["lbl_default"]).upper()[:28]
 
     def _pedir_formato_custom(self):
         # El siguiente texto que escriba el usuario será el formato.
         self.esperando_formato = True
-        self.turns.append(("editor", "Dime el formato que quieres (por ejemplo: «bio para mi perfil de Instagram»)."))
-        self.campo.hint_text = "Escribe el formato…"
+        self.turns.append(("editor", _T["pedir_formato"]))
+        self.campo.hint_text = _T["hint_formato"]
         self._render_chat()
         self.chips_row.controls = []
         self.router.page.update()
@@ -211,11 +214,11 @@ class frmEditor:
             await self._generar()
             return
         if self.es_correo:
-            pregunta = "Perfecto, un correo. ¿Sobre qué es y a quién va dirigido? Cuéntame lo esencial y lo redacto."
+            pregunta = _T["pregunta_correo"]
         elif (formato or "").lower() == "linkedin":
-            pregunta = "Perfecto, un post de LinkedIn. ¿Qué logro o tema quieres compartir? Dame los datos y lo redacto."
+            pregunta = _T["pregunta_linkedin"]
         else:
-            pregunta = f"Perfecto, «{formato}». Cuéntame lo esencial y lo redacto."
+            pregunta = _T["pregunta_custom"].format(formato=formato)
         self.turns.append(("editor", pregunta))
         self.sugerencias = []
         self._actualizar_todo()
@@ -238,7 +241,7 @@ class frmEditor:
         # Caso 1: el usuario está definiendo un formato personalizado.
         if self.esperando_formato and not self.formato:
             self.esperando_formato = False
-            self.campo.hint_text = "Pídele a Editor un ajuste..."
+            self.campo.hint_text = _T["hint_ajuste"]
             self.turns.append(("user", instruccion))
             self._registrar_texto(instruccion)
             await self._set_formato(instruccion)
@@ -248,7 +251,7 @@ class frmEditor:
         if not self.formato:
             self.turns.append(("user", instruccion))
             self._registrar_texto(instruccion)
-            self.turns.append(("editor", "Anotado. ¿En qué formato lo quieres? Elige Correo o Post de LinkedIn abajo, o dime tú el formato."))
+            self.turns.append(("editor", _T["nudge_formato"]))
             self._render_chat()
             self._render_chips()
             self.router.page.update()
@@ -261,13 +264,13 @@ class frmEditor:
 
     async def _generar(self):
         self._render_chat()
-        self.router.mostrar_carga("Editor está redactando…")
+        self.router.mostrar_carga(_T["redactando"])
         try:
             res = await clsAgentes.editor_estudio(self.id_usuario, self.formato, self.contexto_texto, self.borrador, self.turns)
         except Exception:
             traceback.print_exc()
             self.router.ocultar_carga()
-            self.turns.append(("editor", "Tuve un problema. Intenta de nuevo."))
+            self.turns.append(("editor", _T["error_generar"]))
             self._render_chat()
             self.router.page.update()
             return
@@ -283,14 +286,14 @@ class frmEditor:
 
     async def _regenerar(self, e=None):
         if self.formato:
-            self.turns.append(("user", "Regenera el borrador desde cero, mismo formato y material."))
+            self.turns.append(("user", _T["regenerar_instr"]))
             await self._generar()
 
     def _version_anterior(self, e=None):
         if not self.historial:
             return
         self.borrador, self.asunto = self.historial.pop()
-        self.turns.append(("editor", "Volví a la versión anterior."))
+        self.turns.append(("editor", _T["version_anterior_msg"]))
         self._persistir()
         self._actualizar_todo()
 
@@ -310,7 +313,7 @@ class frmEditor:
 
     def _completar(self, e=None):
         if not self.borrador:
-            self.router.page.show_dialog(ft.SnackBar(ft.Text("Aún no hay borrador para marcar como completado.")))
+            self.router.page.show_dialog(ft.SnackBar(ft.Text(_T["completar_sin_borrador"])))
             self.router.page.update()
             return
         self._persistir()
@@ -322,7 +325,7 @@ class frmEditor:
         texto = (f"Asunto: {self.asunto}\n\n{self.borrador}" if (self.es_correo and self.asunto) else self.borrador)
         # clipboard.set es async en flet 0.85: lo agendamos.
         self.router.page.run_task(self.router.page.clipboard.set, texto or "")
-        self.router.page.show_dialog(ft.SnackBar(ft.Text("Borrador copiado al portapapeles.")))
+        self.router.page.show_dialog(ft.SnackBar(ft.Text(_T["copiado"])))
         self.router.page.update()
 
     def _actualizar_todo(self):
@@ -357,14 +360,14 @@ class frmEditor:
             padding=ft.Padding.only(left=28, top=18, right=168, bottom=18),
             content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
                 ft.Row(spacing=10, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
-                    ft.IconButton(icon=ft.Icons.ARROW_BACK_ROUNDED, icon_color=tema.NAVY, tooltip="Volver a Editor", on_click=lambda e: self.router.navegar_a("/editor")),
-                    cmp.eyebrow("Climb · Editor", color=tema.AMBAR),
+                    ft.IconButton(icon=ft.Icons.ARROW_BACK_ROUNDED, icon_color=tema.NAVY, tooltip=_T["tooltip_volver"], on_click=lambda e: self.router.navegar_a("/editor")),
+                    cmp.eyebrow(_T["marca"], color=tema.AMBAR),
                     self.lbl_formato,
                 ]),
                 ft.Row(spacing=10, controls=[
-                    self._boton_toolbar("← Versión anterior", lambda e: self._version_anterior()),
-                    self._boton_toolbar("↻ Regenerar todo", lambda e: self.router.page.run_task(self._regenerar)),
-                    self._boton_toolbar("✓ Completar", lambda e: self._completar(), primario=True),
+                    self._boton_toolbar(_T["tb_version_anterior"], lambda e: self._version_anterior()),
+                    self._boton_toolbar(_T["tb_regenerar"], lambda e: self.router.page.run_task(self._regenerar)),
+                    self._boton_toolbar(_T["tb_completar"], lambda e: self._completar(), primario=True),
                 ]),
             ]),
         )
@@ -376,7 +379,7 @@ class frmEditor:
                 padding=ft.Padding.symmetric(horizontal=18, vertical=14),
                 bgcolor=tema.SUPERFICIE, border=ft.Border.only(left=ft.BorderSide(2, tema.AMBAR)), border_radius=4,
                 content=ft.Row(spacing=10, controls=[
-                    cmp.eyebrow("Basado en · Archivo", color=tema.HINT, size=10),
+                    cmp.eyebrow(_T["banner_basado"], color=tema.HINT, size=10),
                     ft.Text(f'"{self.contexto.get("titulo","")}"', size=13, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED),
                 ]),
             )

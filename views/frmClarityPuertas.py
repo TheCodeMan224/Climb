@@ -12,7 +12,10 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes, clsClarity, clsMirror
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["clarity"]
 
 
 class frmClarityPuertas:
@@ -45,7 +48,7 @@ class frmClarityPuertas:
         accion = self.cierre.get("accion_texto") or ""
         self.router.navegar_a("/pacer")
         if accion:
-            self.router.page.show_dialog(ft.SnackBar(ft.Text(f"Sugerencia de Clarity: {accion}")))
+            self.router.page.show_dialog(ft.SnackBar(ft.Text(_T["sugerencia_pacer"].format(accion=accion))))
             self.router.page.update()
 
     # --- Cards de puerta ----------------------------------------------------
@@ -55,7 +58,7 @@ class frmClarityPuertas:
             meta.append(ft.Container(
                 border=ft.Border.all(1, tema.AMBAR), border_radius=3,
                 padding=ft.Padding.symmetric(horizontal=8, vertical=2),
-                content=cmp.eyebrow("Recomendada", color=tema.AMBAR, size=10)))
+                content=cmp.eyebrow(_T["recomendada"], color=tema.AMBAR, size=10)))
         return ft.Container(
             bgcolor=tema.SUPERFICIE,
             border=ft.Border.all(1, tema.AMBAR) if recomendada else ft.Border.all(1, tema.BORDER_LIGHT),
@@ -76,9 +79,9 @@ class frmClarityPuertas:
     def construir(self):
         if not self.cierre:
             return ft.Column(expand=True, alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, controls=[
-                ft.Text("No hay una conversación para cerrar.", size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
+                ft.Text(_T["sin_conversacion"], size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
                 ft.Container(height=16),
-                cmp.boton_primario("Ir a Clarity", on_click=lambda e: self.router.navegar_a("/clarity")),
+                cmp.boton_primario(_T["ir_clarity"], on_click=lambda e: self.router.navegar_a("/clarity")),
             ])
 
         c = self.cierre
@@ -88,7 +91,7 @@ class frmClarityPuertas:
             padding=ft.Padding.only(bottom=32), margin=ft.Margin.only(bottom=24),
             border=ft.Border.only(bottom=ft.BorderSide(1, tema.BORDER_LIGHT)),
             content=ft.Column(spacing=0, controls=[
-                cmp.eyebrow("Clarity", color=tema.AMBAR, size=11),
+                cmp.eyebrow(_T["speaker_clarity"], color=tema.AMBAR, size=11),
                 ft.Container(height=12),
                 ft.Container(width=600, content=ft.Text(c.get("sintesis", ""), size=17, color=tema.NAVY, font_family=tema.FUENTE_BODY)),
                 ft.Container(height=14),
@@ -99,41 +102,41 @@ class frmClarityPuertas:
         intro = ft.Column(horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=0, controls=[
             cmp.hairline(width=56),
             ft.Container(height=18),
-            cmp.eyebrow("Tres caminos", color=tema.MUTED),
+            cmp.eyebrow(_T["tres_caminos"], color=tema.MUTED),
             ft.Container(height=14),
-            ft.Text("Lo que sigue depende de ti", size=28, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+            ft.Text(_T["puertas_titulo"], size=28, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
             ft.Container(height=14),
             ft.Container(width=460, content=ft.Text(
-                "No tienes que elegir uno. Pero algo te ayuda a aterrizar lo que pensaste.",
+                _T["puertas_helper"],
                 size=14, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED, text_align=ft.TextAlign.CENTER)),
         ])
 
         puertas = [self._puerta(
-            "01", "Cerrar la sesión", "Quedarme con la claridad obtenida",
-            "Ya viste lo que necesitabas. El sistema guarda esta conversación. Vuelves al dashboard.",
+            "01", _T["p1_tag"], _T["p1_titulo"],
+            _T["p1_desc"],
             self._cerrar, recomendada=(rec == 1))]
         if c.get("hay_patron"):
             puertas.append(self._puerta(
-                "02", "Trabajar el patrón", "Llevar esto a una sesión con Mirror",
-                f'El reflejo de "{c.get("patron_quote","")}" merece su propia sesión. Mirror lo desarma a profundidad.',
+                "02", _T["p2_tag"], _T["p2_titulo"],
+                _T["p2_desc"].format(patron=c.get("patron_quote", "")),
                 self._a_mirror, recomendada=(rec == 2)))
         if c.get("hay_accion"):
             puertas.append(self._puerta(
-                "03", "Sumar a tu misión", "Convertir en una acción de tu Pacer",
-                f'"{c.get("accion_texto","")}" puede volverse parte de tu misión activa.',
+                "03", _T["p3_tag"], _T["p3_titulo"],
+                _T["p3_desc"].format(accion=c.get("accion_texto", "")),
                 self._a_pacer, recomendada=(rec == 3)))
 
         seguir = ft.Container(
             padding=ft.Padding.only(top=22), margin=ft.Margin.only(top=10),
             border=ft.Border.only(top=ft.BorderSide(1, tema.BORDER_LIGHT)),
             content=ft.Row(alignment=ft.MainAxisAlignment.CENTER, controls=[
-                cmp.enlace_cta("↻ Quiero seguir conversando", on_click=lambda e: self.router.navegar_a("/clarity/conversacion")),
+                cmp.enlace_cta(_T["seguir_conversando"], on_click=lambda e: self.router.navegar_a("/clarity/conversacion")),
             ]),
         )
 
         controles = [
             ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
-                ft.Row(spacing=8, controls=[cmp.eyebrow("Climb", color=tema.AMBAR), cmp.eyebrow("·  Clarity · Cierre", color=tema.HINT)]),
+                ft.Row(spacing=8, controls=[cmp.eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR), cmp.eyebrow(_T["puertas_subtopbar"], color=tema.HINT)]),
             ]),
             ft.Container(height=40),
             final_turn,

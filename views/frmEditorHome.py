@@ -8,7 +8,10 @@ import flet as ft
 
 import componentes as cmp
 import tema
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["editor_home"]
 
 
 class frmEditorHome:
@@ -31,19 +34,19 @@ class frmEditorHome:
     def _etiqueta(self, d):
         f = (d.get("formato") or "").strip().lower()
         if f == "linkedin":
-            return "POST · LINKEDIN"
+            return _T["lbl_linkedin"]
         if d.get("es_correo"):
-            return "CORREO"
-        return (d.get("formato") or "BORRADOR").upper()[:30]
+            return _T["lbl_correo"]
+        return (d.get("formato") or _T["lbl_fallback"]).upper()[:30]
 
     def _pill(self, d):
         f = (d.get("formato") or "").strip().lower()
         if f == "linkedin":
-            corto = "LinkedIn"
+            corto = _T["pill_linkedin"]
         elif d.get("es_correo"):
-            corto = "Correo"
+            corto = _T["pill_correo"]
         else:
-            corto = (d.get("formato") or "Texto").split()[0].capitalize()[:10]
+            corto = (d.get("formato") or _T["pill_texto"]).split()[0].capitalize()[:10]
         return ft.Container(
             width=78, height=58, border_radius=4, bgcolor=tema.AMBAR_LIGHT,
             alignment=ft.Alignment.CENTER,
@@ -54,12 +57,12 @@ class frmEditorHome:
         info = ft.Column(spacing=8, expand=True, controls=[
             ft.Row(spacing=14, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
                 cmp.eyebrow(self._etiqueta(d), color=tema.AMBAR, size=11),
-                cmp.eyebrow(f"Editado {d.get('hace','')}", color=tema.HINT, size=10),
+                cmp.eyebrow(_T["editado"].format(hace=d.get('hace', '')), color=tema.HINT, size=10),
             ]),
-            ft.Text(f'"{d.get("preview","")}"' if d.get("preview") else "(sin contenido)",
+            ft.Text(f'"{d.get("preview","")}"' if d.get("preview") else _T["sin_contenido"],
                     size=15, color=tema.NAVY, font_family=tema.FUENTE_BODY),
         ])
-        accion = cmp.enlace_cta("Ver  →" if completado else "Continuar  →",
+        accion = cmp.enlace_cta(_T["ver"] if completado else _T["continuar"],
                                 on_click=lambda e, i=d["id"]: self._abrir(i))
         return ft.Container(
             border=ft.Border.all(1, tema.BORDER_LIGHT), border_radius=6,
@@ -86,31 +89,31 @@ class frmEditorHome:
                 ft.Text("02", size=64, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
                 ft.Container(width=24),
                 ft.Column(spacing=8, expand=True, controls=[
-                    ft.Text("Editor", size=46, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                    ft.Text(_T["titulo"], size=46, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
                     ft.Container(width=520, content=ft.Text(
-                        "Convierte tu trabajo profesional en contenido para mostrar afuera. Hablo con tu voz, no con la mía.",
+                        _T["subtitulo"],
                         size=15, font_family=tema.FUENTE_BODY, color=tema.MUTED)),
                 ]),
-                cmp.boton_primario("＋  Nuevo borrador", on_click=self._nuevo),
+                cmp.boton_primario(_T["nuevo"], on_click=self._nuevo),
             ],
         )
 
         contenido = [
-            cmp.topbar("Editor", derecha="← Volver al dashboard", on_back=lambda e: self.router.navegar_a("/menu_inicio")),
+            cmp.topbar(_T["topbar"], derecha=TEXTOS["comun"]["volver_dashboard"], on_back=lambda e: self.router.navegar_a("/menu_inicio")),
             ft.Container(height=36),
             encabezado,
             cmp.section_divider(),
-            cmp.section_header("Borradores activos", f"{len(activos)} sin terminar"),
+            cmp.section_header(_T["h_activos"], _T["activos_contador"].format(n=len(activos))),
             ft.Container(height=16),
         ]
         if activos:
             contenido.extend(self._card(d) for d in activos)
         else:
-            contenido.append(self._vacio("Aún no tienes borradores en proceso. Crea uno nuevo para empezar."))
+            contenido.append(self._vacio(_T["vacio"]))
 
         if completos:
             contenido.append(cmp.section_divider())
-            contenido.append(cmp.section_header("Completados", str(len(completos))))
+            contenido.append(cmp.section_header(_T["h_completados"], str(len(completos))))
             contenido.append(ft.Container(height=16))
             contenido.extend(self._card(d, completado=True) for d in completos)
 

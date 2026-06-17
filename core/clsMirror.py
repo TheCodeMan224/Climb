@@ -17,18 +17,19 @@ from data import clsInteraccionDB
 
 
 def _hace(dias):
-    """Texto relativo en español a partir de un número de días."""
+    """Texto relativo (en inglés) a partir de un número de días."""
     if dias <= 0:
-        return "hoy"
+        return "today"
     if dias == 1:
-        return "ayer"
+        return "yesterday"
     if dias < 7:
-        return f"hace {dias} días"
+        return f"{dias} days ago"
     if dias < 14:
-        return "hace 1 semana"
+        return "1 week ago"
     if dias < 30:
-        return f"hace {dias // 7} semanas"
-    return f"hace {dias // 30} meses"
+        return f"{dias // 7} weeks ago"
+    meses = dias // 30
+    return f"{meses} month{'s' if meses != 1 else ''} ago"
 
 
 @dataclass
@@ -73,14 +74,14 @@ class Patron:
 
     @property
     def detected_meta(self) -> str:
-        origen = "Descrito por ti" if self.source == "user" else "Detectado por Scout"
+        origen = "Described by you" if self.source == "user" else "Detected by Scout"
         return f"{origen}  ·  {_hace((datetime.now() - self.detected_at).days)}"
 
     @property
     def observed_meta(self) -> str:
         if not self.last_observed:
-            return "Sin observaciones recientes"
-        return f"Última observación: {_hace((datetime.now() - self.last_observed).days)}"
+            return "No recent observations"
+        return f"Last observed: {_hace((datetime.now() - self.last_observed).days)}"
 
 
 # ----------------------------------------------------------------------------

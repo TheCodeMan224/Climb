@@ -13,15 +13,14 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes
+from core.textos import TEXTOS
 from data import clsInteraccionDB
 
-_APERTURA = (
-    "Cuéntame qué pasó esta semana que valga la pena guardar. "
-    "No tiene que ser algo enorme."
-)
+_T = TEXTOS["archive"]
+_APERTURA = _T["apertura"]
 
-# Fragmento de la frase trigger que el prompt obliga a Archive a usar literal.
-_TRIGGER = "documentemos el logro o quieres modificar algo"
+# Fragmento de la frase trigger (en inglés) que el prompt obliga a Archive a usar literal.
+_TRIGGER = "document the win this way"
 
 
 class frmArchiveChat:
@@ -37,7 +36,7 @@ class frmArchiveChat:
         self.boton_enviar = None
         self.lbl_sesion = ft.Text("", size=11, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.HINT)
         self.campo = ft.TextField(
-            hint_text="Escribe lo que quieras compartir...",
+            hint_text=_T["hint_chat"],
             multiline=True,
             min_lines=1,
             max_lines=5,
@@ -57,7 +56,7 @@ class frmArchiveChat:
         return ft.Column(
             spacing=0,
             controls=[
-                cmp.eyebrow("Tú" if es_user else "Archive", color=tema.MUTED if es_user else tema.AMBAR),
+                cmp.eyebrow(TEXTOS["comun"]["tu"] if es_user else _T["speaker_archive"], color=tema.MUTED if es_user else tema.AMBAR),
                 ft.Container(height=10),
                 ft.Container(
                     width=600,
@@ -77,9 +76,9 @@ class frmArchiveChat:
 
     def _turno_ref(self):
         """Turno de Archive con un Text referenciable (para 'escribiendo' + revelado)."""
-        txt = ft.Text("Escribiendo…", size=16, color=tema.MUTED, italic=True, font_family=tema.FUENTE_BODY)
+        txt = ft.Text(_T["escribiendo"], size=16, color=tema.MUTED, italic=True, font_family=tema.FUENTE_BODY)
         col = ft.Column(spacing=0, controls=[
-            cmp.eyebrow("Archive", color=tema.AMBAR),
+            cmp.eyebrow(_T["speaker_archive"], color=tema.AMBAR),
             ft.Container(height=10),
             ft.Container(width=600, content=txt),
             ft.Container(height=24),
@@ -90,7 +89,7 @@ class frmArchiveChat:
 
     def _render_turnos(self):
         self.turnos_col.controls = [self._turno(s, t) for s, t in self.turns]
-        self.lbl_sesion.value = f"SESIÓN · {len(self.turns)} TURNOS  ·  RECOLECTANDO CONTEXTO"
+        self.lbl_sesion.value = _T["sesion_meta"].format(n=len(self.turns))
 
     # --- Panel de confirmación (frase trigger) -----------------------------
     @staticmethod
@@ -104,7 +103,7 @@ class frmArchiveChat:
             vertical_alignment=ft.CrossAxisAlignment.CENTER,
             controls=[
                 ft.ElevatedButton(
-                    content=ft.Text("Sí, generar ficha", size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+                    content=ft.Text(_T["btn_si_generar"], size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
                     on_click=self._si_generar,
                     style=ft.ButtonStyle(
                         bgcolor=tema.NAVY,
@@ -114,7 +113,7 @@ class frmArchiveChat:
                     ),
                 ),
                 ft.OutlinedButton(
-                    content=ft.Text("Quiero modificar algo", size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.NAVY),
+                    content=ft.Text(_T["btn_modificar"], size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.NAVY),
                     on_click=self._quiero_modificar,
                     style=ft.ButtonStyle(
                         side=ft.BorderSide(1, tema.BORDER_LIGHT),
@@ -154,7 +153,7 @@ class frmArchiveChat:
             respuesta = await clsAgentes.responder_archive(self.turns, self.id_usuario)
         except Exception:
             traceback.print_exc()  # error real en consola para diagnóstico
-            respuesta = "Tuvimos un problema generando la respuesta. Intenta de nuevo."
+            respuesta = _T["error_respuesta"]
 
         self.turns.append(("archive", respuesta))
         # Revelar gradualmente en el turno en vivo.
@@ -175,23 +174,23 @@ class frmArchiveChat:
         await self._mandar(self.campo.value)
 
     async def _quiero_modificar(self, e):
-        await self._mandar("Quiero modificar algo más")
+        await self._mandar(_T["modificar_msg"])
 
     async def _si_generar(self, e):
         self._ocultar_panel()
-        self.router.mostrar_carga("Generando tu ficha…")
+        self.router.mostrar_carga(_T["generando_ficha"])
         try:
             ficha = await clsAgentes.generar_ficha_logro(self.turns, self.id_usuario)
         except Exception:
             self.router.ocultar_carga()
-            self.router.page.show_dialog(ft.SnackBar(ft.Text("No pude generar la ficha. Intenta de nuevo.")))
+            self.router.page.show_dialog(ft.SnackBar(ft.Text(_T["error_ficha"])))
             self.router.page.update()
             return
 
         # Se guarda al instante, junto con la conversación de origen.
         clsInteraccionDB.insertar_logro_completo(
             self.id_usuario,
-            ficha.get("tipo", "Otro"),
+            ficha.get("tipo", "Other"),
             ficha.get("titulo", ""),
             ficha.get("contexto", ""),
             ficha.get("mi_rol", ""),
@@ -215,12 +214,11 @@ class frmArchiveChat:
                 ft.Column(
                     spacing=8,
                     controls=[
-                        ft.Text("Archive", size=32, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                        ft.Text(_T["nombre"], size=32, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
                         ft.Container(
                             width=460,
                             content=ft.Text(
-                                "Tu cronista profesional. Documenta los logros que importan para "
-                                "que, cuando los necesites — entrevistas, reviews, decisiones — estén listos.",
+                                _T["descripcion"],
                                 size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED,
                             ),
                         ),
@@ -230,7 +228,7 @@ class frmArchiveChat:
         )
 
         self.boton_enviar = ft.ElevatedButton(
-            content=ft.Text("ENVIAR  →", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+            content=ft.Text(TEXTOS["comun"]["enviar"], size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
             on_click=self._enviar,
             style=ft.ButtonStyle(
                 bgcolor=tema.NAVY,
@@ -246,7 +244,7 @@ class frmArchiveChat:
             content=ft.Column(
                 spacing=0,
                 controls=[
-                    cmp.eyebrow("Tu respuesta"),
+                    cmp.eyebrow(_T["tu_respuesta"]),
                     ft.Container(height=12),
                     ft.Container(
                         border=ft.Border.only(bottom=ft.BorderSide(1, tema.NAVY)),
@@ -270,7 +268,7 @@ class frmArchiveChat:
                     content=ft.Column(
                         spacing=0,
                         controls=[
-                            cmp.topbar("Archive", derecha="← Volver al dashboard", on_back=lambda e: self.router.navegar_a("/menu_inicio")),
+                            cmp.topbar(_T["topbar"], derecha=TEXTOS["comun"]["volver_dashboard"], on_back=lambda e: self.router.navegar_a("/menu_inicio")),
                             ft.Container(height=36),
                             encabezado_agente,
                             ft.Container(height=28),

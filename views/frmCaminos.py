@@ -6,7 +6,10 @@ import flet as ft
 import tema
 
 from core import clsAgentes
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["caminos"]
 
 
 class frmCaminos:
@@ -33,7 +36,7 @@ class frmCaminos:
         )
 
         # Overlay de carga mientras Pacer genera la primera mision.
-        self.router.mostrar_carga("Preparando tu primera misión…")
+        self.router.mostrar_carga(_T["preparando"])
         try:
             mision = await clsAgentes.generar_mision_pacer(self.id_usuario)
             self.router.mision_actual = mision
@@ -54,7 +57,7 @@ class frmCaminos:
 
     def _card_camino(self, indice, camino):
         boton = ft.ElevatedButton(
-            "Tomar este camino",
+            _T["tomar"],
             on_click=lambda e, i=indice: self.router.page.run_task(self._tomar_camino, i),
             style=ft.ButtonStyle(
                 bgcolor=tema.NAVY,
@@ -71,7 +74,7 @@ class frmCaminos:
             content=ft.Column(
                 spacing=4,
                 controls=[
-                    ft.Text("POR QUÉ ENCAJA CONTIGO", size=11, weight=ft.FontWeight.BOLD, color=tema.AMBAR),
+                    ft.Text(_T["por_que_encaja"], size=11, weight=ft.FontWeight.BOLD, color=tema.AMBAR),
                     ft.Text(camino.get("por_que_encaja", ""), size=13, color=tema.TEXTO, font_family=tema.FUENTE_BODY),
                 ],
             ),
@@ -92,19 +95,19 @@ class frmCaminos:
                     ft.Divider(height=1, color=tema.BORDER_LIGHT),
                     ft.Row(
                         controls=[
-                            self._meta("Tradeoff principal", camino.get("tradeoff_principal", "")),
-                            self._meta("Riesgo principal", camino.get("riesgo_principal", "")),
+                            self._meta(_T["lbl_tradeoff"], camino.get("tradeoff_principal", "")),
+                            self._meta(_T["lbl_riesgo"], camino.get("riesgo_principal", "")),
                         ]
                     ),
                     ft.Row(
                         controls=[
-                            self._meta("Tiempo estimado por semana", camino.get("tiempo_estimado_semanal", "")),
-                            self._meta("Patrón que rompe", camino.get("patron_que_rompe", "")),
+                            self._meta(_T["lbl_tiempo"], camino.get("tiempo_estimado_semanal", "")),
+                            self._meta(_T["lbl_patron"], camino.get("patron_que_rompe", "")),
                         ]
                     ),
                     ft.Row(
                         controls=[
-                            self._meta("Supuesto que este camino pone a prueba", camino.get("supuesto_que_desafia", "")),
+                            self._meta(_T["lbl_supuesto"], camino.get("supuesto_que_desafia", "")),
                         ]
                     ),
                     ft.Container(height=4),
@@ -121,14 +124,14 @@ class frmCaminos:
                 spacing=12,
                 controls=[
                     ft.ProgressRing(width=22, height=22, color=tema.AMBAR, stroke_width=3),
-                    ft.Text("Preparando tu primera misión...", color=tema.TEXTO_SUAVE),
+                    ft.Text(_T["preparando"], color=tema.TEXTO_SUAVE),
                 ],
             ),
         )
 
         controles = [
-            ft.Text("Tu plan para los próximos 30 días", size=34, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
-            ft.Text("Tres caminos posibles. Tú decides cuál tomar.", size=16, color=tema.TEXTO_SUAVE),
+            ft.Text(_T["titulo"], size=34, weight=ft.FontWeight.BOLD, color=tema.TEXTO, font_family=tema.FUENTE_DISPLAY),
+            ft.Text(_T["subtitulo"], size=16, color=tema.TEXTO_SUAVE),
             ft.Container(
                 margin=ft.Margin.only(top=10),
                 padding=ft.Padding.symmetric(horizontal=14, vertical=10),
@@ -136,8 +139,7 @@ class frmCaminos:
                 border_radius=8,
                 border=ft.Border.only(left=ft.BorderSide(3, tema.AMBAR)),
                 content=ft.Text(
-                    "Climb te muestra opciones con sus costos y riesgos; no elige por ti. "
-                    "Es un insumo para que TÚ decidas, no una respuesta definitiva.",
+                    _T["rotulo"],
                     size=13, italic=True, color=tema.TEXTO_SUAVE, font_family=tema.FUENTE_SERIF),
             ),
             ft.Container(height=16),

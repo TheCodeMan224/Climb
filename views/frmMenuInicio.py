@@ -7,18 +7,21 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes, clsMirror
+from core.textos import TEXTOS
 from data import clsInteraccionDB
 
-# Descripciones breves (texto literal a usar, ver seccion 7.8). No modificar.
+_T = TEXTOS["dashboard"]
+
+# Descripciones breves de los agentes (texto con voz, centralizado en textos.py).
 AGENTES = [
-    ("Mirror", "coach_mirror", "Te ayuda a procesar tus patrones limitantes con preguntas socráticas."),
-    ("Editor", "coach_editor", "Traduce tu impacto técnico a lenguaje ejecutivo sin perder tu voz."),
-    ("Archive", "coach_archive", "Documenta tus logros profesionales para cuando importen."),
-    ("Clarity", "clarity_session", "Te devuelve perspectiva y te ayuda a pensar antes de decidir tu siguiente movimiento."),
+    ("Mirror", "coach_mirror", _T["ag_mirror"]),
+    ("Editor", "coach_editor", _T["ag_editor"]),
+    ("Archive", "coach_archive", _T["ag_archive"]),
+    ("Clarity", "clarity_session", _T["ag_clarity"]),
 ]
 
-_DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
-_MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+_DIAS = TEXTOS["comun"]["dias"]
+_MESES = TEXTOS["comun"]["meses"]
 
 
 class frmMenuInicio:
@@ -29,9 +32,9 @@ class frmMenuInicio:
     async def _refrescar_diagnostico(self, e):
         try:
             await clsAgentes.refrescar_diagnostico_incremental(self.id_usuario)
-            mensaje = "Diagnóstico actualizado"
+            mensaje = _T["diag_actualizado"]
         except Exception:
-            mensaje = "No se pudo actualizar el diagnóstico"
+            mensaje = _T["diag_error"]
         # Aprovechar el refresco para actualizar también el voice profile.
         try:
             await clsAgentes.actualizar_voice_profile(self.id_usuario)
@@ -56,14 +59,14 @@ class frmMenuInicio:
     def _topbar(self):
         return ft.Row(
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            controls=[cmp.eyebrow("Climb", color=tema.AMBAR), cmp.eyebrow(self._fecha_hoy(), color=tema.HINT)],
+            controls=[cmp.eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR), cmp.eyebrow(self._fecha_hoy(), color=tema.HINT)],
         )
 
     def _hero(self, nombre, frase_pivote):
         controles = [
-            cmp.eyebrow("Bitácora del día"),
+            cmp.eyebrow(_T["bitacora"]),
             ft.Container(height=10),
-            ft.Text(f"Hola, {nombre}", size=52, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+            ft.Text(_T["saludo"].format(nombre=nombre), size=52, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
         ]
         if frase_pivote:
             controles.append(ft.Container(height=14))
@@ -114,7 +117,7 @@ class frmMenuInicio:
                         controls=[
                             ft.Text(num, size=14, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
                             ft.Text(nombre, size=15, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.NAVY, expand=True),
-                            cmp.enlace_cta("Mirror  →", on_click=lambda e, n=nombre, d=descripcion: self._ir_patron_mirror(n, d)),
+                            cmp.enlace_cta(_T["ir_mirror"], on_click=lambda e, n=nombre, d=descripcion: self._ir_patron_mirror(n, d)),
                         ],
                     ),
                     ft.Text(descripcion, size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED, max_lines=2, overflow=ft.TextOverflow.ELLIPSIS),
@@ -144,7 +147,7 @@ class frmMenuInicio:
         completadas = sum(1 for p in progreso if p)
 
         if completadas >= total and total > 0:
-            proxima = "Misión completada · genera la siguiente"
+            proxima = _T["mision_completada"]
         else:
             pendientes = [a for a, hecha in zip(acciones, progreso) if not hecha]
             proxima = pendientes[0] if pendientes else (acciones[0] if acciones else "")
@@ -156,21 +159,21 @@ class frmMenuInicio:
             content=ft.Column(
                 spacing=0,
                 controls=[
-                    cmp.eyebrow("Misión activa", color=tema.AMBAR),
+                    cmp.eyebrow(_T["mision_activa"], color=tema.AMBAR),
                     ft.Container(height=12),
                     ft.Text(mision.get("nombre_mision", ""), size=26, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.TEXTO_SOBRE_NAVY),
                     ft.Container(height=22),
                     self._mission_dots(completadas, total),
                     ft.Container(height=22),
                     ft.Text(
-                        f"{completadas} DE {total} ACCIONES  ·  PRÓXIMA · {proxima.upper()}",
+                        _T["acciones_proxima"].format(completadas=completadas, total=total, proxima=proxima.upper()),
                         size=11,
                         weight=ft.FontWeight.W_600,
                         font_family=tema.FUENTE_SUBHEADER,
                         color=tema.TEXTO_SUAVE_SOBRE_NAVY,
                     ),
                     ft.Container(height=22),
-                    ft.Row(controls=[cmp.boton_ambar("Ver mi misión  →", on_click=lambda e: self.router.navegar_a("/pacer"))]),
+                    ft.Row(controls=[cmp.boton_ambar(_T["ver_mision"], on_click=lambda e: self.router.navegar_a("/pacer"))]),
                 ],
             ),
         )
@@ -183,13 +186,13 @@ class frmMenuInicio:
             content=ft.Column(
                 spacing=0,
                 controls=[
-                    cmp.eyebrow("Tu camino", color=tema.AMBAR),
+                    cmp.eyebrow(_T["tu_camino"], color=tema.AMBAR),
                     ft.Container(height=12),
                     ft.Text(camino.get("nombre_camino", ""), size=26, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.TEXTO_SOBRE_NAVY),
                     ft.Container(height=14),
-                    ft.Text("Aún no has generado tu primera misión.", size=14, font_family=tema.FUENTE_BODY, color=tema.TEXTO_SUAVE_SOBRE_NAVY),
+                    ft.Text(_T["sin_mision"], size=14, font_family=tema.FUENTE_BODY, color=tema.TEXTO_SUAVE_SOBRE_NAVY),
                     ft.Container(height=22),
-                    ft.Row(controls=[cmp.boton_ambar("Generar mi misión  →", on_click=lambda e: self.router.navegar_a("/pacer"))]),
+                    ft.Row(controls=[cmp.boton_ambar(_T["generar_mision"], on_click=lambda e: self.router.navegar_a("/pacer"))]),
                 ],
             ),
         )
@@ -214,7 +217,7 @@ class frmMenuInicio:
                             ft.Container(height=8),
                             ft.Text(descripcion, size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED),
                             ft.Container(height=12),
-                            cmp.enlace_cta("Hablar  →", on_click=lambda e, t=tipo_agente: self._abrir_agente(t)),
+                            cmp.enlace_cta(_T["hablar"], on_click=lambda e, t=tipo_agente: self._abrir_agente(t)),
                         ],
                     ),
                 ],
@@ -272,7 +275,7 @@ class frmMenuInicio:
         patrones_top = patrones[:2]
         if patrones_top:
             controles.append(self._divisor())
-            controles.append(cmp.section_header("Scout · Patrones detectados", contador=f"{len(patrones_top):02d}"))
+            controles.append(cmp.section_header(_T["h_patrones"], contador=f"{len(patrones_top):02d}"))
             controles.append(ft.Container(height=14))
             for i, p in enumerate(patrones_top, start=1):
                 controles.append(self._card_patron(f"{i:02d}", p.get("nombre", ""), p.get("descripcion", "")))
@@ -281,18 +284,18 @@ class frmMenuInicio:
         camino = clsInteraccionDB.obtener_camino_elegido(self.id_usuario)
         if estado_mision:
             controles.append(self._divisor())
-            controles.append(cmp.section_header("Camino · Activo"))
+            controles.append(cmp.section_header(_T["h_camino"]))
             controles.append(ft.Container(height=22))
             controles.append(self._banner_mision(estado_mision))
         elif camino:
             controles.append(self._divisor())
-            controles.append(cmp.section_header("Camino · Activo"))
+            controles.append(cmp.section_header(_T["h_camino"]))
             controles.append(ft.Container(height=22))
             controles.append(self._banner_camino_sin_mision(camino))
 
         # Agentes (siempre).
         controles.append(self._divisor())
-        controles.append(cmp.section_header("Tus agentes", contador=f"{len(AGENTES):02d}"))
+        controles.append(cmp.section_header(_T["h_agentes"], contador=f"{len(AGENTES):02d}"))
         controles.append(ft.Container(height=22))
         controles.append(
             ft.Row(spacing=16, controls=[
@@ -311,7 +314,7 @@ class frmMenuInicio:
         # Del archivo: logros reales registrados por Archive (solo si existen).
         if logros_recientes:
             controles.append(self._divisor())
-            controles.append(cmp.section_header("Del archivo · Logros recientes", contador=f"{len(logros_recientes):02d}"))
+            controles.append(cmp.section_header(_T["h_archivo"], contador=f"{len(logros_recientes):02d}"))
             controles.append(ft.Container(height=4))
             for i, l in enumerate(logros_recientes):
                 controles.append(self._fila_logro(l, ultimo=(i == len(logros_recientes) - 1)))
@@ -325,8 +328,8 @@ class frmMenuInicio:
                 content=ft.Row(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
-                        cmp.enlace_cta("Refrescar diagnóstico  →", on_click=self._refrescar_diagnostico),
-                        cmp.eyebrow("v0.1 · Beta", color=tema.HINT),
+                        cmp.enlace_cta(_T["refrescar"], on_click=self._refrescar_diagnostico),
+                        cmp.eyebrow(_T["version"], color=tema.HINT),
                     ],
                 ),
             )

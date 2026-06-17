@@ -6,13 +6,10 @@ import flet as ft
 import tema
 
 from core import clsAgentes
+from core.textos import TEXTOS
 
-MENSAJES = [
-    "Leyendo tus respuestas...",
-    "Identificando patrones...",
-    "Construyendo tu perfil...",
-    "Preparando tu diagnóstico...",
-]
+_T = TEXTOS["progreso"]
+MENSAJES = _T["mensajes"]
 
 DURACION_MINIMA = 8.0  # segundos
 
@@ -56,14 +53,14 @@ class frmProgreso:
         self.contenedor_error.visible = True
         self.contenedor_error.controls = [
             ft.Text(
-                "Tuvimos un problema, intenta de nuevo",
+                _T["error"],
                 size=18,
                 color=tema.CORAL,
                 text_align=ft.TextAlign.CENTER,
             ),
             ft.Container(height=12),
             ft.ElevatedButton(
-                "Regresar",
+                _T["regresar"],
                 on_click=lambda e: self.router.navegar_a("/scout_reflection"),
                 style=ft.ButtonStyle(
                     bgcolor=tema.NAVY,

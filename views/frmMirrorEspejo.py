@@ -12,7 +12,10 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsMirror
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["mirror"]
 
 
 class frmMirrorEspejo:
@@ -73,7 +76,7 @@ class frmMirrorEspejo:
             border=ft.Border.all(1, tema.BORDER_LIGHT),
             border_radius=6,
             padding=ft.Padding.symmetric(horizontal=32, vertical=28),
-            content=ft.Column(spacing=14, controls=[cmp.eyebrow("Recomendaciones para mejorar", color=tema.AMBAR), *filas]),
+            content=ft.Column(spacing=14, controls=[cmp.eyebrow(_T["espejo_recomendaciones"], color=tema.AMBAR), *filas]),
         )
 
     def _opcion(self, titulo, descripcion, on_click, destacado=False):
@@ -105,8 +108,8 @@ class frmMirrorEspejo:
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                     spacing=16,
                     controls=[
-                        ft.Text("No hay una sesión para cerrar.", size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
-                        cmp.boton_primario("Ir a Mirror", on_click=lambda e: self.router.navegar_a("/mirror")),
+                        ft.Text(_T["sin_sesion_cerrar"], size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
+                        cmp.boton_primario(_T["ir_mirror"], on_click=lambda e: self.router.navegar_a("/mirror")),
                     ],
                 ),
             )
@@ -117,13 +120,13 @@ class frmMirrorEspejo:
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
             controls=[
-                cmp.eyebrow("El espejo", color=tema.AMBAR),
+                cmp.eyebrow(_T["espejo_eyebrow"], color=tema.AMBAR),
                 ft.Container(height=14),
-                ft.Text("Esto es lo que vimos", size=44, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                ft.Text(_T["espejo_titulo"], size=44, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
                 ft.Container(height=18),
                 cmp.hairline(width=48),
                 ft.Container(height=18),
-                ft.Container(width=460, content=ft.Text("Tómate un momento antes de cerrar. Lo que sigue es para ti, no para tu archivo.", size=16, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED, text_align=ft.TextAlign.CENTER)),
+                ft.Container(width=460, content=ft.Text(_T["espejo_sub"], size=16, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED, text_align=ft.TextAlign.CENTER)),
             ],
         )
 
@@ -140,11 +143,11 @@ class frmMirrorEspejo:
             padding=ft.Padding.only(top=32),
             border=ft.Border.only(top=ft.BorderSide(1, tema.BORDER_LIGHT)),
             content=ft.Column(spacing=18, controls=[
-                ft.Container(alignment=ft.Alignment.CENTER, content=cmp.eyebrow("¿Cómo te quedas con esto?", color=tema.MUTED)),
+                ft.Container(alignment=ft.Alignment.CENTER, content=cmp.eyebrow(_T["espejo_pregunta_cierre"], color=tema.MUTED)),
                 ft.Row(spacing=12, vertical_alignment=ft.CrossAxisAlignment.START, controls=[
-                    self._opcion("✓ ESTO RESONÓ", "Scout seguirá observando si el patrón reaparece.", self._resono, destacado=True),
-                    self._opcion("QUIERO SEGUIR EXPLORANDO", "Volvemos a la sesión por una pregunta más.", self._seguir),
-                    self._opcion("NO RESONÓ", "Scout vuelve a calibrar. El patrón se mantiene activo.", self._no_resono),
+                    self._opcion(_T["reson_titulo"], _T["reson_desc"], self._resono, destacado=True),
+                    self._opcion(_T["explorar_titulo"], _T["explorar_desc"], self._seguir),
+                    self._opcion(_T["no_reson_titulo"], _T["no_reson_desc"], self._no_resono),
                 ]),
             ]),
         )
@@ -159,23 +162,23 @@ class frmMirrorEspejo:
                     padding=ft.Padding.symmetric(horizontal=64, vertical=40),
                     content=ft.Column(spacing=0, controls=[
                         ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, controls=[
-                            ft.Row(spacing=8, controls=[cmp.eyebrow("Climb", color=tema.AMBAR), cmp.eyebrow("·  Mirror · Cierre", color=tema.HINT)]),
-                            cmp.eyebrow(f"Sesión 01  ·  {self.session_minutes} minutos", color=tema.HINT, size=10),
+                            ft.Row(spacing=8, controls=[cmp.eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR), cmp.eyebrow(_T["espejo_subtopbar"], color=tema.HINT)]),
+                            cmp.eyebrow(_T["espejo_sesion_meta"].format(n=self.session_minutes), color=tema.HINT, size=10),
                         ]),
                         ft.Container(height=44),
                         intro,
                         ft.Container(height=56),
                         transformacion,
                         ft.Container(height=56),
-                        self._bloque("Lo que vimos", rf.lo_que_vimos),
+                        self._bloque(_T["espejo_lo_que_vimos"], rf.lo_que_vimos),
                         ft.Container(height=24),
-                        self._bloque("Cómo se manifiesta en tu trabajo", rf.manifestacion),
+                        self._bloque(_T["espejo_manifestacion"], rf.manifestacion),
                         ft.Container(height=24),
                         self._bloque_recomendaciones(rf.recomendaciones),
                         ft.Container(height=48),
                         acciones,
                         ft.Container(height=24),
-                        ft.Row(alignment=ft.MainAxisAlignment.CENTER, controls=[cmp.enlace_cta("← Volver a Mirror", on_click=lambda e: self.router.navegar_a("/mirror"))]),
+                        ft.Row(alignment=ft.MainAxisAlignment.CENTER, controls=[cmp.enlace_cta(_T["volver_a_mirror"], on_click=lambda e: self.router.navegar_a("/mirror"))]),
                         ft.Container(height=48),
                     ]),
                 )

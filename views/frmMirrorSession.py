@@ -16,9 +16,11 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes, clsMirror
+from core.textos import TEXTOS
 from data import clsInteraccionDB
 
-_PREGUNTA_CARGANDO = "Mirror está preparando tu primera pregunta..."
+_T = TEXTOS["mirror"]
+_PREGUNTA_CARGANDO = _T["pregunta_cargando"]
 
 
 class frmMirrorSession:
@@ -37,13 +39,13 @@ class frmMirrorSession:
         self._inicio = datetime.now()
 
         self.txt_pregunta = ft.Text(self.current_question, size=28, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY)
-        self.lbl_num = cmp.eyebrow(f"Pregunta {self.question_number:02d}", color=tema.HINT, size=10)
+        self.lbl_num = cmp.eyebrow(_T["lbl_num_inicial"].format(n=self.question_number), color=tema.HINT, size=10)
         self.col_historial = ft.Column(spacing=0, visible=False)
         self.col_centro = ft.Column(spacing=0)
         self.footer = ft.Container()
         self.lbl_camino = ft.Text("", size=11, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.BLUE)
         self.campo = ft.TextField(
-            hint_text="Cuéntale a Mirror sobre tu trabajo...",
+            hint_text=_T["session_hint"],
             multiline=True, min_lines=3, max_lines=8, expand=True,
             border=ft.InputBorder.NONE, bgcolor="transparent", cursor_color=tema.NAVY,
             text_style=ft.TextStyle(font_family=tema.FUENTE_BODY, size=16, color=tema.NAVY),
@@ -58,7 +60,7 @@ class frmMirrorSession:
         try:
             q = await clsAgentes.mirror_pregunta(self.patron.quote, [], self.id_usuario)
         except Exception:
-            q = "Cuéntame: ¿cuándo aparece este patrón en tu trabajo, concretamente?"
+            q = _T["q_fallback_inicial"]
         self.current_question = q
         await cmp.revelar_texto(self.txt_pregunta, q)
 
@@ -73,7 +75,7 @@ class frmMirrorSession:
         self.router.page.run_task(clsAgentes.actualizar_voice_profile_si_toca, self.id_usuario)
         self.campo.value = ""
         self.campo.disabled = True
-        self.txt_pregunta.value = "Mirror está escribiendo…"
+        self.txt_pregunta.value = _T["escribiendo"]
         self.router.page.update()
 
         try:
@@ -90,15 +92,15 @@ class frmMirrorSession:
                 q = await clsAgentes.mirror_pregunta(self.patron.quote, self.turns, self.id_usuario)
             except Exception:
                 traceback.print_exc()  # error real en consola para diagnóstico
-                q = "Sigamos: ¿qué más notas de cómo este patrón opera en tu trabajo?"
+                q = _T["q_fallback_seguir"]
             if "[LISTO]" in q:
                 # Mirror considera que ya tiene suficiente: cierra la conversación.
                 self.cierre = True
-                self.cierre_texto = q.replace("[LISTO]", "").strip() or "Creo que ya tenemos suficiente para ver este patrón desde fuera."
+                self.cierre_texto = q.replace("[LISTO]", "").strip() or _T["cierre_fallback"]
             else:
                 self.question_number += 1
                 self.current_question = q
-                self.lbl_num.value = f"PREGUNTA {self.question_number:02d}"
+                self.lbl_num.value = _T["lbl_num"].format(n=self.question_number)
                 revelar = q
 
         self.campo.disabled = False
@@ -115,17 +117,17 @@ class frmMirrorSession:
 
     async def _continuar_boundary(self, e):
         self.boundary_triggered = False
-        self.txt_pregunta.value = "Mirror está escribiendo…"
+        self.txt_pregunta.value = _T["escribiendo"]
         self._render_centro()
         self.footer.visible = True
         self.router.page.update()
         try:
             q = await clsAgentes.mirror_pregunta(self.patron.quote, self.turns, self.id_usuario, reanclar=True)
         except Exception:
-            q = "Volvamos a tu trabajo. ¿Cómo aparece este patrón en una situación laboral concreta?"
+            q = _T["q_fallback_reanclar"]
         self.question_number += 1
         self.current_question = q
-        self.lbl_num.value = f"PREGUNTA {self.question_number:02d}"
+        self.lbl_num.value = _T["lbl_num"].format(n=self.question_number)
         self.router.page.update()
         await cmp.revelar_texto(self.txt_pregunta, q)
 
@@ -135,13 +137,13 @@ class frmMirrorSession:
         self.router.page.update()
 
     async def _terminar(self, e):
-        self.router.mostrar_carga("Generando el espejo…")
+        self.router.mostrar_carga(_T["generando_espejo"])
         try:
             rf = await clsAgentes.mirror_reframe(self.patron.quote, self.turns)
         except Exception:
             traceback.print_exc()
             self.router.ocultar_carga()
-            self.router.page.show_dialog(ft.SnackBar(ft.Text("No pude generar el espejo. Intenta de nuevo.")))
+            self.router.page.show_dialog(ft.SnackBar(ft.Text(_T["error_espejo"])))
             self.router.page.update()
             return
         self.router.mirror_reframe = clsMirror.MirrorReframe(**rf)
@@ -150,7 +152,7 @@ class frmMirrorSession:
 
     # --- Render -------------------------------------------------------------
     def _render_historial(self):
-        self.lbl_camino.value = f"{'▾' if self.historial_visible else '▸'} VER EL CAMINO RECORRIDO ({len(self.turns)} TURNOS)"
+        self.lbl_camino.value = _T["ver_camino"].format(flecha='▾' if self.historial_visible else '▸', n=len(self.turns))
         self.col_historial.visible = self.historial_visible and bool(self.turns)
         filas = []
         for speaker, texto in self.turns:
@@ -158,7 +160,7 @@ class frmMirrorSession:
             filas.append(ft.Container(
                 margin=ft.Margin.only(bottom=22),
                 content=ft.Column(spacing=6, controls=[
-                    cmp.eyebrow("Mirror" if es_mirror else "Tú", color=tema.AMBAR if es_mirror else tema.MUTED, size=10),
+                    cmp.eyebrow(_T["nombre"] if es_mirror else TEXTOS["comun"]["tu"], color=tema.AMBAR if es_mirror else tema.MUTED, size=10),
                     ft.Container(width=560, content=ft.Text(
                         f'"{texto}"' if es_mirror else texto, size=13, italic=es_mirror,
                         font_family=tema.FUENTE_SERIF if es_mirror else tema.FUENTE_BODY,
@@ -171,19 +173,19 @@ class frmMirrorSession:
 
     def _bloque_pregunta(self):
         boton_enviar = ft.ElevatedButton(
-            content=ft.Text("ENVIAR  →", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+            content=ft.Text(TEXTOS["comun"]["enviar"], size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
             on_click=self._enviar,
             style=ft.ButtonStyle(bgcolor=tema.NAVY, shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.symmetric(horizontal=24, vertical=14), elevation=0),
         )
         return ft.Column(spacing=0, controls=[
             ft.Column(spacing=0, controls=[
-                cmp.eyebrow("Mirror pregunta", color=tema.AMBAR),
+                cmp.eyebrow(_T["mirror_pregunta"], color=tema.AMBAR),
                 ft.Container(height=18),
                 ft.Container(width=620, content=self.txt_pregunta),
             ]),
             ft.Container(height=48),
             ft.Column(spacing=0, controls=[
-                cmp.eyebrow("Tu respuesta", color=tema.MUTED),
+                cmp.eyebrow(_T["tu_respuesta"], color=tema.MUTED),
                 ft.Container(height=14),
                 ft.Container(padding=ft.Padding.only(bottom=12), content=ft.Row(vertical_alignment=ft.CrossAxisAlignment.END, controls=[self.campo, boton_enviar])),
                 cmp.subrayado_bicolor(),
@@ -217,18 +219,18 @@ class frmMirrorSession:
                     padding=ft.Padding.only(left=20),
                     border=ft.Border.only(left=ft.BorderSide(2, tema.AMBAR)),
                     content=ft.Column(spacing=18, controls=[
-                        cmp.eyebrow("Mirror responde", color=tema.AMBAR),
-                        ft.Text("Lo que estás compartiendo es importante, y precisamente por eso no soy yo quien debe acompañarte ahí.", size=19, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY),
-                        ft.Text("Yo trabajo solo con patrones profesionales — cómo aparecen en tu trabajo, en tu carrera. Para lo que estás viviendo, un profesional de salud mental va a ser muchísimo más útil que yo.", size=19, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY),
+                        cmp.eyebrow(_T["boundary_eyebrow"], color=tema.AMBAR),
+                        ft.Text(_T["boundary_1"], size=19, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY),
+                        ft.Text(_T["boundary_2"], size=19, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY),
                     ]),
                 ),
                 ft.Container(height=32),
                 ft.Row(spacing=14, controls=[
-                    self._opcion_boundary("Opción A", "Cerrar la sesión", "Terminamos aquí. El patrón queda guardado para retomarlo cuando quieras.", self._cerrar_boundary),
-                    self._opcion_boundary("Opción B", "Regresar al patrón  →", "Volvemos a lo profesional. Te hago una pregunta nueva sobre el patrón.", self._continuar_boundary, primaria=True),
+                    self._opcion_boundary(_T["opcion_a"], _T["boundary_cerrar_titulo"], _T["boundary_cerrar_desc"], self._cerrar_boundary),
+                    self._opcion_boundary(_T["opcion_b"], _T["boundary_seguir_titulo"], _T["boundary_seguir_desc"], self._continuar_boundary, primaria=True),
                 ]),
                 ft.Container(height=24),
-                ft.Text("Tu decisión queda solo entre tú y la sesión.\nNada de lo que compartiste sale de aquí.", size=13, italic=True, font_family=tema.FUENTE_SERIF, color=tema.HINT, text_align=ft.TextAlign.CENTER),
+                ft.Text(_T["boundary_privacidad"], size=13, italic=True, font_family=tema.FUENTE_SERIF, color=tema.HINT, text_align=ft.TextAlign.CENTER),
             ]),
         )
 
@@ -243,14 +245,14 @@ class frmMirrorSession:
                     padding=ft.Padding.only(left=20),
                     border=ft.Border.only(left=ft.BorderSide(2, tema.AMBAR)),
                     content=ft.Column(spacing=14, controls=[
-                        cmp.eyebrow("Mirror", color=tema.AMBAR),
+                        cmp.eyebrow(_T["nombre"], color=tema.AMBAR),
                         ft.Text(self.cierre_texto, size=19, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY),
                     ]),
                 ),
                 ft.Container(height=28),
                 ft.Row(controls=[
                     ft.ElevatedButton(
-                        content=ft.Text("VER EL ESPEJO  →", size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+                        content=ft.Text(_T["ver_espejo"], size=13, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
                         on_click=self._terminar,
                         style=ft.ButtonStyle(bgcolor=tema.NAVY, shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.symmetric(horizontal=32, vertical=18), elevation=0),
                     ),
@@ -276,8 +278,8 @@ class frmMirrorSession:
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                     spacing=16,
                     controls=[
-                        ft.Text("No hay un patrón en sesión.", size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
-                        cmp.boton_primario("Ir a Mirror", on_click=lambda e: self.router.navegar_a("/mirror")),
+                        ft.Text(_T["sin_patron_sesion"], size=16, font_family=tema.FUENTE_BODY, color=tema.MUTED),
+                        cmp.boton_primario(_T["ir_mirror"], on_click=lambda e: self.router.navegar_a("/mirror")),
                     ],
                 ),
             )
@@ -288,12 +290,12 @@ class frmMirrorSession:
         topbar = ft.Row(
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             controls=[
-                ft.Row(spacing=8, controls=[cmp.eyebrow("Climb", color=tema.AMBAR), cmp.eyebrow("·  Mirror  ·  Sesión", color=tema.HINT)]),
+                ft.Row(spacing=8, controls=[cmp.eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR), cmp.eyebrow(_T["subtopbar"], color=tema.HINT)]),
                 ft.Container(
                     border=ft.Border.all(1, tema.BORDER_LIGHT),
                     padding=ft.Padding.symmetric(horizontal=12, vertical=5),
                     border_radius=3,
-                    content=cmp.eyebrow("Ámbito · Carrera profesional", color=tema.AMBAR, size=11),
+                    content=cmp.eyebrow(_T["ambito"], color=tema.AMBAR, size=11),
                 ),
             ],
         )
@@ -304,7 +306,7 @@ class frmMirrorSession:
             content=ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    cmp.eyebrow("Patrón", color=tema.AMBAR, size=10),
+                    cmp.eyebrow(_T["patron"], color=tema.AMBAR, size=10),
                     ft.Container(width=14),
                     ft.Container(expand=True, content=ft.Text(f'"{self.patron.quote}"', size=14, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED)),
                     ft.Container(width=14),
@@ -321,7 +323,7 @@ class frmMirrorSession:
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 controls=[
                     ft.TextButton(content=self.lbl_camino, on_click=self._toggle_historial, style=ft.ButtonStyle(padding=ft.Padding.symmetric(horizontal=0, vertical=4), overlay_color="transparent")),
-                    cmp.enlace_cta("Terminar sesión y ver el espejo  →", on_click=self._terminar, color=tema.AMBAR),
+                    cmp.enlace_cta(_T["terminar_sesion"], on_click=self._terminar, color=tema.AMBAR),
                 ],
             ),
         )

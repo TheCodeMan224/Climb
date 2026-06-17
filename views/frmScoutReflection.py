@@ -7,6 +7,9 @@ import flet as ft
 
 import componentes as cmp
 import tema
+from core.textos import TEXTOS
+
+_T = TEXTOS["scout"]
 
 
 class frmScoutReflection:
@@ -20,10 +23,10 @@ class frmScoutReflection:
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             controls=[
                 ft.Row(spacing=8, controls=[
-                    cmp.eyebrow("Climb", color=tema.AMBAR),
-                    cmp.eyebrow("·  Diagnóstico inicial", color=tema.HINT),
+                    cmp.eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR),
+                    cmp.eyebrow("·  " + _T["subtitulo"], color=tema.HINT),
                 ]),
-                cmp.eyebrow("Paso 01 de 02", color=tema.HINT),
+                cmp.eyebrow(_T["paso"], color=tema.HINT),
             ],
         )
 
@@ -50,22 +53,20 @@ class frmScoutReflection:
             controls=[
                 ft.Text("00", size=40, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.AMBAR),
                 ft.Container(height=10),
-                ft.Text("Scout", size=52, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
+                ft.Text(_T["nombre"], size=52, weight=ft.FontWeight.W_700, font_family=tema.FUENTE_DISPLAY, color=tema.NAVY),
                 ft.Container(height=18),
                 cmp.hairline(width=40),
                 ft.Container(height=22),
-                ft.Text('"Tu explorador. Observa, mapea, conecta los puntos."',
+                ft.Text(_T["quote"],
                         size=15, italic=True, font_family=tema.FUENTE_SERIF, color=tema.MUTED,
                         text_align=ft.TextAlign.CENTER),
                 ft.Container(height=40),
-                cmp.eyebrow("Qué va a pasar", color=tema.MUTED, size=11),
+                cmp.eyebrow(_T["que_va_a_pasar"], color=tema.MUTED, size=11),
                 ft.Container(height=18),
                 ft.Container(
                     width=640,
                     content=ft.Text(
-                        "Voy a leer con calma lo que compartas y mapear los patrones "
-                        "conductuales que definen tu momento profesional: lo que te impulsa, "
-                        "lo que te frena y dónde está la brecha que aún no ves.",
+                        _T["parrafo"],
                         size=16, color=tema.BLUE, font_family=tema.FUENTE_BODY,
                         text_align=ft.TextAlign.CENTER,
                     ),
@@ -77,15 +78,15 @@ class frmScoutReflection:
             vertical_alignment=ft.CrossAxisAlignment.START,
             spacing=40,
             controls=[
-                self._paso("01", "Observa", "Lee tus respuestas sin juzgar. Solo registra."),
-                self._paso("02", "Mapea", "Identifica patrones que se repiten en cómo te ves a ti mismo profesionalmente."),
-                self._paso("03", "Conecta", "Devuelve un diagnóstico cualitativo que alimenta al resto del sistema."),
+                self._paso("01", _T["paso1_titulo"], _T["paso1_desc"]),
+                self._paso("02", _T["paso2_titulo"], _T["paso2_desc"]),
+                self._paso("03", _T["paso3_titulo"], _T["paso3_desc"]),
             ],
         )
 
         cta = ft.Row(
             alignment=ft.MainAxisAlignment.CENTER,
-            controls=[cmp.boton_primario("EMPEZAR EL DIAGNÓSTICO  →", on_click=lambda e: self.router.navegar_a("/progreso"))],
+            controls=[cmp.boton_primario(_T["empezar"], on_click=lambda e: self.router.navegar_a("/progreso"))],
         )
 
         return ft.Column(
@@ -110,7 +111,7 @@ class frmScoutReflection:
                             ft.Container(height=40),
                             ft.Row(
                                 alignment=ft.MainAxisAlignment.CENTER,
-                                controls=[cmp.eyebrow("Observación  ·  Patrón  ·  Brecha", color=tema.HINT, size=11)],
+                                controls=[cmp.eyebrow(_T["footer"], color=tema.HINT, size=11)],
                             ),
                             ft.Container(height=24),
                         ],

@@ -4,17 +4,20 @@ import flet as ft
 
 import componentes as cmp
 import tema
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["login"]
 
 
 class frmLogin:
     def __init__(self, router, id_usuario=None):
         self.router = router
         self.id_usuario = id_usuario
-        self.campo_nombre = cmp.textfield_subrayado("Mike Prueba", autofocus=True)
-        self.campo_numero = cmp.textfield_subrayado("4821")
+        self.campo_nombre = cmp.textfield_subrayado(_T["ph_nombre"], autofocus=True)
+        self.campo_numero = cmp.textfield_subrayado(_T["ph_numero"])
         self.campo_clave = cmp.textfield_subrayado(
-            "••••••••", password=True, can_reveal=True, on_submit=self._entrar
+            _T["ph_clave"], password=True, can_reveal=True, on_submit=self._entrar
         )
         self.error = ft.Text("", color=tema.CORAL, size=13)
 
@@ -24,7 +27,7 @@ class frmLogin:
         clave = self.campo_clave.value or ""
 
         if not (nombre and numero and clave):
-            self.error.value = "Completa nombre, número y clave."
+            self.error.value = _T["err_incompleto"]
             self.router.page.update()
             return
 
@@ -34,7 +37,7 @@ class frmLogin:
 
         id_usuario = clsInteraccionDB.verificar_credenciales(nombre, numero, clave)
         if id_usuario is None:
-            self.error.value = "Usuario o clave incorrectos."
+            self.error.value = _T["err_credenciales"]
             self.router.page.update()
             return
 
@@ -58,12 +61,12 @@ class frmLogin:
                     horizontal_alignment=ft.CrossAxisAlignment.START,
                     spacing=0,
                     controls=[
-                        cmp.eyebrow("Acceso"),
+                        cmp.eyebrow(_T["eyebrow"]),
                         ft.Container(height=16),
                         cmp.hairline(width=40),
                         ft.Container(height=28),
                         ft.Text(
-                            "Inicia sesión",
+                            _T["titulo"],
                             size=44,
                             weight=ft.FontWeight.W_700,
                             font_family=tema.FUENTE_DISPLAY,
@@ -71,7 +74,7 @@ class frmLogin:
                         ),
                         ft.Container(height=12),
                         ft.Text(
-                            "Entra con el usuario que te dimos al crear tu cuenta.",
+                            _T["subtitulo"],
                             size=14,
                             font_family=tema.FUENTE_BODY,
                             color=tema.MUTED,
@@ -80,12 +83,12 @@ class frmLogin:
                         ft.Row(
                             spacing=28,
                             controls=[
-                                ft.Container(expand=2, content=cmp.campo_etiquetado("Tu nombre", self.campo_nombre)),
-                                ft.Container(expand=1, content=cmp.campo_etiquetado("Número", self.campo_numero)),
+                                ft.Container(expand=2, content=cmp.campo_etiquetado(_T["lbl_nombre"], self.campo_nombre)),
+                                ft.Container(expand=1, content=cmp.campo_etiquetado(_T["lbl_numero"], self.campo_numero)),
                             ],
                         ),
                         ft.Container(height=32),
-                        cmp.campo_etiquetado("Tu clave", self.campo_clave),
+                        cmp.campo_etiquetado(_T["lbl_clave"], self.campo_clave),
                         ft.Container(height=20),
                         self.error,
                         ft.Container(height=24),
@@ -93,8 +96,8 @@ class frmLogin:
                             spacing=28,
                             vertical_alignment=ft.CrossAxisAlignment.CENTER,
                             controls=[
-                                cmp.boton_primario("Entrar", on_click=self._entrar),
-                                cmp.enlace("¿No tienes cuenta? Créala", on_click=lambda e: self.router.navegar_a("/pre_onboarding")),
+                                cmp.boton_primario(_T["entrar"], on_click=self._entrar),
+                                cmp.enlace(_T["ir_registro"], on_click=lambda e: self.router.navegar_a("/pre_onboarding")),
                             ],
                         ),
                     ],

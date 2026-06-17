@@ -12,7 +12,10 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes, clsClarity
+from core.textos import TEXTOS
 from data import clsInteraccionDB
+
+_T = TEXTOS["clarity"]
 
 
 class frmClarityConversacion:
@@ -36,9 +39,9 @@ class frmClarityConversacion:
         router.clarity_inicial = None
 
         self.chat_list = ft.ListView(expand=True, spacing=0, padding=ft.Padding.symmetric(vertical=8), auto_scroll=True)
-        self.anchor_lbl = cmp.eyebrow("Pensando · Tu situación", color=tema.AMBAR, size=11)
+        self.anchor_lbl = cmp.eyebrow(_T["anchor_default"], color=tema.AMBAR, size=11)
         self.campo = ft.TextField(
-            hint_text="O dime si ya viste lo que necesitabas...",
+            hint_text=_T["hint_conversacion"],
             expand=True, multiline=True, min_lines=1, max_lines=4,
             border=ft.InputBorder.NONE, bgcolor="transparent", cursor_color=tema.NAVY,
             text_style=ft.TextStyle(font_family=tema.FUENTE_BODY, size=15, color=tema.NAVY),
@@ -59,7 +62,7 @@ class frmClarityConversacion:
     def _turno_control(self, turno):
         es_clarity = turno["speaker"] == "clarity"
         hijos = [
-            cmp.eyebrow("Clarity" if es_clarity else "Tú", color=tema.AMBAR if es_clarity else tema.MUTED, size=11),
+            cmp.eyebrow(_T["speaker_clarity"] if es_clarity else TEXTOS["comun"]["tu"], color=tema.AMBAR if es_clarity else tema.MUTED, size=11),
             ft.Container(height=10),
             ft.Container(width=600, content=ft.Text(
                 turno["text"], size=16,
@@ -104,14 +107,14 @@ class frmClarityConversacion:
         await self._turno_clarity()
 
     async def _turno_clarity(self):
-        self.router.mostrar_carga("Clarity está pensando…")
+        self.router.mostrar_carga(_T["pensando"])
         try:
             pares = [(t["speaker"], t["text"]) for t in self.turns]
             res = await clsAgentes.responder_clarity(pares, self.id_usuario, self.refs, primer_turno=not self.turns)
         except Exception:
             traceback.print_exc()
             self.router.ocultar_carga()
-            self.turns.append({"speaker": "clarity", "text": "Tuve un problema. Intentémoslo de nuevo.", "ref": None})
+            self.turns.append({"speaker": "clarity", "text": _T["error_turno"], "ref": None})
             self._rerender()
             self.router.page.update()
             return
@@ -125,7 +128,7 @@ class frmClarityConversacion:
 
         if res.get("tema") and not self.tema:
             self.tema = res["tema"]
-            self.anchor_lbl.value = f"Pensando · {self.tema}".upper()
+            self.anchor_lbl.value = _T["anchor"].format(tema=self.tema).upper()
 
         self._rerender()
         self.router.ocultar_carga()
@@ -134,7 +137,7 @@ class frmClarityConversacion:
             await self._cerrar()
 
     async def _cerrar(self):
-        self.router.mostrar_carga("Cerrando la conversación…")
+        self.router.mostrar_carga(_T["cerrando"])
         try:
             pares = [(t["speaker"], t["text"]) for t in self.turns]
             cierre = await clsAgentes.clarity_cierre(pares, self.id_usuario)
@@ -156,10 +159,10 @@ class frmClarityConversacion:
             on_click=lambda e: self.router.navegar_a("/clarity"), ink=True,
             content=ft.Row(alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
                 ft.Row(spacing=14, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
-                    cmp.eyebrow("Tu espejo", color=tema.AMBAR, size=11),
+                    cmp.eyebrow(_T["tu_espejo"], color=tema.AMBAR, size=11),
                     ft.Text(clsClarity.resumen_counters_texto(self.counters), size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED),
                 ]),
-                cmp.eyebrow("Ver completo  →", color=tema.BLUE, size=10),
+                cmp.eyebrow(_T["ver_completo"], color=tema.BLUE, size=10),
             ]),
         )
 
@@ -169,14 +172,14 @@ class frmClarityConversacion:
         ])
 
         entrada = ft.Column(spacing=12, controls=[
-            cmp.eyebrow("Sigue pensando en voz alta", color=tema.MUTED, size=11),
+            cmp.eyebrow(_T["sigue_pensando"], color=tema.MUTED, size=11),
             ft.Container(
                 border=ft.Border.only(bottom=ft.BorderSide(1, tema.NAVY)),
                 padding=ft.Padding.only(bottom=12),
                 content=ft.Row(vertical_alignment=ft.CrossAxisAlignment.END, controls=[
                     self.campo,
                     ft.ElevatedButton(
-                        content=ft.Text("ENVIAR  →", size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
+                        content=ft.Text(TEXTOS["comun"]["enviar"], size=12, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.TEXTO_SOBRE_NAVY),
                         on_click=self._enviar_input,
                         style=ft.ButtonStyle(bgcolor=tema.NAVY, shape=ft.RoundedRectangleBorder(radius=4), padding=ft.Padding.symmetric(horizontal=22, vertical=14), elevation=0)),
                 ]),
@@ -184,7 +187,7 @@ class frmClarityConversacion:
         ])
 
         cuerpo = ft.Column(expand=True, spacing=0, controls=[
-            cmp.topbar("Clarity · Sesión", derecha="← Volver", on_back=lambda e: self.router.navegar_a("/clarity")),
+            cmp.topbar(_T["topbar_sesion"], derecha=TEXTOS["comun"]["volver"], on_back=lambda e: self.router.navegar_a("/clarity")),
             ft.Container(height=24),
             colapsado,
             anchor,

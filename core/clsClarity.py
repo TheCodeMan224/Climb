@@ -77,15 +77,15 @@ def cargar_espejo(id_usuario):
     if logros:
         titulos = ", ".join(l["titulo"] for l in logros[:3])
         segs = [
-            ("Has rescatado ", False), (str(len(logros)), True),
-            (f" {_plural(len(logros), 'logro')} que estaban olvidados — {titulos}.", False),
+            ("You've rescued ", False), (str(len(logros)), True),
+            (f" {_plural(len(logros), 'win')} that had been forgotten — {titulos}.", False),
         ]
         bloques.append(EspejoBloque("03", "Archive", segs, True))
     else:
         bloques.append(EspejoBloque(
             "03", "Archive",
-            [("Aún no documentas tus logros. Cuando cierres algo que importe, Archive lo guarda para cuando lo necesites.", False)],
-            False, cta_texto="Abrir Archive  →", cta_ruta="/archive"))
+            [("You haven't documented your wins yet. When you close something that matters, Archive saves it for when you need it.", False)],
+            False, cta_texto="Open Archive  →", cta_ruta="/archive"))
 
     # --- Mirror (01) ---
     pendientes, observando = clsMirror.cargar_hub(id_usuario)
@@ -94,44 +94,44 @@ def cargar_espejo(id_usuario):
         cita = p.reframe.old_quote if p.reframe else p.quote
         dias = (datetime.now() - p.detected_at).days
         segs = [
-            ("Trabajaste el patrón ", False),
+            ("You worked on the pattern ", False),
             (f'"{cita}"', False),
-            (f" {clsMirror._hace(dias)}, y ya empieza a sonar distinto.", False),
+            (f" {clsMirror._hace(dias)}, and it's already starting to sound different.", False),
         ]
         bloques.append(EspejoBloque("01", "Mirror", segs, True))
     elif pendientes:
-        segs = [("Tienes ", False), (str(len(pendientes)), True),
-                (f" {_plural(len(pendientes), 'patrón')} por trabajar. Mirror los desarma con preguntas.", False)]
-        bloques.append(EspejoBloque("01", "Mirror", segs, True, cta_texto="Abrir Mirror  →", cta_ruta="/mirror"))
+        segs = [("You have ", False), (str(len(pendientes)), True),
+                (f" {_plural(len(pendientes), 'pattern')} to work on. Mirror takes them apart with questions.", False)]
+        bloques.append(EspejoBloque("01", "Mirror", segs, True, cta_texto="Open Mirror  →", cta_ruta="/mirror"))
     else:
         bloques.append(EspejoBloque(
             "01", "Mirror",
-            [("Todavía no has trabajado ningún patrón con Mirror.", False)],
-            False, cta_texto="Abrir Mirror  →", cta_ruta="/mirror"))
+            [("You haven't worked on any pattern with Mirror yet.", False)],
+            False, cta_texto="Open Mirror  →", cta_ruta="/mirror"))
 
     # --- Editor (02) ---
     completos = clsInteraccionDB.obtener_borradores_editor(id_usuario, "completado")
     if completos:
-        segs = [("Has pulido ", False), (str(len(completos)), True),
-                (f" {_plural(len(completos), 'pieza')} de contenido listas para mostrar afuera.", False)]
+        segs = [("You've polished ", False), (str(len(completos)), True),
+                (f" {_plural(len(completos), 'piece')} of content ready to show the world.", False)]
         bloques.append(EspejoBloque("02", "Editor", segs, True))
     else:
         bloques.append(EspejoBloque(
             "02", "Editor",
-            [("Aún no has terminado ninguna pieza con Editor.", False)],
-            False, cta_texto="Abrir Editor  →", cta_ruta="/editor"))
+            [("You haven't finished any piece with Editor yet.", False)],
+            False, cta_texto="Open Editor  →", cta_ruta="/editor"))
 
     # --- Scout (00) ---
     scout_pendientes = _patrones_scout_no_procesados(id_usuario)
     if scout_pendientes:
         bloques.append(EspejoBloque(
             "00", "Scout",
-            [("Tu diagnóstico sigue alimentando al sistema. Detecté un patrón nuevo que vale la pena ver.", False)],
-            True, cta_texto="Ver patrón detectado  →", cta_patron=scout_pendientes[0]))
+            [("Your diagnosis keeps feeding the system. I detected a new pattern worth seeing.", False)],
+            True, cta_texto="See detected pattern  →", cta_patron=scout_pendientes[0]))
     else:
         bloques.append(EspejoBloque(
             "00", "Scout",
-            [("Tu diagnóstico inicial sigue activo en el fondo, observando cómo evolucionas.", False)],
+            [("Your initial diagnosis is still active in the background, watching how you evolve.", False)],
             False))
 
     # --- Pacer snapshot ---
@@ -169,11 +169,14 @@ def referencias_disponibles(id_usuario):
 
 def resumen_counters_texto(counters):
     """Texto de una línea para el espejo colapsado (pantallas 2 y 3)."""
+    w = counters.get('logros', 0)
+    pt = counters.get('patrones', 0)
+    pz = counters.get('piezas', 0)
     partes = [
-        f"{counters.get('logros', 0)} logros",
-        f"{counters.get('patrones', 0)} patrón trabajado" if counters.get('patrones', 0) == 1 else f"{counters.get('patrones', 0)} patrones trabajados",
-        f"{counters.get('piezas', 0)} piezas pulidas",
+        f"{w} {'win' if w == 1 else 'wins'}",
+        f"{pt} pattern worked" if pt == 1 else f"{pt} patterns worked",
+        f"{pz} {'piece' if pz == 1 else 'pieces'} polished",
     ]
     if counters.get("mision"):
-        partes.append(f"misión {counters['mision']}")
+        partes.append(f"mission {counters['mision']}")
     return "  ·  ".join(partes)

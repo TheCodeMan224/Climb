@@ -530,7 +530,7 @@ def obtener_ultima_mision(id_usuario):
 # ----------------------------------------------------------------------------
 # Logros_Personales (registrados por Archive)
 # ----------------------------------------------------------------------------
-TIPOS_LOGRO = ["Proyecto", "Impacto", "Reconocimiento", "Liderazgo", "Habilidad"]
+TIPOS_LOGRO = ["Project", "Impact", "Recognition", "Leadership", "Skill"]
 
 
 def insertar_logro(id_usuario, tipo, logro, descripcion):
@@ -566,13 +566,13 @@ def obtener_logros(id_usuario):
 # --- Modelo enriquecido para Archive (3 pantallas) -------------------------
 # Tipos del archivo de referencia de Archive.
 LOGRO_TYPES = [
-    "Deal cerrado", "Proyecto", "Certificación", "Aprendizaje",
-    "Activación", "Liderazgo", "Presentación", "Otro",
+    "Deal closed", "Project", "Certification", "Learning",
+    "Activation", "Leadership", "Presentation", "Other",
 ]
 
-_MESES_CORTO = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-_MESES_LARGO = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+_MESES_CORTO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_MESES_LARGO = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"]
 
 
 def _parse_fecha(ts):
@@ -745,17 +745,17 @@ def obtener_misiones_completadas(id_usuario):
 # Editor_Borradores (estudio de redacción)
 # ----------------------------------------------------------------------------
 def _hace(ts):
-    """Devuelve un texto relativo ('hace 5 min', 'hace 2h', 'ayer', 'hace 3 días')."""
+    """Devuelve un texto relativo en inglés ('5 min ago', '2h ago', 'yesterday', '3 days ago')."""
     fecha = _parse_fecha(ts)
     seg = (datetime.now() - fecha).total_seconds()
     if seg < 60:
-        return "hace un momento"
+        return "just now"
     if seg < 3600:
-        return f"hace {int(seg // 60)} min"
+        return f"{int(seg // 60)} min ago"
     if seg < 86400:
-        return f"hace {int(seg // 3600)}h"
+        return f"{int(seg // 3600)}h ago"
     dias = int(seg // 86400)
-    return "ayer" if dias == 1 else f"hace {dias} días"
+    return "yesterday" if dias == 1 else f"{dias} days ago"
 
 
 def _preview_borrador(texto):

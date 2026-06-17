@@ -9,6 +9,7 @@ import asyncio
 import flet as ft
 
 import tema
+from core.textos import TEXTOS
 
 
 async def revelar_texto(control, texto, delay=0.02):
@@ -51,7 +52,7 @@ def topbar(subtitulo, derecha="", on_back=None):
     """Barra superior editorial: 'Climb · {subtitulo}' a la izquierda y un
     link opcional a la derecha (p. ej. '← Volver al dashboard')."""
     izquierda = ft.Row(spacing=8, controls=[
-        eyebrow("Climb", color=tema.AMBAR),
+        eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR),
         eyebrow("·  " + subtitulo, color=tema.HINT),
     ])
     derecha_ctrl = enlace_cta(derecha, on_click=on_back) if derecha else ft.Container()
@@ -251,7 +252,7 @@ def section_head(texto, contador=None, on_ver_todos=None):
     if contador:
         acciones.append(eyebrow(contador, color=tema.HINT))
     if on_ver_todos:
-        acciones.append(enlace_cta("Ver todos  →", on_click=on_ver_todos))
+        acciones.append(enlace_cta(TEXTOS["comun"]["ver_todos"], on_click=on_ver_todos))
     derecha = ft.Row(spacing=20, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=acciones) if acciones else ft.Container()
     return ft.Container(
         margin=ft.Margin.only(bottom=18),
