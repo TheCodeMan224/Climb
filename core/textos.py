@@ -19,7 +19,7 @@ ACTOS = [
         "Act I — Where you are today",
         "There are no right answers here. Write the way you talk, even if it comes out messy. I just want to really get to know you.",
         [
-            "How do you feel about your career right now? Not the LinkedIn version — the real one.",
+            "How do you feel about your career right now? Not what others see, but what you really feel.",
             "When something at work frustrates you or you feel stuck, what do you do with it? Talk it out, keep it in, work more hours?",
         ],
     ),
@@ -218,6 +218,17 @@ TEXTOS = {
         "lbl_clave2": "Confirm your password",
         "crear": "Create account",
         "ir_login": "Already have an account? Sign in",
+        "disclaimer_titulo": "Climb gives you inputs, not answers",
+        "disclaimer_cuerpo": (
+            "Every path, every pattern, every mission is something to think with — not a "
+            "verdict to follow. The decisions about your career stay with you, because the "
+            "context that matters most lives outside this app: your family, your finances, "
+            "your real life."
+        ),
+        "disclaimer_check": "I understand. The decisions stay with me.",
+        "leer_acuerdo": "Read the agreement  →",
+        "disclaimer_cerrar": "Got it",
+        "err_disclaimer": "Please confirm you understand to continue.",
     },
 
     # -------------------------------------------------------------- onboarding
@@ -372,6 +383,9 @@ TEXTOS = {
         "observacion_contador": "{n} patterns processed",
         "h_nuevo": "Work on a new pattern",
         "empezar_sesion_card": "Start session  →",
+        "reanudar": "Resume  →",
+        "en_progreso_meta": "In progress · {n} answered",
+        "dejar_despues": "Leave for later",
         "procesado_meta": "Processed {fecha}  ·  {observado}",
         "retomar": "Resume  →",
         "vacio_titulo": V_MIRROR_VACIO_TITULO,

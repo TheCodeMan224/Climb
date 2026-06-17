@@ -71,6 +71,27 @@ class Patron:
     reframe: Optional[MirrorReframe] = None
     last_observed: Optional[datetime] = None
     scout_ref: Optional[str] = None  # nombre del patron de Scout (para dedupe)
+    turns_json: Optional[str] = None  # conversacion en progreso (sesion a medias)
+
+    @property
+    def sesion(self):
+        """Sesión en progreso como dict {turns, current_question, question_number}, o None."""
+        if not self.turns_json:
+            return None
+        try:
+            return json.loads(self.turns_json)
+        except (ValueError, TypeError):
+            return None
+
+    @property
+    def en_progreso(self) -> bool:
+        """True si el patrón tiene una conversación a medias para retomar."""
+        return self.status != "observing" and self.sesion is not None
+
+    @property
+    def respuestas_en_progreso(self) -> int:
+        s = self.sesion or {}
+        return sum(1 for t in s.get("turns", []) if t and t[0] == "user")
 
     @property
     def detected_meta(self) -> str:
@@ -117,6 +138,7 @@ def _patron_de_fila(f):
         reframe=reframe,
         last_observed=_parse_ts(f["last_observed"]) if f.get("last_observed") else None,
         scout_ref=f.get("scout_ref"),
+        turns_json=f.get("turns_json"),
     )
 
 
@@ -138,10 +160,12 @@ def cargar_hub(id_usuario):
     procesados_scout = set()
     for f in filas:
         p = _patron_de_fila(f)
+        # Cualquier patrón de Scout ya presente en la tabla (en progreso o procesado)
+        # no debe volver a aparecer desde el resumen.
+        if f.get("scout_ref"):
+            procesados_scout.add(f["scout_ref"])
         if p.status == "observing":
             observando.append(p)
-            if f.get("scout_ref"):
-                procesados_scout.add(f["scout_ref"])
         else:
             pendientes.append(p)
 

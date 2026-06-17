@@ -140,7 +140,7 @@ class frmCaminos:
                 border=ft.Border.only(left=ft.BorderSide(3, tema.AMBAR)),
                 content=ft.Text(
                     _T["rotulo"],
-                    size=13, italic=True, color=tema.TEXTO_SUAVE, font_family=tema.FUENTE_SERIF),
+                    size=13, italic=True, color=tema.NAVY, font_family=tema.FUENTE_SERIF),
             ),
             ft.Container(height=16),
         ]

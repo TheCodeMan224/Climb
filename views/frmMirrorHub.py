@@ -23,7 +23,8 @@ class frmMirrorHub:
     # --- Navegación ---------------------------------------------------------
     def _empezar(self, patron):
         self.router.mirror_patron = patron
-        self.router.navegar_a("/mirror/entry")
+        # Si hay una sesión a medias, se retoma directo (sin la pantalla de entrada).
+        self.router.navegar_a("/mirror/session" if patron.en_progreso else "/mirror/entry")
 
     def _empezar_propio(self, e):
         quote = (self.campo_propio.value or "").strip()
@@ -52,11 +53,13 @@ class frmMirrorHub:
                         border=ft.Border.only(left=ft.BorderSide(2, tema.AMBAR)),
                         content=ft.Column(spacing=8, controls=[
                             ft.Text(f'"{patron.quote}"', size=17, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY),
-                            cmp.eyebrow(patron.detected_meta, color=tema.HINT, size=10),
+                            cmp.eyebrow(
+                                _T["en_progreso_meta"].format(n=patron.respuestas_en_progreso) if patron.en_progreso else patron.detected_meta,
+                                color=tema.AMBAR if patron.en_progreso else tema.HINT, size=10),
                         ]),
                     ),
                     ft.Container(width=16),
-                    cmp.eyebrow(_T["empezar_sesion_card"], color=tema.BLUE, size=11),
+                    cmp.eyebrow(_T["reanudar"] if patron.en_progreso else _T["empezar_sesion_card"], color=tema.BLUE, size=11),
                 ],
             ),
         )

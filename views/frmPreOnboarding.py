@@ -19,6 +19,13 @@ class frmPreOnboarding:
         self.campo_clave2 = cmp.textfield_subrayado(
             _T["ph_clave2"], password=True, can_reveal=True, on_submit=self._continuar
         )
+        self.check_disclaimer = ft.Checkbox(
+            label=_T["disclaimer_check"],
+            value=False,
+            fill_color=tema.NAVY,
+            check_color=tema.OFF_WHITE,
+            label_style=ft.TextStyle(font_family=tema.FUENTE_BODY, size=13, color=tema.NAVY),
+        )
         self.error = ft.Text("", color=tema.CORAL, size=13)
 
     def _continuar(self, e):
@@ -38,11 +45,29 @@ class frmPreOnboarding:
             self.error.value = _T["err_no_coinciden"]
             self.router.page.update()
             return
+        if not self.check_disclaimer.value:
+            self.error.value = _T["err_disclaimer"]
+            self.router.page.update()
+            return
 
         datos = clsInteraccionDB.crear_usuario(nombre, clave)
         self.router.id_usuario = datos["id_usuario"]
         self.router.nombre = nombre
         self._mostrar_handle(datos["handle"])
+
+    def _abrir_acuerdo(self, e):
+        """Ventana emergente con el disclaimer; el usuario lo lee y luego marca el checkbox."""
+        dialog = ft.AlertDialog(
+            modal=True,
+            bgcolor=tema.SUPERFICIE,
+            title=ft.Text(_T["disclaimer_titulo"], color=tema.NAVY, font_family=tema.FUENTE_DISPLAY, size=22, weight=ft.FontWeight.W_700),
+            content=ft.Container(
+                width=460,
+                content=ft.Text(_T["disclaimer_cuerpo"], size=15, color=tema.NAVY, font_family=tema.FUENTE_BODY),
+            ),
+            actions=[cmp.boton_primario(_T["disclaimer_cerrar"], on_click=lambda e: self.router.page.pop_dialog())],
+        )
+        self.router.page.show_dialog(dialog)
 
     def _mostrar_handle(self, handle):
         """Muestra el handle generado y, al confirmar, avanza al onboarding."""
@@ -74,16 +99,18 @@ class frmPreOnboarding:
         self.router.page.show_dialog(dialog)
 
     def construir(self):
-        return ft.Container(
+        return ft.Column(
             expand=True,
-            alignment=ft.Alignment.CENTER,
-            padding=40,
-            content=ft.Container(
-                width=480,
-                content=ft.Column(
-                    horizontal_alignment=ft.CrossAxisAlignment.START,
-                    spacing=0,
-                    controls=[
+            scroll=ft.ScrollMode.AUTO,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
+                ft.Container(
+                    width=480,
+                    padding=ft.Padding.symmetric(horizontal=40, vertical=44),
+                    content=ft.Column(
+                        horizontal_alignment=ft.CrossAxisAlignment.START,
+                        spacing=0,
+                        controls=[
                         cmp.eyebrow(_T["eyebrow"]),
                         ft.Container(height=16),
                         cmp.hairline(width=40),
@@ -108,7 +135,11 @@ class frmPreOnboarding:
                         cmp.campo_etiquetado(_T["lbl_clave"], self.campo_clave),
                         ft.Container(height=32),
                         cmp.campo_etiquetado(_T["lbl_clave2"], self.campo_clave2),
-                        ft.Container(height=20),
+                        ft.Container(height=24),
+                        cmp.enlace(_T["leer_acuerdo"], on_click=self._abrir_acuerdo),
+                        ft.Container(height=4),
+                        self.check_disclaimer,
+                        ft.Container(height=14),
                         self.error,
                         ft.Container(height=24),
                         ft.Row(
@@ -121,5 +152,6 @@ class frmPreOnboarding:
                         ),
                     ],
                 ),
-            ),
+                ),
+            ],
         )

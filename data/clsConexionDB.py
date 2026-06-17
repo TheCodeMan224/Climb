@@ -229,6 +229,9 @@ def inicializar_db():
     _asegurar_columna(cursor, "Misiones", "estado", "TEXT DEFAULT 'activa'")
     _asegurar_columna(cursor, "Misiones", "fecha_completada", "TIMESTAMP")
 
+    # Conversacion en progreso de una sesion de Mirror (para retomarla luego).
+    _asegurar_columna(cursor, "Mirror_Patrones", "turns_json", "TEXT")
+
     # Modelo enriquecido de logros para Archive (sobre la tabla existente).
     _asegurar_columna(cursor, "Logros_Personales", "mi_rol", "TEXT")
     _asegurar_columna(cursor, "Logros_Personales", "aprendizaje", "TEXT")

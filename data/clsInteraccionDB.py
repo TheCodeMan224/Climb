@@ -449,14 +449,43 @@ def insertar_patron_procesado(id_usuario, quote, source, reframe_json, scout_ref
 
 
 def marcar_patron_procesado(id_patron, reframe_json):
-    """Marca un patrón existente como observing con su reframe."""
+    """Marca un patrón existente como observing con su reframe (y limpia la sesión en progreso)."""
     conexion = obtener_conexion()
     conexion.execute(
-        "UPDATE Mirror_Patrones SET status='observing', reframe_json=?, last_observed=CURRENT_TIMESTAMP WHERE idPatron=?",
+        "UPDATE Mirror_Patrones SET status='observing', reframe_json=?, turns_json=NULL, last_observed=CURRENT_TIMESTAMP WHERE idPatron=?",
         (reframe_json, id_patron),
     )
     conexion.commit()
     conexion.close()
+
+
+def guardar_sesion_mirror(id_patron, turns_json):
+    """Guarda la conversación en progreso de un patrón existente (para retomarla)."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        "UPDATE Mirror_Patrones SET turns_json=? WHERE idPatron=?",
+        (turns_json, id_patron),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def insertar_patron_en_progreso(id_usuario, quote, source, turns_json, scout_ref=None):
+    """Inserta un patrón aún 'pending' con su conversación en progreso. Devuelve idPatron.
+
+    Se usa cuando el usuario deja a medias un patrón que aún no estaba en la tabla
+    (p. ej. uno detectado por Scout)."""
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    cursor.execute(
+        "INSERT INTO Mirror_Patrones (id_usuario, quote, source, status, scout_ref, turns_json) "
+        "VALUES (?, ?, ?, 'pending', ?, ?)",
+        (id_usuario, quote, source, scout_ref, turns_json),
+    )
+    id_patron = cursor.lastrowid
+    conexion.commit()
+    conexion.close()
+    return id_patron
 
 
 def obtener_patrones_mirror(id_usuario):
@@ -464,7 +493,7 @@ def obtener_patrones_mirror(id_usuario):
     conexion = obtener_conexion()
     filas = conexion.execute(
         """
-        SELECT idPatron, quote, source, status, scout_ref, reframe_json, detected_at, last_observed
+        SELECT idPatron, quote, source, status, scout_ref, reframe_json, turns_json, detected_at, last_observed
         FROM Mirror_Patrones WHERE id_usuario = ? ORDER BY idPatron DESC
         """,
         (id_usuario,),

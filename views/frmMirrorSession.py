@@ -8,6 +8,7 @@ NOTA(Claude): las preguntas y la detección de boundary son MOCK por ahora; ver
 los TODO marcados (Claude-Q, Claude-B).
 """
 
+import json
 import traceback
 from datetime import datetime
 
@@ -37,12 +38,22 @@ class frmMirrorSession:
         self.cierre = False
         self.cierre_texto = ""
         self._inicio = datetime.now()
+        self._reanudado = False
+
+        # Retomar una sesión a medias, si el patrón trae una guardada.
+        sesion = self.patron.sesion if self.patron else None
+        if sesion:
+            self.turns = [tuple(t) for t in sesion.get("turns", [])]
+            self.current_question = sesion.get("current_question") or self.current_question
+            self.question_number = sesion.get("question_number") or self.question_number
+            self._reanudado = True
 
         self.txt_pregunta = ft.Text(self.current_question, size=28, italic=True, font_family=tema.FUENTE_SERIF, color=tema.NAVY)
         self.lbl_num = cmp.eyebrow(_T["lbl_num_inicial"].format(n=self.question_number), color=tema.HINT, size=10)
         self.col_historial = ft.Column(spacing=0, visible=False)
         self.col_centro = ft.Column(spacing=0)
         self.footer = ft.Container()
+        self.btn_terminar = None  # link "ver el espejo" (visible solo con ≥3 respuestas)
         self.lbl_camino = ft.Text("", size=11, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.BLUE)
         self.campo = ft.TextField(
             hint_text=_T["session_hint"],
@@ -55,7 +66,7 @@ class frmMirrorSession:
 
     # --- Carga inicial: primera pregunta -----------------------------------
     async def al_cargar(self):
-        if not self.patron or self.turns:
+        if not self.patron or self.turns or self._reanudado:
             return
         try:
             q = await clsAgentes.mirror_pregunta(self.patron.quote, [], self.id_usuario)
@@ -105,6 +116,8 @@ class frmMirrorSession:
 
         self.campo.disabled = False
         self._render_centro()
+        if self.btn_terminar is not None:
+            self.btn_terminar.visible = self._user_answers() >= 3
         self.footer.visible = not (self.boundary_triggered or self.cierre)
         self._render_historial()
         self.router.page.update()
@@ -135,6 +148,24 @@ class frmMirrorSession:
         self.historial_visible = not self.historial_visible
         self._render_historial()
         self.router.page.update()
+
+    def _user_answers(self):
+        return sum(1 for s, _ in self.turns if s == "user")
+
+    def _dejar_para_despues(self, e=None):
+        """Guarda la conversación a medias y vuelve al hub para retomarla luego."""
+        sesion = json.dumps({
+            "turns": [list(t) for t in self.turns],
+            "current_question": self.current_question,
+            "question_number": self.question_number,
+        }, ensure_ascii=False)
+        pid = str(self.patron.id) if self.patron else ""
+        if pid.startswith("db:"):
+            clsInteraccionDB.guardar_sesion_mirror(int(pid.split(":", 1)[1]), sesion)
+        else:
+            clsInteraccionDB.insertar_patron_en_progreso(
+                self.id_usuario, self.patron.quote, self.patron.source, sesion, scout_ref=self.patron.scout_ref)
+        self.router.navegar_a("/mirror")
 
     async def _terminar(self, e):
         self.router.mostrar_carga(_T["generando_espejo"])
@@ -315,15 +346,21 @@ class frmMirrorSession:
             ),
         )
 
+        self.btn_terminar = cmp.enlace_cta(_T["terminar_sesion"], on_click=self._terminar, color=tema.AMBAR)
+        self.btn_terminar.visible = self._user_answers() >= 3  # solo el usuario decide tras 3 respuestas
         self.footer = ft.Container(
             padding=ft.Padding.only(top=24),
             border=ft.Border.only(top=ft.BorderSide(1, tema.BORDER_LIGHT)),
             visible=not self.boundary_triggered,
             content=ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
                     ft.TextButton(content=self.lbl_camino, on_click=self._toggle_historial, style=ft.ButtonStyle(padding=ft.Padding.symmetric(horizontal=0, vertical=4), overlay_color="transparent")),
-                    cmp.enlace_cta(_T["terminar_sesion"], on_click=self._terminar, color=tema.AMBAR),
+                    ft.Row(spacing=24, vertical_alignment=ft.CrossAxisAlignment.CENTER, controls=[
+                        cmp.enlace_cta(_T["dejar_despues"], on_click=self._dejar_para_despues),
+                        self.btn_terminar,
+                    ]),
                 ],
             ),
         )
