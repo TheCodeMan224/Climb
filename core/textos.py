@@ -276,7 +276,6 @@ TEXTOS = {
     "diagnostico": {
         "saludo": V_DIAG_SALUDO,
         "subtitulo": "Your qualitative diagnosis",
-        "descargar_pdf": "Download PDF",
         "rotulo": (
             "This is an initial read from your onboarding: a starting point to think with, "
             "not a verdict. You decide what to do with it."

@@ -100,29 +100,17 @@ class frmDiagnostico:
 
         # Seccion 1 - Header
         secciones.append(
-            ft.Row(
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                vertical_alignment=ft.CrossAxisAlignment.START,
+            ft.Column(
+                spacing=4,
                 controls=[
-                    ft.Column(
-                        expand=True,
-                        spacing=4,
-                        controls=[
-                            ft.Text(
-                                _T["saludo"].format(nombre=nombre),
-                                size=36,
-                                weight=ft.FontWeight.BOLD,
-                                font_family=tema.FUENTE_DISPLAY,
-                                color=tema.TEXTO,
-                            ),
-                            ft.Text(_T["subtitulo"], size=15, italic=True, color=tema.TEXTO_SUAVE),
-                        ],
+                    ft.Text(
+                        _T["saludo"].format(nombre=nombre),
+                        size=36,
+                        weight=ft.FontWeight.BOLD,
+                        font_family=tema.FUENTE_DISPLAY,
+                        color=tema.TEXTO,
                     ),
-                    ft.OutlinedButton(
-                        _T["descargar_pdf"],
-                        on_click=lambda e: None,  # mockup, sin funcionalidad real
-                        style=ft.ButtonStyle(color=tema.BLUE),
-                    ),
+                    ft.Text(_T["subtitulo"], size=15, italic=True, color=tema.TEXTO_SUAVE),
                 ],
             )
         )
