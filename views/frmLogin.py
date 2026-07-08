@@ -1,4 +1,4 @@
-"""Inicio de sesión: handle (Nombre#número) + clave."""
+"""Inicio de sesión: correo o nombre de usuario + clave."""
 
 import flet as ft
 
@@ -14,35 +14,32 @@ class frmLogin:
     def __init__(self, router, id_usuario=None):
         self.router = router
         self.id_usuario = id_usuario
-        self.campo_nombre = cmp.textfield_subrayado(_T["ph_nombre"], autofocus=True)
-        self.campo_numero = cmp.textfield_subrayado(_T["ph_numero"])
+        self.campo_identificador = cmp.textfield_subrayado(_T["ph_identificador"], autofocus=True)
         self.campo_clave = cmp.textfield_subrayado(
             _T["ph_clave"], password=True, can_reveal=True, on_submit=self._entrar
         )
         self.error = ft.Text("", color=tema.CORAL, size=13)
 
     def _entrar(self, e):
-        nombre = (self.campo_nombre.value or "").strip()
-        numero = (self.campo_numero.value or "").strip().lstrip("#")
+        identificador = (self.campo_identificador.value or "").strip()
         clave = self.campo_clave.value or ""
 
-        if not (nombre and numero and clave):
+        if not (identificador and clave):
             self.error.value = _T["err_incompleto"]
             self.router.page.update()
             return
 
-        # El discriminador se guarda con 4 dígitos; normalizamos lo tecleado.
-        if numero.isdigit():
-            numero = numero.zfill(4)
-
-        id_usuario = clsInteraccionDB.verificar_credenciales(nombre, numero, clave)
+        # Un solo campo: acepta correo o username; la capa de datos resuelve cuál es.
+        id_usuario = clsInteraccionDB.verificar_credenciales(identificador, clave)
         if id_usuario is None:
             self.error.value = _T["err_credenciales"]
             self.router.page.update()
             return
 
         self.router.id_usuario = id_usuario
-        self.router.nombre = nombre
+        self.router.nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
+        # Aplicar el idioma guardado del usuario para toda la sesión.
+        self.router.cargar_idioma_usuario()
 
         # Si ya completó el onboarding, va directo al dashboard; si no, lo reanuda.
         if clsInteraccionDB.obtener_perfil(id_usuario):
@@ -80,15 +77,11 @@ class frmLogin:
                             color=tema.MUTED,
                         ),
                         ft.Container(height=44),
-                        ft.Row(
-                            spacing=28,
-                            controls=[
-                                ft.Container(expand=2, content=cmp.campo_etiquetado(_T["lbl_nombre"], self.campo_nombre)),
-                                ft.Container(expand=1, content=cmp.campo_etiquetado(_T["lbl_numero"], self.campo_numero)),
-                            ],
-                        ),
+                        cmp.campo_etiquetado(_T["lbl_identificador"], self.campo_identificador),
                         ft.Container(height=32),
                         cmp.campo_etiquetado(_T["lbl_clave"], self.campo_clave),
+                        ft.Container(height=12),
+                        cmp.enlace(_T["olvide"], on_click=lambda e: self.router.navegar_a("/recuperar")),
                         ft.Container(height=20),
                         self.error,
                         ft.Container(height=24),

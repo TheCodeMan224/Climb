@@ -13,7 +13,7 @@ import tema
 from core.textos import TEXTOS
 
 _T = TEXTOS["archive"]
-_MESES = TEXTOS["comun"]["meses_largo"]
+_COMUN = TEXTOS["comun"]  # proxy vivo: resuelve el idioma al leer
 
 
 class frmArchiveFicha:
@@ -27,7 +27,7 @@ class frmArchiveFicha:
     def _card(self):
         f = self.ficha
         fecha = f.get("fecha") or datetime.now()
-        fecha_str = f"{fecha.day:02d} {_MESES[fecha.month - 1]} {fecha.year}"
+        fecha_str = f"{fecha.day:02d} {_COMUN['meses_largo'][fecha.month - 1]} {fecha.year}"
 
         cuerpo = [
             ft.Row(

@@ -217,11 +217,31 @@ def inicializar_db():
         """
     )
 
-    # Migracion de autenticacion: handle (Nombre#numero) + clave hasheada.
-    # Las columnas se agregan sobre la tabla Usuarios existente sin perder datos.
+    # Codigos de recuperacion de contrasena (6 digitos, guardados hasheados).
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS Password_Resets (
+            id_reset INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_usuario INTEGER NOT NULL,
+            code_hash TEXT NOT NULL,
+            expira TIMESTAMP NOT NULL,     -- ISO UTC; el codigo caduca a los 20 min
+            usado INTEGER DEFAULT 0,       -- 1 tras usarse (un solo uso)
+            fecha_creacion TIMESTAMP NOT NULL,  -- ISO UTC; para el rate limit
+            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
+        );
+        """
+    )
+
+    # Autenticacion: username unico + correo unico + clave hasheada.
+    # 'discriminador' es legado (ya no se usa); se conserva la columna por
+    # compatibilidad con bases existentes, pero el login va por username/correo.
     _asegurar_columna(cursor, "Usuarios", "discriminador", "TEXT")
+    _asegurar_columna(cursor, "Usuarios", "username", "TEXT")
+    _asegurar_columna(cursor, "Usuarios", "correo", "TEXT")
     _asegurar_columna(cursor, "Usuarios", "password_hash", "TEXT")
     _asegurar_columna(cursor, "Usuarios", "password_salt", "TEXT")
+    # Idioma preferido de la interfaz y de la salida de la IA ('en' | 'es').
+    _asegurar_columna(cursor, "Usuarios", "idioma", "TEXT DEFAULT 'en'")
 
     # Progreso de misiones (acciones completadas) sobre la tabla existente.
     _asegurar_columna(cursor, "Misiones", "progreso_json", "TEXT")
@@ -239,9 +259,13 @@ def inicializar_db():
     _asegurar_columna(cursor, "Logros_Personales", "metrics_json", "TEXT")
     # Conversacion de Archive que origino la ficha (para auditar / rehacer).
     _asegurar_columna(cursor, "Logros_Personales", "conversacion_json", "TEXT")
+    # El login ahora va por username o correo, ambos unicos.
+    cursor.execute("DROP INDEX IF EXISTS idx_usuario_handle")
     cursor.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuario_handle "
-        "ON Usuarios(nombre, discriminador)"
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuario_username ON Usuarios(username)"
+    )
+    cursor.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuario_correo ON Usuarios(correo)"
     )
 
     conexion.commit()

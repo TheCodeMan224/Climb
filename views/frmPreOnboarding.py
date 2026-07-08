@@ -1,4 +1,4 @@
-"""Registro: captura del nombre y la clave del usuario."""
+"""Registro: nombre, correo, nombre de usuario único y clave."""
 
 import flet as ft
 
@@ -14,7 +14,15 @@ class frmPreOnboarding:
     def __init__(self, router, id_usuario=None):
         self.router = router
         self.id_usuario = id_usuario
-        self.campo_nombre = cmp.textfield_subrayado(_T["ph_nombre"], autofocus=True)
+        # Si el usuario edita el username a mano, dejamos de autosugerirlo.
+        self.username_editado = False
+        self.campo_nombre = cmp.textfield_subrayado(
+            _T["ph_nombre"], autofocus=True, on_blur=self._sugerir_si_vacio
+        )
+        self.campo_correo = cmp.textfield_subrayado(_T["ph_correo"])
+        self.campo_username = cmp.textfield_subrayado(
+            _T["ph_username"], on_change=self._marcar_username_editado
+        )
         self.campo_clave = cmp.textfield_subrayado(_T["ph_clave"], password=True, can_reveal=True)
         self.campo_clave2 = cmp.textfield_subrayado(
             _T["ph_clave2"], password=True, can_reveal=True, on_submit=self._continuar
@@ -28,32 +36,67 @@ class frmPreOnboarding:
         )
         self.error = ft.Text("", color=tema.CORAL, size=13)
 
-    def _continuar(self, e):
-        nombre = (self.campo_nombre.value or "").strip()
-        clave = self.campo_clave.value or ""
-        clave2 = self.campo_clave2.value or ""
+    # --- Sugerencia de username -------------------------------------------
+    def _marcar_username_editado(self, e):
+        self.username_editado = True
 
+    def _sugerir_si_vacio(self, e):
+        """Al salir del campo de nombre, propone un username si aún no hay uno propio."""
+        nombre = (self.campo_nombre.value or "").strip()
+        if nombre and not self.username_editado and not (self.campo_username.value or "").strip():
+            self.campo_username.value = clsInteraccionDB.sugerir_username(nombre)
+            self.router.page.update()
+
+    def _forzar_sugerencia(self, e):
+        """Enlace 'sugerir uno': regenera desde el nombre, aunque haya algo escrito."""
+        nombre = (self.campo_nombre.value or "").strip()
         if not nombre:
             self.error.value = _T["err_sin_nombre"]
             self.router.page.update()
             return
-        if len(clave) < 4:
-            self.error.value = _T["err_clave_corta"]
-            self.router.page.update()
-            return
-        if clave != clave2:
-            self.error.value = _T["err_no_coinciden"]
-            self.router.page.update()
-            return
-        if not self.check_disclaimer.value:
-            self.error.value = _T["err_disclaimer"]
-            self.router.page.update()
-            return
+        self.campo_username.value = clsInteraccionDB.sugerir_username(nombre)
+        self.username_editado = False
+        self.error.value = ""
+        self.router.page.update()
 
-        datos = clsInteraccionDB.crear_usuario(nombre, clave)
+    # --- Creación de cuenta -----------------------------------------------
+    def _continuar(self, e):
+        nombre = (self.campo_nombre.value or "").strip()
+        correo = (self.campo_correo.value or "").strip()
+        username = (self.campo_username.value or "").strip()
+        clave = self.campo_clave.value or ""
+        clave2 = self.campo_clave2.value or ""
+
+        def fallar(msg):
+            self.error.value = msg
+            self.router.page.update()
+
+        if not nombre:
+            return fallar(_T["err_sin_nombre"])
+        if not clsInteraccionDB.correo_valido(correo):
+            return fallar(_T["err_correo_invalido"])
+        if not clsInteraccionDB.username_valido(username):
+            return fallar(_T["err_username_invalido"])
+        if len(clave) < 4:
+            return fallar(_T["err_clave_corta"])
+        if clave != clave2:
+            return fallar(_T["err_no_coinciden"])
+        if not self.check_disclaimer.value:
+            return fallar(_T["err_disclaimer"])
+        if clsInteraccionDB.correo_existe(correo):
+            return fallar(_T["err_correo_existe"])
+        if clsInteraccionDB.username_existe(username):
+            return fallar(_T["err_username_existe"])
+
+        try:
+            datos = clsInteraccionDB.crear_usuario(nombre, username, correo, clave, self.router.idioma)
+        except ValueError:
+            # Colisión detectada por el índice único (carrera contra otro registro).
+            return fallar(_T["err_username_existe"])
+
         self.router.id_usuario = datos["id_usuario"]
         self.router.nombre = nombre
-        self._mostrar_handle(datos["handle"])
+        self.router.navegar_a("/onboarding")
 
     def _abrir_acuerdo(self, e):
         """Ventana emergente con el disclaimer; el usuario lo lee y luego marca el checkbox."""
@@ -66,35 +109,6 @@ class frmPreOnboarding:
                 content=ft.Text(_T["disclaimer_cuerpo"], size=15, color=tema.NAVY, font_family=tema.FUENTE_BODY),
             ),
             actions=[cmp.boton_primario(_T["disclaimer_cerrar"], on_click=lambda e: self.router.page.pop_dialog())],
-        )
-        self.router.page.show_dialog(dialog)
-
-    def _mostrar_handle(self, handle):
-        """Muestra el handle generado y, al confirmar, avanza al onboarding."""
-        def ir_onboarding(e):
-            self.router.page.pop_dialog()
-            self.router.navegar_a("/onboarding")
-
-        dialog = ft.AlertDialog(
-            modal=True,
-            bgcolor=tema.SUPERFICIE,
-            title=ft.Text(_T["dlg_titulo"], color=tema.NAVY, font_family=tema.FUENTE_DISPLAY),
-            content=ft.Column(
-                tight=True,
-                spacing=14,
-                horizontal_alignment=ft.CrossAxisAlignment.START,
-                controls=[
-                    cmp.eyebrow(_T["dlg_eyebrow"]),
-                    ft.Text(handle, size=26, weight=ft.FontWeight.BOLD, color=tema.AMBAR, selectable=True),
-                    cmp.hairline(width=40),
-                    ft.Text(
-                        _T["dlg_aviso"],
-                        color=tema.MUTED,
-                        font_family=tema.FUENTE_BODY,
-                    ),
-                ],
-            ),
-            actions=[cmp.boton_primario(_T["dlg_continuar"], on_click=ir_onboarding)],
         )
         self.router.page.show_dialog(dialog)
 
@@ -131,6 +145,12 @@ class frmPreOnboarding:
                         ),
                         ft.Container(height=44),
                         cmp.campo_etiquetado(_T["lbl_nombre"], self.campo_nombre),
+                        ft.Container(height=32),
+                        cmp.campo_etiquetado(_T["lbl_correo"], self.campo_correo),
+                        ft.Container(height=32),
+                        cmp.campo_etiquetado(_T["lbl_username"], self.campo_username),
+                        ft.Container(height=8),
+                        cmp.enlace(_T["sugerir_username"], on_click=self._forzar_sugerencia),
                         ft.Container(height=32),
                         cmp.campo_etiquetado(_T["lbl_clave"], self.campo_clave),
                         ft.Container(height=32),

@@ -13,13 +13,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from core import clsMirror
+from core.textos import TEXTOS
 from data import clsInteraccionDB
-
-_MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
 
 def _fecha_corta(dt):
-    return f"{dt.day:02d} {_MESES[dt.month - 1]}"
+    # Meses en el idioma activo (proxy vivo de i18n).
+    return f"{dt.day:02d} {TEXTOS['comun']['meses'][dt.month - 1]}"
 
 
 @dataclass

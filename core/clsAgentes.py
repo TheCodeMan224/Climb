@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from core import clsMirror
 from core.identidad import IDENTIDAD_CLIMB
+from core.textos import get_idioma
 from data import clsInteraccionDB
 
 load_dotenv()
@@ -21,9 +22,30 @@ MODELO_FICHA = "claude-sonnet-4-6"
 _cliente = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
+def _directiva_idioma():
+    """Instrucción de idioma de salida según el idioma activo de la sesión.
+
+    Solo afecta el texto libre que el usuario lee. Los nombres de claves JSON y
+    los valores enumerados/fijos que el prompt define literalmente (p. ej. los
+    tipos de hallazgo) deben quedar EXACTAMENTE como aparecen en el prompt, sin
+    traducir, para no romper el parseo ni las validaciones."""
+    if get_idioma() == "es":
+        return (
+            "\n\n---\n\nIDIOMA DE SALIDA: escribe en ESPAÑOL todo el texto libre que el "
+            "usuario leerá, con la voz de Climb. NO cambies los nombres de las claves JSON "
+            "ni los valores enumerados/fijos que este prompt define de forma literal; "
+            "déjalos EXACTAMENTE como aparecen aquí."
+        )
+    return (
+        "\n\n---\n\nOUTPUT LANGUAGE: write all free-form, user-facing text in ENGLISH, in "
+        "Climb's voice. Do NOT change JSON key names or any enumerated/fixed values this "
+        "prompt defines literally; keep them EXACTLY as written here."
+    )
+
+
 def _con_identidad(prompt):
-    """Antepone la identidad de marca de Climb a un prompt de sistema."""
-    return IDENTIDAD_CLIMB + "\n\n---\n\n" + prompt
+    """Antepone la identidad de marca de Climb y añade la directiva de idioma."""
+    return IDENTIDAD_CLIMB + "\n\n---\n\n" + prompt + _directiva_idioma()
 
 
 # Aclaración para los prompts que llevan identidad de Climb Y el voice profile

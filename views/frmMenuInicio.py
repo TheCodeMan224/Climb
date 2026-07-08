@@ -11,17 +11,17 @@ from core.textos import TEXTOS
 from data import clsInteraccionDB
 
 _T = TEXTOS["dashboard"]
+_COMUN = TEXTOS["comun"]  # proxy vivo: resuelve el idioma al leer
 
-# Descripciones breves de los agentes (texto con voz, centralizado en textos.py).
-AGENTES = [
-    ("Mirror", "coach_mirror", _T["ag_mirror"]),
-    ("Editor", "coach_editor", _T["ag_editor"]),
-    ("Archive", "coach_archive", _T["ag_archive"]),
-    ("Clarity", "clarity_session", _T["ag_clarity"]),
-]
 
-_DIAS = TEXTOS["comun"]["dias"]
-_MESES = TEXTOS["comun"]["meses"]
+def _agentes():
+    """Descripciones breves de los agentes en el idioma actual (se lee al render)."""
+    return [
+        ("Mirror", "coach_mirror", _T["ag_mirror"]),
+        ("Editor", "coach_editor", _T["ag_editor"]),
+        ("Archive", "coach_archive", _T["ag_archive"]),
+        ("Clarity", "clarity_session", _T["ag_clarity"]),
+    ]
 
 
 class frmMenuInicio:
@@ -46,17 +46,20 @@ class frmMenuInicio:
     # --- Helpers de fecha ---------------------------------------------------
     def _fecha_hoy(self):
         ahora = datetime.now()
-        return f"{_DIAS[ahora.weekday()]} · {ahora.day} {_MESES[ahora.month - 1]} {ahora.year}"
+        return f"{_COMUN['dias'][ahora.weekday()]} · {ahora.day} {_COMUN['meses'][ahora.month - 1]} {ahora.year}"
 
     def _fecha_corta(self, ts):
         try:
             d = datetime.strptime(str(ts)[:10], "%Y-%m-%d")
-            return f"{d.day} {_MESES[d.month - 1]}"
+            return f"{d.day} {_COMUN['meses'][d.month - 1]}"
         except (ValueError, TypeError):
             return ""
 
     # --- Bloques ------------------------------------------------------------
     def _topbar(self):
+        # El idioma se fija al crear la cuenta; por eso NO se ofrece cambiarlo aquí.
+        # Para reactivar el cambio desde el menú en el futuro, basta con volver a
+        # poner cmp.toggle_idioma(self.router) junto a la marca (toda la lógica sigue).
         return ft.Row(
             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
             controls=[cmp.eyebrow(TEXTOS["comun"]["marca"], color=tema.AMBAR), cmp.eyebrow(self._fecha_hoy(), color=tema.HINT)],
@@ -295,19 +298,20 @@ class frmMenuInicio:
 
         # Agentes (siempre).
         controles.append(self._divisor())
-        controles.append(cmp.section_header(_T["h_agentes"], contador=f"{len(AGENTES):02d}"))
+        ags = _agentes()
+        controles.append(cmp.section_header(_T["h_agentes"], contador=f"{len(ags):02d}"))
         controles.append(ft.Container(height=22))
         controles.append(
             ft.Row(spacing=16, controls=[
-                self._card_agente("01", *AGENTES[0]),
-                self._card_agente("02", *AGENTES[1]),
+                self._card_agente("01", *ags[0]),
+                self._card_agente("02", *ags[1]),
             ])
         )
         controles.append(ft.Container(height=16))
         controles.append(
             ft.Row(spacing=16, controls=[
-                self._card_agente("03", *AGENTES[2]),
-                self._card_agente("04", *AGENTES[3]),
+                self._card_agente("03", *ags[2]),
+                self._card_agente("04", *ags[3]),
             ])
         )
 

@@ -13,23 +13,25 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from typing import Optional
 
+from core.textos import TEXTOS
 from data import clsInteraccionDB
 
 
 def _hace(dias):
-    """Texto relativo (en inglés) a partir de un número de días."""
+    """Texto relativo en el idioma activo a partir de un número de días."""
+    _F = TEXTOS["fechas"]
     if dias <= 0:
-        return "today"
+        return _F["hoy"]
     if dias == 1:
-        return "yesterday"
+        return _F["ayer"]
     if dias < 7:
-        return f"{dias} days ago"
+        return _F["hace_dias"].format(n=dias)
     if dias < 14:
-        return "1 week ago"
+        return _F["hace_semana"]
     if dias < 30:
-        return f"{dias // 7} weeks ago"
+        return _F["hace_semanas"].format(n=dias // 7)
     meses = dias // 30
-    return f"{meses} month{'s' if meses != 1 else ''} ago"
+    return (_F["hace_mes"] if meses == 1 else _F["hace_meses"]).format(n=meses)
 
 
 @dataclass

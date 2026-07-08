@@ -5,7 +5,7 @@ import flet as ft
 import componentes as cmp
 import tema
 from core import clsAgentes
-from core.textos import ACTOS, TEXTOS
+from core.textos import TEXTOS
 from data import clsInteraccionDB
 
 _T = TEXTOS["onboarding"]
@@ -16,7 +16,7 @@ class frmOnboarding:
         self.router = router
         self.id_usuario = id_usuario if id_usuario is not None else router.id_usuario
 
-        self.preguntas = [(t, intro, p) for t, intro, lista in ACTOS for p in lista]
+        self.preguntas = [(t, intro, p) for t, intro, lista in _T["actos"] for p in lista]
         self.respuestas = ["" for _ in self.preguntas]
         self.indice = 0
 

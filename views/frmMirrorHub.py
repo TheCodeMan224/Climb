@@ -11,7 +11,7 @@ from core.textos import TEXTOS
 from data import clsInteraccionDB
 
 _T = TEXTOS["mirror"]
-_MESES = TEXTOS["comun"]["meses"]
+_COMUN = TEXTOS["comun"]  # proxy vivo: resuelve el idioma al leer
 
 
 class frmMirrorHub:
@@ -67,7 +67,7 @@ class frmMirrorHub:
     def _card_observando(self, patron):
         if not patron.reframe:
             return ft.Container()
-        procesado = f"{patron.detected_at.day:02d} {_MESES[patron.detected_at.month - 1]}"
+        procesado = f"{patron.detected_at.day:02d} {_COMUN['meses'][patron.detected_at.month - 1]}"
         return ft.Container(
             bgcolor=tema.SUPERFICIE,
             border=ft.Border.all(1, tema.BORDER_LIGHT),

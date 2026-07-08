@@ -7,9 +7,11 @@ los artefactos JSON que viajan entre pantallas) y cambia la vista actual.
 import flet as ft
 
 import tema
+from core.textos import set_idioma as _set_idioma
 from data import clsInteraccionDB
 from views.frmLanding import frmLanding
 from views.frmLogin import frmLogin
+from views.frmRecuperarPassword import frmRecuperarPassword
 from views.frmPreOnboarding import frmPreOnboarding
 from views.frmOnboarding import frmOnboarding
 from views.frmScoutReflection import frmScoutReflection
@@ -40,6 +42,8 @@ class Router:
         # Estado global minimo de la sesion.
         self.id_usuario = None
         self.nombre = None
+        self.idioma = _set_idioma("en")  # idioma activo de la sesion (default: ingles)
+        self.ruta_actual = None     # ultima ruta navegada (para re-render al cambiar idioma)
 
         # Artefactos que viajan entre pantallas.
         self.diagnostico_actual = None
@@ -107,7 +111,7 @@ class Router:
         self.page.update()
 
     # Rutas sin sesion donde el chip no debe mostrarse.
-    _RUTAS_SIN_CHIP = {"/landing", "/login", "/pre_onboarding"}
+    _RUTAS_SIN_CHIP = {"/landing", "/login", "/pre_onboarding", "/recuperar"}
 
     def _actualizar_chip(self, ruta):
         if self.id_usuario and ruta not in self._RUTAS_SIN_CHIP:
@@ -117,8 +121,28 @@ class Router:
         else:
             self.chip_handle.visible = False
 
+    def aplicar_idioma(self, idioma, persistir=True):
+        """Fija el idioma activo (sesion + i18n) y lo persiste si hay usuario."""
+        self.idioma = _set_idioma(idioma)
+        if persistir and self.id_usuario:
+            clsInteraccionDB.guardar_idioma(self.id_usuario, self.idioma)
+
+    def cambiar_idioma(self, idioma):
+        """Cambia el idioma y re-renderiza la vista actual para reflejarlo."""
+        if idioma == self.idioma:
+            return
+        self.aplicar_idioma(idioma)
+        if self.ruta_actual:
+            self.navegar_a(self.ruta_actual)
+
+    def cargar_idioma_usuario(self):
+        """Carga el idioma guardado del usuario activo y lo aplica (sin re-persistir)."""
+        if self.id_usuario:
+            self.aplicar_idioma(clsInteraccionDB.obtener_idioma(self.id_usuario), persistir=False)
+
     def navegar_a(self, ruta):
         """Cambia la vista actual segun la ruta indicada."""
+        self.ruta_actual = ruta
         vista = self._resolver_vista(ruta)
 
         # Reset de propiedades de pagina a un estado base; cada vista las ajusta.
@@ -154,6 +178,7 @@ class Router:
         vistas = {
             "/landing": frmLanding,
             "/login": frmLogin,
+            "/recuperar": frmRecuperarPassword,
             "/pre_onboarding": frmPreOnboarding,
             "/onboarding": frmOnboarding,
             "/scout_reflection": frmScoutReflection,

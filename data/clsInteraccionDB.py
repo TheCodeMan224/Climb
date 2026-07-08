@@ -7,9 +7,13 @@ import hashlib
 import hmac
 import json
 import os
-import random
-from datetime import datetime
+import re
+import secrets
+import sqlite3
+import unicodedata
+from datetime import datetime, timedelta, timezone
 
+from core.textos import TEXTOS
 from data.clsConexionDB import obtener_conexion
 
 # Parametros de hashing de claves (pbkdf2_hmac, solo libreria estandar).
@@ -27,62 +31,138 @@ def _hash_clave(clave, salt=None):
 # ----------------------------------------------------------------------------
 # Usuarios
 # ----------------------------------------------------------------------------
-def crear_usuario(nombre, clave):
-    """Crea un usuario con handle Nombre#numero y clave hasheada.
+# Reglas de identidad de cuenta.
+# username: 3-20 caracteres, empieza con letra, solo a-z 0-9 . y _ (case-insensitive).
+_USERNAME_RE = re.compile(r"^[a-z][a-z0-9._]{2,19}$")
+_CORREO_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
-    Genera un discriminador de 4 digitos unico para ese nombre. Devuelve un dict
-    con id_usuario, discriminador y handle completo (ej. 'Daniel#4821').
+
+def normalizar_username(username):
+    """El username es case-insensitive: se guarda y compara en minusculas."""
+    return (username or "").strip().lower()
+
+
+def normalizar_correo(correo):
+    return (correo or "").strip().lower()
+
+
+def username_valido(username):
+    return bool(_USERNAME_RE.match(normalizar_username(username)))
+
+
+def correo_valido(correo):
+    return bool(_CORREO_RE.match(normalizar_correo(correo)))
+
+
+def username_existe(username):
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        "SELECT 1 FROM Usuarios WHERE username = ?", (normalizar_username(username),)
+    ).fetchone()
+    conexion.close()
+    return fila is not None
+
+
+def correo_existe(correo):
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        "SELECT 1 FROM Usuarios WHERE correo = ?", (normalizar_correo(correo),)
+    ).fetchone()
+    conexion.close()
+    return fila is not None
+
+
+def sugerir_username(nombre):
+    """Propone un username libre derivado del nombre ('Daniel Beltran' -> 'danielbeltran')."""
+    # Quitar acentos y dejar solo a-z 0-9.
+    base = unicodedata.normalize("NFKD", nombre or "")
+    base = "".join(c for c in base if not unicodedata.combining(c)).lower()
+    base = re.sub(r"[^a-z0-9]", "", base)
+    if len(base) < 3 or not base[:1].isalpha():
+        base = ("user" + base)
+    base = base[:20]
+    if not username_existe(base):
+        return base
+    # Sufijo numerico incremental hasta encontrar uno libre.
+    n = 2
+    while True:
+        candidato = f"{base[:20 - len(str(n))]}{n}"
+        if not username_existe(candidato):
+            return candidato
+        n += 1
+
+
+def crear_usuario(nombre, username, correo, clave, idioma="en"):
+    """Crea un usuario con username unico, correo, clave hasheada e idioma.
+
+    Devuelve un dict con id_usuario y username. Lanza ValueError si el username o
+    el correo ya estan registrados (colision detectada por el indice unico).
     """
+    username = normalizar_username(username)
+    correo = normalizar_correo(correo)
+    idioma = idioma if idioma in ("en", "es") else "en"
     salt_hex, hash_hex = _hash_clave(clave)
     conexion = obtener_conexion()
     cursor = conexion.cursor()
-
-    # Generar un discriminador unico para este nombre (reintenta ante colision).
-    while True:
-        discriminador = f"{random.randint(0, 9999):04d}"
-        existe = cursor.execute(
-            "SELECT 1 FROM Usuarios WHERE nombre = ? AND discriminador = ?",
-            (nombre, discriminador),
-        ).fetchone()
-        if not existe:
-            break
-
-    cursor.execute(
-        "INSERT INTO Usuarios (nombre, discriminador, password_hash, password_salt) "
-        "VALUES (?, ?, ?, ?)",
-        (nombre, discriminador, hash_hex, salt_hex),
-    )
+    try:
+        cursor.execute(
+            "INSERT INTO Usuarios (nombre, username, correo, password_hash, password_salt, idioma) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (nombre.strip(), username, correo, hash_hex, salt_hex, idioma),
+        )
+    except sqlite3.IntegrityError as exc:
+        conexion.close()
+        raise ValueError("username o correo ya registrado") from exc
     id_usuario = cursor.lastrowid
     conexion.commit()
     conexion.close()
-    return {
-        "id_usuario": id_usuario,
-        "discriminador": discriminador,
-        "handle": f"{nombre}#{discriminador}",
-    }
+    return {"id_usuario": id_usuario, "username": username}
+
+
+def obtener_idioma(id_usuario):
+    """Devuelve el idioma preferido del usuario ('en' | 'es'), 'en' por defecto."""
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        "SELECT idioma FROM Usuarios WHERE id_usuario = ?", (id_usuario,)
+    ).fetchone()
+    conexion.close()
+    if not fila or fila["idioma"] not in ("en", "es"):
+        return "en"
+    return fila["idioma"]
+
+
+def guardar_idioma(id_usuario, idioma):
+    """Persiste el idioma preferido del usuario."""
+    if idioma not in ("en", "es"):
+        return
+    conexion = obtener_conexion()
+    conexion.execute(
+        "UPDATE Usuarios SET idioma = ? WHERE id_usuario = ?", (idioma, id_usuario)
+    )
+    conexion.commit()
+    conexion.close()
 
 
 def obtener_handle(id_usuario):
-    """Devuelve el handle del usuario ('Nombre#numero'), o solo el nombre, o None."""
+    """Devuelve el handle publico del usuario ('@username'), o None."""
     conexion = obtener_conexion()
     fila = conexion.execute(
-        "SELECT nombre, discriminador FROM Usuarios WHERE id_usuario = ?", (id_usuario,)
+        "SELECT username FROM Usuarios WHERE id_usuario = ?", (id_usuario,)
     ).fetchone()
     conexion.close()
-    if not fila:
+    if not fila or not fila["username"]:
         return None
-    if fila["discriminador"]:
-        return f"{fila['nombre']}#{fila['discriminador']}"
-    return fila["nombre"]
+    return f"@{fila['username']}"
 
 
-def verificar_credenciales(nombre, discriminador, clave):
-    """Verifica el handle (Nombre#numero) y la clave. Devuelve id_usuario o None."""
+def verificar_credenciales(identificador, clave):
+    """Verifica login por correo o username + clave. Devuelve id_usuario o None."""
+    ident = (identificador or "").strip().lower()
     conexion = obtener_conexion()
     fila = conexion.execute(
         "SELECT id_usuario, password_hash, password_salt FROM Usuarios "
-        "WHERE nombre = ? AND discriminador = ?",
-        (nombre, discriminador),
+        "WHERE username = ? OR correo = ?",
+        (ident, ident),
     ).fetchone()
     conexion.close()
 
@@ -104,6 +184,136 @@ def obtener_nombre_usuario(id_usuario):
     ).fetchone()
     conexion.close()
     return fila["nombre"] if fila else None
+
+
+def obtener_usuario_por_correo(correo):
+    """Devuelve {id_usuario, nombre, correo} para un correo, o None."""
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        "SELECT id_usuario, nombre, correo FROM Usuarios WHERE correo = ?",
+        (normalizar_correo(correo),),
+    ).fetchone()
+    conexion.close()
+    return dict(fila) if fila else None
+
+
+# ----------------------------------------------------------------------------
+# Recuperacion de contrasena (codigo de 6 digitos por correo)
+# ----------------------------------------------------------------------------
+_RESET_EXPIRA_MIN = 20      # el codigo caduca a los 20 minutos
+_RESET_COOLDOWN_SEG = 60    # minimo entre solicitudes para el mismo correo
+
+
+def _hash_code(code):
+    """Hash del codigo de reset (sha256). No se guarda en texto plano."""
+    return hashlib.sha256(code.encode("utf-8")).hexdigest()
+
+
+def _parse_utc(texto):
+    """Parsea un ISO a datetime aware en UTC; asume UTC si viene sin zona."""
+    dt = datetime.fromisoformat(texto)
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def crear_codigo_reset(correo):
+    """Genera un codigo de reset para un correo y lo deja listo para enviar.
+
+    Devuelve {id_usuario, nombre, correo, code} si se genero uno, o None si el
+    correo no existe o si se pidio otro hace muy poco (rate limit). El caller solo
+    envia el correo cuando el resultado no es None; en todos los casos debe mostrar
+    el mismo mensaje generico para no revelar si la cuenta existe.
+    """
+    usuario = obtener_usuario_por_correo(correo)
+    if not usuario:
+        return None
+
+    ahora = datetime.now(timezone.utc)
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+
+    # Rate limit: si hay un codigo reciente sin usar, no generamos otro.
+    fila = cursor.execute(
+        "SELECT fecha_creacion FROM Password_Resets "
+        "WHERE id_usuario = ? AND usado = 0 ORDER BY id_reset DESC LIMIT 1",
+        (usuario["id_usuario"],),
+    ).fetchone()
+    if fila:
+        try:
+            creado = _parse_utc(fila["fecha_creacion"])
+            if (ahora - creado).total_seconds() < _RESET_COOLDOWN_SEG:
+                conexion.close()
+                return None
+        except (ValueError, TypeError):
+            pass
+
+    # Invalidar codigos anteriores (single-use estricto) y crear el nuevo.
+    cursor.execute(
+        "UPDATE Password_Resets SET usado = 1 WHERE id_usuario = ? AND usado = 0",
+        (usuario["id_usuario"],),
+    )
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    expira = (ahora + timedelta(minutes=_RESET_EXPIRA_MIN)).isoformat()
+    cursor.execute(
+        "INSERT INTO Password_Resets (id_usuario, code_hash, expira, usado, fecha_creacion) "
+        "VALUES (?, ?, ?, 0, ?)",
+        (usuario["id_usuario"], _hash_code(code), expira, ahora.isoformat()),
+    )
+    conexion.commit()
+    conexion.close()
+    return {
+        "id_usuario": usuario["id_usuario"],
+        "nombre": usuario["nombre"],
+        "correo": usuario["correo"],
+        "code": code,
+    }
+
+
+def verificar_codigo_reset(correo, code):
+    """Valida un codigo (vigente, sin usar, correcto). Devuelve id_usuario o None.
+
+    Si es valido, lo marca como usado en el acto para que no se pueda reutilizar.
+    """
+    usuario = obtener_usuario_por_correo(correo)
+    if not usuario:
+        return None
+
+    conexion = obtener_conexion()
+    cursor = conexion.cursor()
+    fila = cursor.execute(
+        "SELECT id_reset, expira FROM Password_Resets "
+        "WHERE id_usuario = ? AND code_hash = ? AND usado = 0 "
+        "ORDER BY id_reset DESC LIMIT 1",
+        (usuario["id_usuario"], _hash_code((code or "").strip())),
+    ).fetchone()
+    if not fila:
+        conexion.close()
+        return None
+
+    try:
+        expira = _parse_utc(fila["expira"])
+    except (ValueError, TypeError):
+        conexion.close()
+        return None
+    if datetime.now(timezone.utc) > expira:
+        conexion.close()
+        return None
+
+    cursor.execute("UPDATE Password_Resets SET usado = 1 WHERE id_reset = ?", (fila["id_reset"],))
+    conexion.commit()
+    conexion.close()
+    return usuario["id_usuario"]
+
+
+def cambiar_password(id_usuario, nueva_clave):
+    """Reemplaza la clave del usuario (nuevo salt + hash)."""
+    salt_hex, hash_hex = _hash_clave(nueva_clave)
+    conexion = obtener_conexion()
+    conexion.execute(
+        "UPDATE Usuarios SET password_hash = ?, password_salt = ? WHERE id_usuario = ?",
+        (hash_hex, salt_hex, id_usuario),
+    )
+    conexion.commit()
+    conexion.close()
 
 
 # ----------------------------------------------------------------------------
@@ -599,11 +809,6 @@ LOGRO_TYPES = [
     "Activation", "Leadership", "Presentation", "Other",
 ]
 
-_MESES_CORTO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-_MESES_LARGO = ["January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"]
-
-
 def _parse_fecha(ts):
     """Convierte el timestamp de SQLite en datetime (con respaldo a hoy)."""
     s = str(ts) if ts else ""
@@ -658,8 +863,8 @@ def _logro_dict(fila):
         "tags": tags,
         "metrics": metrics,
         "fecha": fecha,
-        "fecha_corta": f"{fecha.day:02d} {_MESES_CORTO[fecha.month - 1]}",
-        "mes_anio": f"{_MESES_LARGO[fecha.month - 1]} {fecha.year}",
+        "fecha_corta": f"{fecha.day:02d} {TEXTOS['comun']['meses'][fecha.month - 1]}",
+        "mes_anio": f"{TEXTOS['comun']['meses_largo'][fecha.month - 1]} {fecha.year}",
         "metric_destacada": metrics[0] if metrics else None,
     }
 
@@ -774,17 +979,18 @@ def obtener_misiones_completadas(id_usuario):
 # Editor_Borradores (estudio de redacción)
 # ----------------------------------------------------------------------------
 def _hace(ts):
-    """Devuelve un texto relativo en inglés ('5 min ago', '2h ago', 'yesterday', '3 days ago')."""
+    """Texto relativo en el idioma activo ('5 min ago' / 'hace 5 min', etc.)."""
+    _F = TEXTOS["fechas"]
     fecha = _parse_fecha(ts)
     seg = (datetime.now() - fecha).total_seconds()
     if seg < 60:
-        return "just now"
+        return _F["ahora"]
     if seg < 3600:
-        return f"{int(seg // 60)} min ago"
+        return _F["hace_min"].format(n=int(seg // 60))
     if seg < 86400:
-        return f"{int(seg // 3600)}h ago"
+        return _F["hace_horas"].format(n=int(seg // 3600))
     dias = int(seg // 86400)
-    return "yesterday" if dias == 1 else f"{dias} days ago"
+    return _F["ayer"] if dias == 1 else _F["hace_dias"].format(n=dias)
 
 
 def _preview_borrador(texto):

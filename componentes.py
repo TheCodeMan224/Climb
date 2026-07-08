@@ -9,7 +9,7 @@ import asyncio
 import flet as ft
 
 import tema
-from core.textos import TEXTOS
+from core.textos import TEXTOS, get_idioma
 
 
 async def revelar_texto(control, texto, delay=0.02):
@@ -45,6 +45,38 @@ def eyebrow(texto, color=tema.MUTED, size=11):
         weight=ft.FontWeight.W_600,
         font_family=tema.FUENTE_SUBHEADER,
         color=color,
+    )
+
+
+def toggle_idioma(router):
+    """Selector compacto EN | ES. El idioma activo va resaltado; el otro cambia
+    el idioma de toda la app y re-renderiza la vista actual."""
+    actual = get_idioma()
+
+    def pill(lang, etiqueta):
+        activo = (lang == actual)
+        contenedor = ft.Container(
+            content=ft.Text(
+                etiqueta,
+                size=11,
+                weight=ft.FontWeight.W_700,
+                font_family=tema.FUENTE_SUBHEADER,
+                color=tema.OFF_WHITE if activo else tema.MUTED,
+            ),
+            padding=ft.Padding.symmetric(horizontal=10, vertical=5),
+            bgcolor=tema.NAVY if activo else "transparent",
+            border_radius=13,
+        )
+        if not activo:
+            contenedor.on_click = lambda e, l=lang: router.cambiar_idioma(l)
+        return contenedor
+
+    return ft.Container(
+        padding=3,
+        bgcolor=tema.SUPERFICIE,
+        border=ft.Border.all(1, tema.BORDER_LIGHT),
+        border_radius=16,
+        content=ft.Row(spacing=2, tight=True, controls=[pill("en", "EN"), pill("es", "ES")]),
     )
 
 

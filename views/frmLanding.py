@@ -13,7 +13,7 @@ class frmLanding:
         self.id_usuario = id_usuario
 
     def construir(self):
-        return ft.Container(
+        contenido = ft.Container(
             expand=True,
             alignment=ft.Alignment.CENTER,
             gradient=ft.LinearGradient(
@@ -60,4 +60,12 @@ class frmLanding:
                     ),
                 ],
             ),
+        )
+        # Toggle de idioma fijo en la esquina superior derecha.
+        return ft.Stack(
+            expand=True,
+            controls=[
+                contenido,
+                ft.Container(top=16, right=18, content=cmp.toggle_idioma(self.router)),
+            ],
         )
