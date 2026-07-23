@@ -1,25 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&family=DM+Sans:wght@500;600&display=swap');
+
 :root {
-  --navy: #1a2340;
-  --amber: #d99a3a;
-  --offwhite: #f7f5f0;
-  --muted: #6b7280;
-  --coral: #e06a5a;
-  --border: #e2ddd3;
+  --navy: #0A1F44;
+  --amber: #BA7517;
+  --amber-light: #FAEEDA;
+  --offwhite: #FAFAF7;
+  --section: #F5F5F2;
+  --surface: #FFFFFF;
+  --muted: #5F5E5A;
+  --coral: #712B13;
+  --border: #E5E5E0;
+  --hint: #B4B2A9;
+  --syne: 'Syne', sans-serif;
+  --dm: 'DM Sans', sans-serif;
+  --inter: 'Inter', sans-serif;
+  --serif: Georgia, 'Times New Roman', serif;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: var(--inter);
+  font-size: 16px;
+  line-height: 1.7;
   background: var(--offwhite);
   color: var(--navy);
 }
 
 main {
-  max-width: 560px;
+  max-width: 620px;
   margin: 0 auto;
-  padding: 48px 24px;
+  padding: 56px 28px 96px;
 }
 
 .center {
@@ -28,54 +40,68 @@ main {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 12px;
+  padding: 24px;
 }
 
-.logo { font-size: 72px; font-weight: 800; color: var(--amber); margin: 0; }
-.tag { font-style: italic; color: var(--muted); margin: 0 0 20px; }
+.logo { font-family: var(--syne); font-size: 88px; font-weight: 800; color: var(--amber); margin: 0; letter-spacing: -0.02em; }
+.tag { font-family: var(--serif); font-style: italic; color: var(--muted); margin: 0 0 24px; }
 
-h1 { font-size: 34px; margin: 0 0 4px; }
-h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 28px 0 10px; }
-.sub { color: var(--muted); margin: 0 0 24px; }
+h1 { font-family: var(--syne); font-weight: 800; font-size: 40px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; }
+h2 {
+  font-family: var(--dm); font-weight: 600; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  margin: 34px 0 12px;
+}
+.sub { color: var(--muted); margin: 0 0 26px; }
+.pivote { font-family: var(--serif); font-style: italic; font-size: 21px; line-height: 1.45; color: var(--navy); margin: 12px 0 18px; }
 
-label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 4px; }
+label { display: block; font-family: var(--dm); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 18px 0 6px; }
 input, textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
-  font-family: inherit;
-  background: #fff;
+  font-family: var(--inter);
+  color: var(--navy);
+  background: var(--surface);
 }
-textarea { min-height: 70px; resize: vertical; }
+input:focus, textarea:focus { outline: none; border-color: var(--navy); }
+input::placeholder, textarea::placeholder { color: var(--hint); }
+textarea { min-height: 80px; resize: vertical; line-height: 1.6; }
 
 .btn {
   display: inline-block;
+  font-family: var(--dm); font-weight: 600; font-size: 14px;
   background: var(--navy);
   color: var(--offwhite);
   border: none;
-  padding: 11px 20px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 10px;
   cursor: pointer;
   text-decoration: none;
-  margin-top: 20px;
+  margin-top: 22px;
+  transition: opacity .15s ease;
 }
-.btn:disabled { opacity: .5; cursor: default; }
+.btn:hover { opacity: .9; }
+.btn:disabled { opacity: .45; cursor: default; }
 
-.link { color: var(--amber); text-decoration: none; font-size: 14px; }
-.row { display: flex; gap: 20px; align-items: center; margin-top: 16px; }
+.link { font-family: var(--dm); font-weight: 600; color: var(--amber); text-decoration: none; font-size: 14px; }
+.link:hover { text-decoration: underline; }
+.row { display: flex; gap: 18px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
 
 .card {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 18px 20px;
   margin-bottom: 14px;
 }
+.card strong { font-family: var(--dm); font-weight: 600; }
 
 .error { color: var(--coral); font-size: 14px; margin-top: 12px; }
-.pivote { font-size: 20px; font-style: italic; color: var(--navy); line-height: 1.4; }
 .muted { color: var(--muted); font-size: 14px; }
+
+ul { padding-left: 20px; }
+li { margin: 6px 0; }
