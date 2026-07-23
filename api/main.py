@@ -8,14 +8,16 @@ esta API NO reemplaza esas llamadas todavía.
 Arranque: `uvicorn api.main:app --host 0.0.0.0 --port 8000`
 """
 
+import json
 import os
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from core import clsCorreo
+from core import clsAgentes, clsCorreo
 from core.clsAgentes import orquestar_interaccion_agente, seed_agentes
 from data import clsInteraccionDB as db
 
@@ -183,6 +185,67 @@ def api_guardar_perfil(id_usuario: int, payload: PerfilIn):
         payload.desahogo_libre,
     )
     return {"ok": True}
+
+
+# ============================================================================
+# Generación (LLM) — Scout y Pacer
+# ============================================================================
+class CaminosIn(BaseModel):
+    diagnostico: Optional[dict] = None   # el diagnóstico que devolvió /diagnostico
+
+
+class CaminoElegidoIn(BaseModel):
+    nombre_camino: str
+    descripcion_camino: str = ""
+    tradeoff_principal: str = ""
+    riesgo_principal: str = ""
+    tiempo_estimado_semanal: str = ""
+    patron_que_rompe: str = ""
+    caminos_alternativos: list = []
+
+
+def _requiere_perfil(id_usuario):
+    if db.obtener_perfil(id_usuario) is None:
+        raise HTTPException(status_code=400, detail="El usuario aún no completó el onboarding.")
+
+
+@app.post("/api/usuarios/{id_usuario}/diagnostico")
+async def api_diagnostico(id_usuario: int):
+    """Corre Scout: genera y persiste el diagnóstico cualitativo. Devuelve el JSON."""
+    _requiere_perfil(id_usuario)
+    return await clsAgentes.generar_diagnostico_cualitativo(id_usuario)
+
+
+@app.post("/api/usuarios/{id_usuario}/caminos")
+async def api_caminos(id_usuario: int, payload: CaminosIn):
+    """Corre Scout: genera los 3 caminos a partir del diagnóstico (o lo regenera)."""
+    _requiere_perfil(id_usuario)
+    return await clsAgentes.generar_tres_caminos(id_usuario, payload.diagnostico)
+
+
+@app.post("/api/usuarios/{id_usuario}/camino-elegido", status_code=201)
+def api_camino_elegido(id_usuario: int, payload: CaminoElegidoIn):
+    """Guarda el camino elegido por el usuario."""
+    if db.obtener_nombre_usuario(id_usuario) is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    db.insertar_camino_elegido(
+        id_usuario,
+        payload.nombre_camino,
+        payload.descripcion_camino,
+        payload.tradeoff_principal,
+        payload.riesgo_principal,
+        payload.tiempo_estimado_semanal,
+        payload.patron_que_rompe,
+        json.dumps(payload.caminos_alternativos, ensure_ascii=False),
+    )
+    return {"ok": True}
+
+
+@app.post("/api/usuarios/{id_usuario}/mision")
+async def api_mision(id_usuario: int):
+    """Corre Pacer: genera y persiste la misión semanal desde el camino elegido."""
+    _requiere_perfil(id_usuario)
+    return await clsAgentes.generar_mision_pacer(id_usuario)
 
 
 @app.get("/api/usuarios/{id_usuario}")
