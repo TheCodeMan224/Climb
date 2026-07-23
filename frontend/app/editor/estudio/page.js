@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
 
 export default function EditorEstudio() {
   const router = useRouter();
@@ -73,8 +74,8 @@ export default function EditorEstudio() {
   if (!formato) {
     return (
       <main>
-        <Link className="link" href="/editor">{tr("back_editor")}</Link>
-        <h1 style={{ marginTop: 16 }}>{tr("editor_studio")}</h1>
+        <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/editor">{tr("back_editor")}</Link></div>
+        <h1>{tr("editor_studio")}</h1>
         {contextoTitulo && <p className="muted">{tr("writing_about")} <strong>{contextoTitulo}</strong></p>}
         <p className="sub">{tr("pick_format")}</p>
         <div className="row">
@@ -87,9 +88,12 @@ export default function EditorEstudio() {
 
   return (
     <main style={{ maxWidth: 1080 }}>
-      <div className="row" style={{ justifyContent: "space-between", marginTop: 0 }}>
-        <Link className="link" href="/editor">{tr("back_editor")}</Link>
-        {idBorrador && <button className="link" onClick={completar} style={{ background: "none", border: "none", cursor: "pointer" }}>{tr("complete")}</button>}
+      <div className="topbar" style={{ marginBottom: 8 }}>
+        <Wordmark href="/dashboard" />
+        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+          <Link className="link" href="/editor">{tr("back_editor")}</Link>
+          {idBorrador && <button className="link" onClick={completar} style={{ background: "none", border: "none", cursor: "pointer" }}>{tr("complete")}</button>}
+        </div>
       </div>
       {contextoTitulo && <p className="muted" style={{ marginTop: 8 }}>{tr("based_on")} <strong>{contextoTitulo}</strong></p>}
 

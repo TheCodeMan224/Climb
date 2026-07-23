@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
 
 export default function ArchiveFicha() {
   const router = useRouter();
@@ -26,8 +27,8 @@ export default function ArchiveFicha() {
 
   return (
     <main>
-      <Link className="link" href="/archive">{tr("back_archive")}</Link>
-      <p className="muted" style={{ marginTop: 16 }}>{ficha._recien_generado ? tr("win_archived") : tr("from_archive_eyebrow")}</p>
+      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/archive">{tr("back_archive")}</Link></div>
+      <div className="eyebrow" style={{ marginBottom: 12 }}>{ficha._recien_generado ? tr("win_archived") : tr("from_archive_eyebrow")}</div>
       <h1>{ficha.titulo}</h1>
       <p className="muted">{ficha.tipo}{ficha.fecha_corta ? ` · ${ficha.fecha_corta}` : ""}</p>
       {metrics.length > 0 && (

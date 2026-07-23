@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
 
 export default function MirrorSession() {
   const router = useRouter();
@@ -93,8 +94,8 @@ export default function MirrorSession() {
 
   return (
     <main>
-      <Link className="link" href="/mirror">← Mirror</Link>
-      <p className="muted" style={{ marginTop: 16 }}>{tr("pattern_label")} {patron.quote}</p>
+      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/mirror">← Mirror</Link></div>
+      <div className="eyebrow" style={{ marginBottom: 8 }}>{tr("pattern_label")} {patron.quote}</div>
       <h1>{tr("onb_progress")} {respondidas + 1}</h1>
       <p className="pivote">{busy && !pregunta ? tr("mirror_preparing") : pregunta}</p>
       {error && <p className="error">{error}</p>}

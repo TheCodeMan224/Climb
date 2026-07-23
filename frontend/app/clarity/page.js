@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../lib/api";
 import { t, getLang } from "../../lib/i18n";
+import Wordmark from "../components/Wordmark";
+import AgentMark from "../components/AgentMark";
 
 export default function ClarityEspejo() {
   const router = useRouter();
@@ -37,8 +39,11 @@ export default function ClarityEspejo() {
 
   return (
     <main>
-      <Link className="link" href="/dashboard">{tr("back_dashboard")}</Link>
-      <h1 style={{ marginTop: 16 }}>{tr("clarity_built")}{espejo?.nombre ? `, ${espejo.nombre}` : ""}</h1>
+      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 10 }}>
+        <AgentMark name="Clarity" size={44} />
+        <h1 style={{ margin: 0 }}>{tr("clarity_built")}{espejo?.nombre ? `, ${espejo.nombre}` : ""}</h1>
+      </div>
       {error && <p className="error">{error}</p>}
       {espejo && espejo.bloques.map((b, i) => (
         <div className="card" key={i}>

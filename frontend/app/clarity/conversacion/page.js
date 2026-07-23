@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
 
 export default function ClarityConversacion() {
   const router = useRouter();
@@ -54,7 +55,7 @@ export default function ClarityConversacion() {
 
   return (
     <main>
-      <Link className="link" href="/clarity">← Clarity</Link>
+      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/clarity">← Clarity</Link></div>
       <div style={{ margin: "16px 0" }}>
         {turns.map(([who, text], i) => (
           <div key={i} style={{ margin: "12px 0", whiteSpace: "pre-wrap" }}>

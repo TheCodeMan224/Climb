@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
 
 export default function PacerCompletada() {
   const router = useRouter();
@@ -40,8 +41,8 @@ export default function PacerCompletada() {
 
   return (
     <main>
-      <Link className="link" href="/dashboard">{tr("back_dashboard")}</Link>
-      <h1 style={{ marginTop: 16 }}>{tr("mission_complete")}</h1>
+      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <h1>{tr("mission_complete")}</h1>
       <p className="sub">{tr("next_intro")}</p>
       {error && <p className="error">{error}</p>}
       {!sugerencias && !error && <p className="muted">{tr("pacer_thinking")}</p>}

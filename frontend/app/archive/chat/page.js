@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
+import AgentMark from "../../components/AgentMark";
 
 export default function ArchiveChat() {
   const router = useRouter();
@@ -53,8 +55,11 @@ export default function ArchiveChat() {
 
   return (
     <main>
-      <Link className="link" href="/archive">{tr("back_archive")}</Link>
-      <h1 style={{ marginTop: 16 }}>Archive</h1>
+      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/archive">{tr("back_archive")}</Link></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
+        <AgentMark name="Archive" size={40} />
+        <h1 style={{ margin: 0 }}>Archive</h1>
+      </div>
       <div style={{ margin: "16px 0" }}>
         {turns.map(([who, text], i) => (
           <div key={i} style={{ margin: "12px 0" }}>

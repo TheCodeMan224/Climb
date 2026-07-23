@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
 
 export default function ClarityPuertas() {
   const router = useRouter();
@@ -46,6 +47,7 @@ export default function ClarityPuertas() {
 
   return (
     <main>
+      <div className="topbar"><Wordmark href="/dashboard" /></div>
       <h1>{tr("next_up_to_you")}</h1>
       <p className="pivote">{cierre.sintesis}</p>
       <p className="sub">{cierre.pregunta}</p>

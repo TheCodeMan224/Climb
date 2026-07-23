@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../lib/api";
 import { t, getLang } from "../../lib/i18n";
+import Wordmark from "../components/Wordmark";
+import AgentMark from "../components/AgentMark";
 
 export default function EditorHome() {
   const router = useRouter();
@@ -40,8 +42,11 @@ export default function EditorHome() {
 
   return (
     <main>
-      <Link className="link" href="/dashboard">{tr("back_dashboard")}</Link>
-      <h1 style={{ marginTop: 16 }}>{tr("editor")}</h1>
+      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 10 }}>
+        <AgentMark name="Editor" size={44} />
+        <h1 style={{ margin: 0 }}>{tr("editor")}</h1>
+      </div>
       <p className="sub">{tr("editor_intro")}</p>
       <button className="btn" onClick={() => router.push("/editor/estudio")}>{tr("new_draft")}</button>
       {error && <p className="error">{error}</p>}

@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../lib/api";
 import { t, getLang } from "../../lib/i18n";
+import Wordmark from "../components/Wordmark";
+import AgentMark from "../components/AgentMark";
 
 export default function Archive() {
   const router = useRouter();
@@ -33,8 +35,11 @@ export default function Archive() {
 
   return (
     <main>
-      <Link className="link" href="/dashboard">{tr("back_dashboard")}</Link>
-      <h1 style={{ marginTop: 16 }}>{tr("the_archive")}</h1>
+      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 10 }}>
+        <AgentMark name="Archive" size={44} />
+        <h1 style={{ margin: 0 }}>{tr("the_archive")}</h1>
+      </div>
       <p className="sub">{tr("archive_intro")}</p>
       <button className="btn" onClick={() => router.push("/archive/chat")}>{tr("document_win")}</button>
       {error && <p className="error">{error}</p>}

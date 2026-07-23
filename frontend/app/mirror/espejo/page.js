@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getUsuario } from "../../../lib/api";
 import { t, getLang } from "../../../lib/i18n";
+import Wordmark from "../../components/Wordmark";
 
 export default function MirrorEspejo() {
   const router = useRouter();
@@ -39,7 +40,8 @@ export default function MirrorEspejo() {
 
   return (
     <main>
-      <p className="muted" style={{ marginTop: 16, textTransform: "uppercase", fontSize: 12 }}>{tr("the_mirror")}</p>
+      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div className="eyebrow" style={{ marginBottom: 12 }}>{tr("the_mirror")}</div>
       <h1>{tr("this_is_what_we_saw")}</h1>
       <div className="card">
         <p className="muted" style={{ textDecoration: "line-through", margin: 0 }}>{reframe.old_quote}</p>
