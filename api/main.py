@@ -283,6 +283,48 @@ def api_aceptar_mision(id_usuario: int, payload: MisionIn):
     return {"id_mision": db.insertar_mision(id_usuario, payload.mision)}
 
 
+# ============================================================================
+# Archive (chat -> ficha -> timeline)
+# ============================================================================
+class TurnosIn(BaseModel):
+    turns: list = []   # [[speaker, texto], ...]
+
+
+_ARCHIVE_TRIGGER = "document the win this way"
+
+
+@app.post("/api/usuarios/{id_usuario}/archive/mensaje")
+async def api_archive_mensaje(id_usuario: int, payload: TurnosIn):
+    """Responde en la conversación de Archive. Indica si ya se puede generar la ficha."""
+    turns = payload.turns
+    if turns and turns[-1][0] == "user":
+        db.registrar_texto_usuario(id_usuario, "archive", turns[-1][1])
+    respuesta = await clsAgentes.responder_archive(turns, id_usuario)
+    try:
+        await clsAgentes.actualizar_voice_profile_si_toca(id_usuario)
+    except Exception:
+        pass
+    return {"respuesta": respuesta, "ofrecer_ficha": _ARCHIVE_TRIGGER in (respuesta or "").lower()}
+
+
+@app.post("/api/usuarios/{id_usuario}/archive/ficha", status_code=201)
+async def api_archive_ficha(id_usuario: int, payload: TurnosIn):
+    """Genera la ficha de logro desde la conversación y la persiste."""
+    ficha = await clsAgentes.generar_ficha_logro(payload.turns, id_usuario)
+    id_registro = db.insertar_logro_completo(
+        id_usuario, ficha["tipo"], ficha["titulo"], ficha["contexto"],
+        ficha.get("mi_rol", ""), ficha.get("aprendizaje", ""),
+        ficha.get("tags", []), ficha.get("metrics", []), conversacion=payload.turns,
+    )
+    return {**ficha, "id": id_registro}
+
+
+@app.get("/api/usuarios/{id_usuario}/archive/timeline")
+def api_archive_timeline(id_usuario: int):
+    """Stats + logros agrupados por mes para la línea de tiempo de Archive."""
+    return {"stats": db.archivo_stats(id_usuario), "meses": db.archivo_agrupado_por_mes(id_usuario)}
+
+
 @app.get("/api/usuarios/{id_usuario}")
 def get_usuario(id_usuario: int):
     """Datos básicos de un usuario (nombre, handle, idioma)."""
