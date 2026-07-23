@@ -111,6 +111,10 @@ class Patron:
 # Carga del Hub: patrones de Scout (del resumen) + patrones de la tabla
 # ----------------------------------------------------------------------------
 def _parse_ts(ts):
+    # PostgreSQL devuelve datetime (tz-aware); lo dejamos naive para comparar con
+    # datetime.now() (naive) en el resto de este módulo.
+    if isinstance(ts, datetime):
+        return ts.replace(tzinfo=None)
     s = str(ts) if ts else ""
     for fmt, corte in (("%Y-%m-%d %H:%M:%S", 19), ("%Y-%m-%d", 10)):
         try:
@@ -132,7 +136,7 @@ def _patron_de_fila(f):
         except (ValueError, TypeError):
             reframe = None
     return Patron(
-        id=f"db:{f['idPatron']}",
+        id=f"db:{f['id_patron']}",
         quote=f["quote"],
         source=f.get("source") or "user",
         detected_at=_parse_ts(f.get("detected_at")),

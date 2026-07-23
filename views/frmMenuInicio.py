@@ -234,7 +234,7 @@ class frmMenuInicio:
             content=ft.Row(
                 vertical_alignment=ft.CrossAxisAlignment.START,
                 controls=[
-                    ft.Container(width=80, content=cmp.eyebrow(self._fecha_corta(logro.get("fechaRegistroLogro")), color=tema.HINT)),
+                    ft.Container(width=80, content=cmp.eyebrow(self._fecha_corta(logro.get("fecha_registro_logro")), color=tema.HINT)),
                     ft.Container(width=20),
                     ft.Column(
                         expand=True,
@@ -245,10 +245,10 @@ class frmMenuInicio:
                                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
                                 controls=[
                                     ft.Text(logro.get("logro", ""), size=14, weight=ft.FontWeight.W_600, font_family=tema.FUENTE_SUBHEADER, color=tema.NAVY, expand=True),
-                                    cmp.eyebrow(logro.get("tipoLogro") or "", color=tema.HINT),
+                                    cmp.eyebrow(logro.get("tipo_logro") or "", color=tema.HINT),
                                 ],
                             ),
-                            ft.Text(logro.get("descripcionLogro", ""), size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED),
+                            ft.Text(logro.get("descripcion_logro", ""), size=13, font_family=tema.FUENTE_BODY, color=tema.MUTED),
                         ],
                     ),
                 ],

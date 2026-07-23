@@ -1182,7 +1182,7 @@ async def actualizar_voice_profile(id_usuario):
         "confianza": _confianza_voice(n_total),
         "fecha": datetime.now().isoformat(),
     }
-    clsInteraccionDB.guardar_voice_profile(id_usuario, contenido, n_total, textos[-1]["idTexto"])
+    clsInteraccionDB.guardar_voice_profile(id_usuario, contenido, n_total, textos[-1]["id_texto"])
     return contenido
 
 

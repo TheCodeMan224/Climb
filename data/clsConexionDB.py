@@ -1,272 +1,85 @@
-"""Conexion y creacion de esquema SQLite para Climb."""
+"""Conexión a PostgreSQL para Climb, con una capa de compatibilidad.
+
+El resto del data layer (clsInteraccionDB) fue escrito contra la API de sqlite3:
+`conexion.execute("... ?", params)`, `cursor.lastrowid`, `fila["columna"]`, etc.
+Para no reescribir cientos de llamadas, `obtener_conexion()` devuelve un envoltorio
+(`_ConexionCompat`) que imita esa API sobre psycopg2:
+
+  - `.execute(sql, params)` traduce los placeholders '?' a '%s' y devuelve un cursor.
+  - el cursor es RealDictCursor, así que `fila["columna"]` sigue funcionando.
+  - `.cursor()`, `.commit()`, `.close()` se comportan igual que en sqlite3.
+
+`cursor.lastrowid` NO existe en psycopg2: los INSERT que necesitan el id usan
+`INSERT ... RETURNING <pk>` + `fetchone()` (ver clsInteraccionDB).
+"""
 
 import os
-import sqlite3
 
-# Ruta absoluta a climb.db, junto a este archivo de proyecto (raiz Climb/).
-_RUTA_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "climb.db")
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 def obtener_conexion():
-    """Devuelve una conexion a climb.db con foreign keys activadas."""
-    conexion = sqlite3.connect(_RUTA_DB)
-    conexion.row_factory = sqlite3.Row
-    conexion.execute("PRAGMA foreign_keys = ON")
-    return conexion
-
-
-def _asegurar_columna(cursor, tabla, columna, definicion):
-    """Agrega una columna a una tabla existente si aun no existe (migracion ligera)."""
-    columnas = [fila["name"] for fila in cursor.execute(f"PRAGMA table_info({tabla})").fetchall()]
-    if columna not in columnas:
-        cursor.execute(f"ALTER TABLE {tabla} ADD COLUMN {columna} {definicion}")
+    """Devuelve una conexión a PostgreSQL (envuelta para imitar sqlite3)."""
+    url = os.getenv("DATABASE_URL")
+    if not url:
+        raise RuntimeError("DATABASE_URL no está definida en el entorno.")
+    return _ConexionCompat(psycopg2.connect(url, cursor_factory=RealDictCursor))
 
 
 def inicializar_db():
-    """Crea las 7 tablas con CREATE TABLE IF NOT EXISTS si no existen."""
-    conexion = obtener_conexion()
-    cursor = conexion.cursor()
+    """El esquema lo crea el contenedor de PostgreSQL vía database/init.sql.
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Usuarios (
-            id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        """
-    )
+    Se mantiene la función porque main.py la llama al arrancar; aquí es un no-op.
+    """
+    print("[INFO] Esquema gestionado por PostgreSQL (database/init.sql).")
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Usuario_Perfil (
-            id_perfil INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            apertura_emocional TEXT,
-            contexto_profesional TEXT,
-            logro_principal TEXT,
-            reaccion_presion_visibilidad TEXT,
-            intentos_previos TEXT,
-            vision_futuro TEXT,
-            desahogo_libre TEXT,
-            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Chats (
-            id_chat INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            tipo_agente TEXT CHECK (tipo_agente IN (
-                'coach_mirror', 'coach_archive', 'coach_editor', 'coach_pacer', 'clarity_session'
-            )),
-            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+def _traducir(sql):
+    """psycopg2 usa '%s' como placeholder en vez del '?' de sqlite3."""
+    return sql.replace("?", "%s")
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Mensajes_Chat (
-            id_mensaje INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_chat INTEGER NOT NULL,
-            rol TEXT CHECK (rol IN ('user', 'assistant')),
-            contenido TEXT NOT NULL,
-            fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_chat) REFERENCES Chats(id_chat) ON DELETE CASCADE
-        );
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Hallazgos_Perfil (
-            id_hallazgo INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            origen TEXT CHECK (origen IN ('Coach', 'Mentor', 'Onboarding')),
-            tipo TEXT CHECK (tipo IN (
-                'Fortaleza', 'Area_Oportunidad', 'Bloqueo_Emocional', 'Meta_Visibilidad'
-            )),
-            descripcion TEXT NOT NULL,
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+class _CursorCompat:
+    """Cursor que traduce '?'->'%s' en execute(). El resto (fetchone, fetchall,
+    rowcount, etc.) se delega al cursor real de psycopg2."""
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Historico_Resumenes (
-            id_resumen INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            contenido_json TEXT NOT NULL,
-            fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+    def __init__(self, cur):
+        self._cur = cur
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Camino_Elegido (
-            id_camino_elegido INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            nombre_camino TEXT NOT NULL,
-            descripcion_camino TEXT NOT NULL,
-            tradeoff_principal TEXT,
-            riesgo_principal TEXT,
-            tiempo_estimado_semanal TEXT,
-            patron_que_rompe TEXT,
-            caminos_alternativos_json TEXT,
-            fecha_eleccion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+    def execute(self, sql, params=()):
+        self._cur.execute(_traducir(sql), params)
+        return self
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Textos_Usuario (
-            idTexto INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            fuente TEXT,            -- 'onboarding' | 'editor' | 'clarity' | 'archive' | 'mirror'
-            texto TEXT NOT NULL,
-            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+    def fetchone(self):
+        return self._cur.fetchone()
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Voice_Profile (
-            id_usuario INTEGER PRIMARY KEY,
-            contenido_json TEXT,
-            n_muestras INTEGER DEFAULT 0,
-            ultimo_texto_id INTEGER DEFAULT 0,
-            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+    def fetchall(self):
+        return self._cur.fetchall()
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Logros_Personales (
-            idRegistro INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuarioLogro INTEGER NOT NULL,
-            tipoLogro TEXT,
-            logro TEXT NOT NULL,
-            descripcionLogro TEXT,
-            fechaRegistroLogro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (usuarioLogro) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+    def __getattr__(self, name):
+        return getattr(self._cur, name)
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Mirror_Patrones (
-            idPatron INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            quote TEXT NOT NULL,
-            source TEXT,            -- 'scout' | 'user'
-            status TEXT,            -- 'pending' | 'observing'
-            scout_ref TEXT,         -- nombre del patron de Scout (dedupe), o NULL
-            reframe_json TEXT,
-            detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            last_observed TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Misiones (
-            id_mision INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            contenido_json TEXT NOT NULL,
-            progreso_json TEXT,
-            fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+class _ConexionCompat:
+    """Imita sqlite3.Connection sobre psycopg2 para el data layer existente."""
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Editor_Borradores (
-            idBorrador INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            formato TEXT,                 -- 'correo' | 'linkedin' | etiqueta libre del usuario
-            es_correo INTEGER DEFAULT 0,  -- 1 si se renderiza como correo (asunto + cuerpo)
-            asunto TEXT,
-            borrador TEXT,
-            estado TEXT DEFAULT 'activo', -- 'activo' | 'completado'
-            contexto_json TEXT,           -- ficha de logro de Archive, si aplica
-            turns_json TEXT,              -- historial del chat para retomar
-            creado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            actualizado TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+    def __init__(self, conn):
+        self._c = conn
 
-    # Codigos de recuperacion de contrasena (6 digitos, guardados hasheados).
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Password_Resets (
-            id_reset INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_usuario INTEGER NOT NULL,
-            code_hash TEXT NOT NULL,
-            expira TIMESTAMP NOT NULL,     -- ISO UTC; el codigo caduca a los 20 min
-            usado INTEGER DEFAULT 0,       -- 1 tras usarse (un solo uso)
-            fecha_creacion TIMESTAMP NOT NULL,  -- ISO UTC; para el rate limit
-            FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario) ON DELETE CASCADE
-        );
-        """
-    )
+    def execute(self, sql, params=()):
+        cur = self._c.cursor()
+        cur.execute(_traducir(sql), params)
+        return _CursorCompat(cur)
 
-    # Autenticacion: username unico + correo unico + clave hasheada.
-    # 'discriminador' es legado (ya no se usa); se conserva la columna por
-    # compatibilidad con bases existentes, pero el login va por username/correo.
-    _asegurar_columna(cursor, "Usuarios", "discriminador", "TEXT")
-    _asegurar_columna(cursor, "Usuarios", "username", "TEXT")
-    _asegurar_columna(cursor, "Usuarios", "correo", "TEXT")
-    _asegurar_columna(cursor, "Usuarios", "password_hash", "TEXT")
-    _asegurar_columna(cursor, "Usuarios", "password_salt", "TEXT")
-    # Idioma preferido de la interfaz y de la salida de la IA ('en' | 'es').
-    _asegurar_columna(cursor, "Usuarios", "idioma", "TEXT DEFAULT 'en'")
+    def cursor(self):
+        return _CursorCompat(self._c.cursor())
 
-    # Progreso de misiones (acciones completadas) sobre la tabla existente.
-    _asegurar_columna(cursor, "Misiones", "progreso_json", "TEXT")
-    # Ciclo de vida de la mision: 'activa' | 'completada' + fecha de cierre.
-    _asegurar_columna(cursor, "Misiones", "estado", "TEXT DEFAULT 'activa'")
-    _asegurar_columna(cursor, "Misiones", "fecha_completada", "TIMESTAMP")
+    def commit(self):
+        self._c.commit()
 
-    # Conversacion en progreso de una sesion de Mirror (para retomarla luego).
-    _asegurar_columna(cursor, "Mirror_Patrones", "turns_json", "TEXT")
+    def rollback(self):
+        self._c.rollback()
 
-    # Modelo enriquecido de logros para Archive (sobre la tabla existente).
-    _asegurar_columna(cursor, "Logros_Personales", "mi_rol", "TEXT")
-    _asegurar_columna(cursor, "Logros_Personales", "aprendizaje", "TEXT")
-    _asegurar_columna(cursor, "Logros_Personales", "tags_json", "TEXT")
-    _asegurar_columna(cursor, "Logros_Personales", "metrics_json", "TEXT")
-    # Conversacion de Archive que origino la ficha (para auditar / rehacer).
-    _asegurar_columna(cursor, "Logros_Personales", "conversacion_json", "TEXT")
-    # El login ahora va por username o correo, ambos unicos.
-    cursor.execute("DROP INDEX IF EXISTS idx_usuario_handle")
-    cursor.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuario_username ON Usuarios(username)"
-    )
-    cursor.execute(
-        "CREATE UNIQUE INDEX IF NOT EXISTS idx_usuario_correo ON Usuarios(correo)"
-    )
-
-    conexion.commit()
-    conexion.close()
+    def close(self):
+        self._c.close()

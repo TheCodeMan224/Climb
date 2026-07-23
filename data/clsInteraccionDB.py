@@ -9,7 +9,7 @@ import json
 import os
 import re
 import secrets
-import sqlite3
+import psycopg2
 import unicodedata
 from datetime import datetime, timedelta, timezone
 
@@ -107,13 +107,13 @@ def crear_usuario(nombre, username, correo, clave, idioma="en"):
     try:
         cursor.execute(
             "INSERT INTO Usuarios (nombre, username, correo, password_hash, password_salt, idioma) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
+            "VALUES (?, ?, ?, ?, ?, ?) RETURNING id_usuario",
             (nombre.strip(), username, correo, hash_hex, salt_hex, idioma),
         )
-    except sqlite3.IntegrityError as exc:
+    except psycopg2.IntegrityError as exc:
         conexion.close()
         raise ValueError("username o correo ya registrado") from exc
-    id_usuario = cursor.lastrowid
+    id_usuario = cursor.fetchone()["id_usuario"]
     conexion.commit()
     conexion.close()
     return {"id_usuario": id_usuario, "username": username}
@@ -209,9 +209,9 @@ def _hash_code(code):
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
 
 
-def _parse_utc(texto):
-    """Parsea un ISO a datetime aware en UTC; asume UTC si viene sin zona."""
-    dt = datetime.fromisoformat(texto)
+def _parse_utc(valor):
+    """Devuelve un datetime aware en UTC desde un datetime o un ISO string."""
+    dt = valor if isinstance(valor, datetime) else datetime.fromisoformat(valor)
     return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
@@ -252,11 +252,11 @@ def crear_codigo_reset(correo):
         (usuario["id_usuario"],),
     )
     code = f"{secrets.randbelow(1_000_000):06d}"
-    expira = (ahora + timedelta(minutes=_RESET_EXPIRA_MIN)).isoformat()
+    expira = ahora + timedelta(minutes=_RESET_EXPIRA_MIN)
     cursor.execute(
         "INSERT INTO Password_Resets (id_usuario, code_hash, expira, usado, fecha_creacion) "
         "VALUES (?, ?, ?, 0, ?)",
-        (usuario["id_usuario"], _hash_code(code), expira, ahora.isoformat()),
+        (usuario["id_usuario"], _hash_code(code), expira, ahora),
     )
     conexion.commit()
     conexion.close()
@@ -395,10 +395,10 @@ def crear_chat(id_usuario, tipo_agente):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     cursor.execute(
-        "INSERT INTO Chats (id_usuario, tipo_agente) VALUES (?, ?)",
+        "INSERT INTO Chats (id_usuario, tipo_agente) VALUES (?, ?) RETURNING id_chat",
         (id_usuario, tipo_agente),
     )
-    id_chat = cursor.lastrowid
+    id_chat = cursor.fetchone()["id_chat"]
     conexion.commit()
     conexion.close()
     return id_chat
@@ -576,13 +576,13 @@ def registrar_texto_usuario(id_usuario, fuente, texto):
 
 
 def obtener_textos_usuario(id_usuario, desde_id=0):
-    """Devuelve los textos del usuario con idTexto > desde_id (orden cronológico)."""
+    """Devuelve los textos del usuario con id_texto > desde_id (orden cronológico)."""
     conexion = obtener_conexion()
     filas = conexion.execute(
         """
-        SELECT idTexto, fuente, texto FROM Textos_Usuario
-        WHERE id_usuario = ? AND idTexto > ?
-        ORDER BY idTexto ASC
+        SELECT id_texto, fuente, texto FROM Textos_Usuario
+        WHERE id_usuario = ? AND id_texto > ?
+        ORDER BY id_texto ASC
         """,
         (id_usuario, desde_id),
     ).fetchall()
@@ -628,31 +628,31 @@ def guardar_voice_profile(id_usuario, contenido, n_muestras, ultimo_texto_id):
 # Mirror_Patrones
 # ----------------------------------------------------------------------------
 def insertar_patron_usuario(id_usuario, quote):
-    """Registra un patrón descrito por el usuario (pending). Devuelve idPatron."""
+    """Registra un patrón descrito por el usuario (pending). Devuelve id_patron."""
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     cursor.execute(
-        "INSERT INTO Mirror_Patrones (id_usuario, quote, source, status) VALUES (?, ?, 'user', 'pending')",
+        "INSERT INTO Mirror_Patrones (id_usuario, quote, source, status) VALUES (?, ?, 'user', 'pending') RETURNING id_patron",
         (id_usuario, quote),
     )
-    id_patron = cursor.lastrowid
+    id_patron = cursor.fetchone()["id_patron"]
     conexion.commit()
     conexion.close()
     return id_patron
 
 
 def insertar_patron_procesado(id_usuario, quote, source, reframe_json, scout_ref=None):
-    """Registra un patrón ya procesado (observing) con su reframe. Devuelve idPatron."""
+    """Registra un patrón ya procesado (observing) con su reframe. Devuelve id_patron."""
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     cursor.execute(
         """
         INSERT INTO Mirror_Patrones (id_usuario, quote, source, status, scout_ref, reframe_json, last_observed)
-        VALUES (?, ?, ?, 'observing', ?, ?, CURRENT_TIMESTAMP)
+        VALUES (?, ?, ?, 'observing', ?, ?, CURRENT_TIMESTAMP) RETURNING id_patron
         """,
         (id_usuario, quote, source, scout_ref, reframe_json),
     )
-    id_patron = cursor.lastrowid
+    id_patron = cursor.fetchone()["id_patron"]
     conexion.commit()
     conexion.close()
     return id_patron
@@ -662,7 +662,7 @@ def marcar_patron_procesado(id_patron, reframe_json):
     """Marca un patrón existente como observing con su reframe (y limpia la sesión en progreso)."""
     conexion = obtener_conexion()
     conexion.execute(
-        "UPDATE Mirror_Patrones SET status='observing', reframe_json=?, turns_json=NULL, last_observed=CURRENT_TIMESTAMP WHERE idPatron=?",
+        "UPDATE Mirror_Patrones SET status='observing', reframe_json=?, turns_json=NULL, last_observed=CURRENT_TIMESTAMP WHERE id_patron=?",
         (reframe_json, id_patron),
     )
     conexion.commit()
@@ -673,7 +673,7 @@ def guardar_sesion_mirror(id_patron, turns_json):
     """Guarda la conversación en progreso de un patrón existente (para retomarla)."""
     conexion = obtener_conexion()
     conexion.execute(
-        "UPDATE Mirror_Patrones SET turns_json=? WHERE idPatron=?",
+        "UPDATE Mirror_Patrones SET turns_json=? WHERE id_patron=?",
         (turns_json, id_patron),
     )
     conexion.commit()
@@ -681,7 +681,7 @@ def guardar_sesion_mirror(id_patron, turns_json):
 
 
 def insertar_patron_en_progreso(id_usuario, quote, source, turns_json, scout_ref=None):
-    """Inserta un patrón aún 'pending' con su conversación en progreso. Devuelve idPatron.
+    """Inserta un patrón aún 'pending' con su conversación en progreso. Devuelve id_patron.
 
     Se usa cuando el usuario deja a medias un patrón que aún no estaba en la tabla
     (p. ej. uno detectado por Scout)."""
@@ -689,10 +689,10 @@ def insertar_patron_en_progreso(id_usuario, quote, source, turns_json, scout_ref
     cursor = conexion.cursor()
     cursor.execute(
         "INSERT INTO Mirror_Patrones (id_usuario, quote, source, status, scout_ref, turns_json) "
-        "VALUES (?, ?, ?, 'pending', ?, ?)",
+        "VALUES (?, ?, ?, 'pending', ?, ?) RETURNING id_patron",
         (id_usuario, quote, source, scout_ref, turns_json),
     )
-    id_patron = cursor.lastrowid
+    id_patron = cursor.fetchone()["id_patron"]
     conexion.commit()
     conexion.close()
     return id_patron
@@ -703,8 +703,8 @@ def obtener_patrones_mirror(id_usuario):
     conexion = obtener_conexion()
     filas = conexion.execute(
         """
-        SELECT idPatron, quote, source, status, scout_ref, reframe_json, turns_json, detected_at, last_observed
-        FROM Mirror_Patrones WHERE id_usuario = ? ORDER BY idPatron DESC
+        SELECT id_patron, quote, source, status, scout_ref, reframe_json, turns_json, detected_at, last_observed
+        FROM Mirror_Patrones WHERE id_usuario = ? ORDER BY id_patron DESC
         """,
         (id_usuario,),
     ).fetchall()
@@ -724,14 +724,14 @@ def insertar_mision(id_usuario, mision):
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     cursor.execute(
-        "INSERT INTO Misiones (id_usuario, contenido_json, progreso_json) VALUES (?, ?, ?)",
+        "INSERT INTO Misiones (id_usuario, contenido_json, progreso_json) VALUES (?, ?, ?) RETURNING id_mision",
         (
             id_usuario,
             json.dumps(mision, ensure_ascii=False),
             json.dumps(progreso),
         ),
     )
-    id_mision = cursor.lastrowid
+    id_mision = cursor.fetchone()["id_mision"]
     conexion.commit()
     conexion.close()
     return id_mision
@@ -777,7 +777,7 @@ def insertar_logro(id_usuario, tipo, logro, descripcion):
     conexion = obtener_conexion()
     conexion.execute(
         """
-        INSERT INTO Logros_Personales (usuarioLogro, tipoLogro, logro, descripcionLogro)
+        INSERT INTO Logros_Personales (id_usuario, tipo_logro, logro, descripcion_logro)
         VALUES (?, ?, ?, ?)
         """,
         (id_usuario, tipo, logro, descripcion),
@@ -791,10 +791,10 @@ def obtener_logros(id_usuario):
     conexion = obtener_conexion()
     filas = conexion.execute(
         """
-        SELECT idRegistro, tipoLogro, logro, descripcionLogro, fechaRegistroLogro
+        SELECT id_registro, tipo_logro, logro, descripcion_logro, fecha_registro_logro
         FROM Logros_Personales
-        WHERE usuarioLogro = ?
-        ORDER BY idRegistro DESC
+        WHERE id_usuario = ?
+        ORDER BY id_registro DESC
         """,
         (id_usuario,),
     ).fetchall()
@@ -810,18 +810,24 @@ LOGRO_TYPES = [
 ]
 
 def _parse_fecha(ts):
-    """Convierte el timestamp de SQLite en datetime (con respaldo a hoy)."""
+    """Devuelve un datetime aware (UTC) desde un datetime o un string; hoy por defecto.
+
+    PostgreSQL devuelve columnas TIMESTAMPTZ como datetime; se aceptan también
+    strings por compatibilidad.
+    """
+    if isinstance(ts, datetime):
+        return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
     s = str(ts) if ts else ""
     for fmt, corte in (("%Y-%m-%d %H:%M:%S", 19), ("%Y-%m-%d", 10)):
         try:
-            return datetime.strptime(s[:corte], fmt)
+            return datetime.strptime(s[:corte], fmt).replace(tzinfo=timezone.utc)
         except ValueError:
             continue
-    return datetime.now()
+    return datetime.now(timezone.utc)
 
 
 def insertar_logro_completo(id_usuario, tipo, titulo, contexto, mi_rol="", aprendizaje="", tags=None, metrics=None, conversacion=None):
-    """Registra un logro completo (modelo Archive). Devuelve idRegistro.
+    """Registra un logro completo (modelo Archive). Devuelve id_registro.
 
     tags: list[str].  metrics: list[{"value", "label"}].
     conversacion: lista de turnos de Archive que originó la ficha (opcional).
@@ -831,9 +837,9 @@ def insertar_logro_completo(id_usuario, tipo, titulo, contexto, mi_rol="", apren
     cursor.execute(
         """
         INSERT INTO Logros_Personales
-            (usuarioLogro, tipoLogro, logro, descripcionLogro, mi_rol, aprendizaje,
+            (id_usuario, tipo_logro, logro, descripcion_logro, mi_rol, aprendizaje,
              tags_json, metrics_json, conversacion_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id_registro
         """,
         (
             id_usuario, tipo, titulo, contexto, mi_rol, aprendizaje,
@@ -842,7 +848,7 @@ def insertar_logro_completo(id_usuario, tipo, titulo, contexto, mi_rol="", apren
             json.dumps(conversacion, ensure_ascii=False) if conversacion is not None else None,
         ),
     )
-    id_logro = cursor.lastrowid
+    id_logro = cursor.fetchone()["id_registro"]
     conexion.commit()
     conexion.close()
     return id_logro
@@ -850,14 +856,14 @@ def insertar_logro_completo(id_usuario, tipo, titulo, contexto, mi_rol="", apren
 
 def _logro_dict(fila):
     """Construye el dict enriquecido (con campos calculados) desde una fila."""
-    fecha = _parse_fecha(fila["fechaRegistroLogro"])
+    fecha = _parse_fecha(fila["fecha_registro_logro"])
     tags = json.loads(fila["tags_json"]) if fila["tags_json"] else []
     metrics = json.loads(fila["metrics_json"]) if fila["metrics_json"] else []
     return {
-        "id": fila["idRegistro"],
-        "tipo": fila["tipoLogro"] or "",
+        "id": fila["id_registro"],
+        "tipo": fila["tipo_logro"] or "",
         "titulo": fila["logro"] or "",
-        "contexto": fila["descripcionLogro"] or "",
+        "contexto": fila["descripcion_logro"] or "",
         "mi_rol": fila["mi_rol"] or "",
         "aprendizaje": fila["aprendizaje"] or "",
         "tags": tags,
@@ -874,11 +880,11 @@ def obtener_logros_completos(id_usuario):
     conexion = obtener_conexion()
     filas = conexion.execute(
         """
-        SELECT idRegistro, tipoLogro, logro, descripcionLogro, mi_rol, aprendizaje,
-               tags_json, metrics_json, fechaRegistroLogro
+        SELECT id_registro, tipo_logro, logro, descripcion_logro, mi_rol, aprendizaje,
+               tags_json, metrics_json, fecha_registro_logro
         FROM Logros_Personales
-        WHERE usuarioLogro = ?
-        ORDER BY fechaRegistroLogro DESC, idRegistro DESC
+        WHERE id_usuario = ?
+        ORDER BY fecha_registro_logro DESC, id_registro DESC
         """,
         (id_usuario,),
     ).fetchall()
@@ -982,7 +988,7 @@ def _hace(ts):
     """Texto relativo en el idioma activo ('5 min ago' / 'hace 5 min', etc.)."""
     _F = TEXTOS["fechas"]
     fecha = _parse_fecha(ts)
-    seg = (datetime.now() - fecha).total_seconds()
+    seg = (datetime.now(timezone.utc) - fecha).total_seconds()
     if seg < 60:
         return _F["ahora"]
     if seg < 3600:
@@ -1001,18 +1007,18 @@ def _preview_borrador(texto):
 
 def crear_borrador_editor(id_usuario, formato, es_correo, asunto, borrador,
                           contexto_json=None, turns_json=None, estado="activo"):
-    """Crea un borrador del estudio de Editor. Devuelve idBorrador."""
+    """Crea un borrador del estudio de Editor. Devuelve id_borrador."""
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     cursor.execute(
         """
         INSERT INTO Editor_Borradores
             (id_usuario, formato, es_correo, asunto, borrador, estado, contexto_json, turns_json)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id_borrador
         """,
         (id_usuario, formato, int(bool(es_correo)), asunto, borrador, estado, contexto_json, turns_json),
     )
-    id_borrador = cursor.lastrowid
+    id_borrador = cursor.fetchone()["id_borrador"]
     conexion.commit()
     conexion.close()
     return id_borrador
@@ -1026,7 +1032,7 @@ def actualizar_borrador_editor(id_borrador, formato, es_correo, asunto, borrador
         UPDATE Editor_Borradores
         SET formato = ?, es_correo = ?, asunto = ?, borrador = ?, turns_json = ?,
             actualizado = CURRENT_TIMESTAMP
-        WHERE idBorrador = ?
+        WHERE id_borrador = ?
         """,
         (formato, int(bool(es_correo)), asunto, borrador, turns_json, id_borrador),
     )
@@ -1038,7 +1044,7 @@ def marcar_borrador_estado(id_borrador, estado):
     """Cambia el estado de un borrador ('activo' | 'completado')."""
     conexion = obtener_conexion()
     conexion.execute(
-        "UPDATE Editor_Borradores SET estado = ?, actualizado = CURRENT_TIMESTAMP WHERE idBorrador = ?",
+        "UPDATE Editor_Borradores SET estado = ?, actualizado = CURRENT_TIMESTAMP WHERE id_borrador = ?",
         (estado, id_borrador),
     )
     conexion.commit()
@@ -1048,7 +1054,7 @@ def marcar_borrador_estado(id_borrador, estado):
 def eliminar_borrador_editor(id_borrador):
     """Elimina un borrador definitivamente."""
     conexion = obtener_conexion()
-    conexion.execute("DELETE FROM Editor_Borradores WHERE idBorrador = ?", (id_borrador,))
+    conexion.execute("DELETE FROM Editor_Borradores WHERE id_borrador = ?", (id_borrador,))
     conexion.commit()
     conexion.close()
 
@@ -1058,9 +1064,9 @@ def obtener_borrador_editor(id_borrador):
     conexion = obtener_conexion()
     fila = conexion.execute(
         """
-        SELECT idBorrador, formato, es_correo, asunto, borrador, estado,
+        SELECT id_borrador, formato, es_correo, asunto, borrador, estado,
                contexto_json, turns_json, actualizado
-        FROM Editor_Borradores WHERE idBorrador = ?
+        FROM Editor_Borradores WHERE id_borrador = ?
         """,
         (id_borrador,),
     ).fetchone()
@@ -1068,7 +1074,7 @@ def obtener_borrador_editor(id_borrador):
     if not fila:
         return None
     d = dict(fila)
-    d["id"] = d["idBorrador"]
+    d["id"] = d["id_borrador"]
     d["es_correo"] = bool(d["es_correo"])
     return d
 
@@ -1082,18 +1088,18 @@ def obtener_borradores_editor(id_usuario, estado=None):
     if estado:
         filas = conexion.execute(
             """
-            SELECT idBorrador, formato, es_correo, asunto, borrador, estado, actualizado
+            SELECT id_borrador, formato, es_correo, asunto, borrador, estado, actualizado
             FROM Editor_Borradores WHERE id_usuario = ? AND estado = ?
-            ORDER BY actualizado DESC, idBorrador DESC
+            ORDER BY actualizado DESC, id_borrador DESC
             """,
             (id_usuario, estado),
         ).fetchall()
     else:
         filas = conexion.execute(
             """
-            SELECT idBorrador, formato, es_correo, asunto, borrador, estado, actualizado
+            SELECT id_borrador, formato, es_correo, asunto, borrador, estado, actualizado
             FROM Editor_Borradores WHERE id_usuario = ?
-            ORDER BY actualizado DESC, idBorrador DESC
+            ORDER BY actualizado DESC, id_borrador DESC
             """,
             (id_usuario,),
         ).fetchall()
@@ -1101,7 +1107,7 @@ def obtener_borradores_editor(id_usuario, estado=None):
     resultado = []
     for f in filas:
         resultado.append({
-            "id": f["idBorrador"],
+            "id": f["id_borrador"],
             "formato": f["formato"] or "",
             "es_correo": bool(f["es_correo"]),
             "asunto": f["asunto"] or "",

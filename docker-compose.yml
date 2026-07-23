@@ -1,0 +1,41 @@
+# Orquestación de desarrollo local (Fase 1): PostgreSQL + backend Flet.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: climb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: climb_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-climb_dev_password}
+      POSTGRES_DB: climb_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U climb_dev -d climb_development"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: .
+    container_name: climb_backend
+    restart: unless-stopped
+    ports:
+      - "8550:8550"           # Flet web
+    volumes:
+      - .:/app                # hot-reload del código en desarrollo
+    environment:
+      PORT: "8550"
+      PYTHONUNBUFFERED: "1"   # logs de Python en vivo (sin buffering en el contenedor)
+      DATABASE_URL: postgresql://climb_dev:${POSTGRES_PASSWORD:-climb_dev_password}@db:5432/climb_development
+    env_file:
+      - .env                  # ANTHROPIC_API_KEY, SMTP_USER, SMTP_APP_PASSWORD, SMTP_FROM
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
