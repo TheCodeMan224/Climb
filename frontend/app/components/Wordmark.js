@@ -1,17 +1,22 @@
+"use client";
+import { useState } from "react";
 import Link from "next/link";
 
-// Marca Climb: montaña (navy) con la cima en oro + wordmark en Syne.
-export default function Wordmark({ href = "/dashboard", size = 22 }) {
-  const mark = (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 11 }}>
-      <svg viewBox="0 0 26 26" width={size} height={size} fill="none" aria-hidden>
-        <path d="M2 24 L13 3 L24 24" stroke="var(--navy)" strokeWidth="2.2" strokeLinejoin="round" />
-        <path d="M9.5 13 L13 3 L16.5 13" stroke="var(--gold)" strokeWidth="2.2" strokeLinejoin="round" />
-      </svg>
-      <span style={{ fontFamily: "var(--syne)", fontWeight: 700, fontSize: size * 0.77, letterSpacing: "-0.01em", color: "var(--navy)" }}>Climb</span>
-    </span>
+// Logo Climb (imagen en /public/climb-logo.png). Si el archivo aún no existe,
+// cae con gracia al wordmark en Syne para no romper el layout.
+export default function Wordmark({ href = "/dashboard", height = 30 }) {
+  const [err, setErr] = useState(false);
+
+  const content = err ? (
+    <span style={{ fontFamily: "var(--syne)", fontWeight: 700, fontSize: height * 0.82, letterSpacing: "-0.02em", color: "var(--navy)" }}>Climb</span>
+  ) : (
+    <img src="/climb-logo.png" alt="Climb" onError={() => setErr(true)}
+         style={{ height, width: "auto", maxWidth: "100%", display: "block" }} />
   );
+
   return href ? (
-    <Link href={href} style={{ textDecoration: "none" }}>{mark}</Link>
-  ) : mark;
+    <Link href={href} style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>{content}</Link>
+  ) : (
+    <span style={{ display: "inline-flex", alignItems: "center" }}>{content}</span>
+  );
 }

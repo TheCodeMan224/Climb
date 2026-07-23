@@ -6,6 +6,7 @@ import { t, getLang, setLang } from "../lib/i18n";
 
 export default function Home() {
   const [lang, setLangState] = useState("en");
+  const [logoErr, setLogoErr] = useState(false);
   useEffect(() => setLangState(getLang()), []);
   const tr = (k) => t(k, lang);
 
@@ -36,7 +37,12 @@ export default function Home() {
 
       {/* center hero */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "40px 0" }}>
-        <h1 className="logo">Climb</h1>
+        {logoErr ? (
+          <h1 className="logo">Climb</h1>
+        ) : (
+          <img src="/climb-logo.png" alt="Climb" onError={() => setLogoErr(true)}
+               style={{ width: "min(460px, 82vw)", height: "auto", display: "block" }} />
+        )}
         <p className="tag">{tr("tagline")}</p>
         <Link className="btn" href="/register" style={{ marginTop: 0, padding: "17px 40px", fontSize: 16 }}>{tr("get_started")}</Link>
         <div style={{ marginTop: 28, fontSize: 15, color: "var(--muted)" }}>
