@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, setUsuario } from "../../lib/api";
+import { t, getLang } from "../../lib/i18n";
 
 export default function Register() {
   const router = useRouter();
@@ -10,6 +11,8 @@ export default function Register() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => setForm((f) => ({ ...f, idioma: getLang() })), []);
+  const tr = (k) => t(k, form.idioma);
   const upd = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   async function submit(e) {
@@ -29,18 +32,18 @@ export default function Register() {
 
   return (
     <main>
-      <h1>Create your account</h1>
-      <p className="sub">Your name is how Climb greets you. Your username and email are how you sign back in.</p>
+      <h1>{tr("reg_title")}</h1>
+      <p className="sub">{tr("reg_sub")}</p>
       <form onSubmit={submit}>
-        <label>Your name</label>
+        <label>{tr("name")}</label>
         <input value={form.nombre} onChange={upd("nombre")} placeholder="Alex Carter" />
-        <label>Email</label>
+        <label>{tr("email")}</label>
         <input value={form.correo} onChange={upd("correo")} placeholder="you@email.com" />
-        <label>Username</label>
+        <label>{tr("username")}</label>
         <input value={form.username} onChange={upd("username")} placeholder="alexcarter" />
-        <label>Password</label>
-        <input type="password" value={form.clave} onChange={upd("clave")} placeholder="At least 4 characters" />
-        <label>Language</label>
+        <label>{tr("password")}</label>
+        <input type="password" value={form.clave} onChange={upd("clave")} placeholder={tr("at_least_4")} />
+        <label>{tr("language")}</label>
         <div className="row" style={{ marginTop: 0 }}>
           {[["en", "English"], ["es", "Español"]].map(([code, label]) => (
             <button type="button" key={code} onClick={() => setForm({ ...form, idioma: code })}
@@ -50,10 +53,10 @@ export default function Register() {
           ))}
         </div>
         {error && <p className="error">{error}</p>}
-        <button className="btn" disabled={busy}>{busy ? "Creating…" : "Create account"}</button>
+        <button className="btn" disabled={busy}>{busy ? tr("creating") : tr("create_account")}</button>
       </form>
       <p className="muted" style={{ marginTop: 20 }}>
-        Already have an account? <Link className="link" href="/login">Sign in</Link>
+        <Link className="link" href="/login">{tr("already_signin")}</Link>
       </p>
     </main>
   );

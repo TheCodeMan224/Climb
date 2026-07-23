@@ -1,15 +1,19 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, setUsuario } from "../../lib/api";
+import { t, getLang } from "../../lib/i18n";
 
 export default function Login() {
   const router = useRouter();
   const [form, setForm] = useState({ identificador: "", clave: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lang, setLangState] = useState("en");
 
+  useEffect(() => setLangState(getLang()), []);
+  const tr = (k) => t(k, lang);
   const upd = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   async function submit(e) {
@@ -29,21 +33,21 @@ export default function Login() {
 
   return (
     <main>
-      <h1>Sign in</h1>
-      <p className="sub">Sign in with your email or your username.</p>
+      <h1>{tr("login_title")}</h1>
+      <p className="sub">{tr("login_sub")}</p>
       <form onSubmit={submit}>
-        <label>Email or username</label>
-        <input value={form.identificador} onChange={upd("identificador")} placeholder="you@email.com or username" />
-        <label>Password</label>
+        <label>{tr("email_or_username")}</label>
+        <input value={form.identificador} onChange={upd("identificador")} placeholder="you@email.com" />
+        <label>{tr("your_password")}</label>
         <input type="password" value={form.clave} onChange={upd("clave")} placeholder="••••••••" />
         {error && <p className="error">{error}</p>}
-        <button className="btn" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+        <button className="btn" disabled={busy}>{busy ? tr("signing_in") : tr("sign_in")}</button>
       </form>
       <p className="muted" style={{ marginTop: 12 }}>
-        <Link className="link" href="/recuperar">Forgot your password?</Link>
+        <Link className="link" href="/recuperar">{tr("forgot")}</Link>
       </p>
-      <p className="muted" style={{ marginTop: 20 }}>
-        Don&apos;t have an account? <Link className="link" href="/register">Create one</Link>
+      <p className="muted" style={{ marginTop: 8 }}>
+        <Link className="link" href="/register">{tr("no_account")}</Link>
       </p>
     </main>
   );

@@ -1,12 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "../../lib/api";
+import { t, getLang } from "../../lib/i18n";
 
 export default function Recuperar() {
   const router = useRouter();
-  const [fase, setFase] = useState("correo"); // 'correo' | 'codigo'
+  const [fase, setFase] = useState("correo");
   const [correo, setCorreo] = useState("");
   const [codigo, setCodigo] = useState("");
   const [clave, setClave] = useState("");
@@ -14,13 +15,17 @@ export default function Recuperar() {
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lang, setLangState] = useState("en");
+
+  useEffect(() => setLangState(getLang()), []);
+  const tr = (k) => t(k, lang);
 
   async function enviar() {
     if (!correo.trim() || busy) return;
     setBusy(true); setError(""); setInfo("");
     try {
       await api("/api/auth/recuperar", { method: "POST", body: { correo } });
-      setInfo("If an account exists for that email, we sent a code. Check your inbox.");
+      setInfo(tr("reset_sent"));
       setFase("codigo");
     } catch (err) {
       setError(err.message);
@@ -31,8 +36,8 @@ export default function Recuperar() {
 
   async function restablecer() {
     if (busy) return;
-    if (clave.length < 4) return setError("Your password must be at least 4 characters.");
-    if (clave !== clave2) return setError("Passwords don't match.");
+    if (clave.length < 4) return setError(tr("password_short"));
+    if (clave !== clave2) return setError(tr("passwords_no_match"));
     setBusy(true); setError("");
     try {
       await api("/api/auth/restablecer", { method: "POST", body: { correo, codigo, nueva_clave: clave } });
@@ -45,33 +50,33 @@ export default function Recuperar() {
 
   return (
     <main>
-      <h1>Reset your password</h1>
+      <h1>{tr("reset_title")}</h1>
       {fase === "correo" ? (
         <>
-          <p className="sub">Enter your email and we&apos;ll send you a code.</p>
-          <label>Email</label>
+          <p className="sub">{tr("reset_sub")}</p>
+          <label>{tr("email")}</label>
           <input value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="you@email.com" />
           {error && <p className="error">{error}</p>}
-          <button className="btn" disabled={busy} onClick={enviar}>{busy ? "Sending…" : "Send code"}</button>
+          <button className="btn" disabled={busy} onClick={enviar}>{busy ? tr("sending") : tr("send_code")}</button>
         </>
       ) : (
         <>
           {info && <p className="muted">{info}</p>}
-          <label>Code</label>
+          <label>{tr("code")}</label>
           <input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="123456" />
-          <label>New password</label>
-          <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder="At least 4 characters" />
-          <label>Confirm new password</label>
-          <input type="password" value={clave2} onChange={(e) => setClave2(e.target.value)} placeholder="Repeat your password" />
+          <label>{tr("new_password")}</label>
+          <input type="password" value={clave} onChange={(e) => setClave(e.target.value)} placeholder={tr("at_least_4")} />
+          <label>{tr("confirm_password")}</label>
+          <input type="password" value={clave2} onChange={(e) => setClave2(e.target.value)} placeholder={tr("at_least_4")} />
           {error && <p className="error">{error}</p>}
-          <button className="btn" disabled={busy} onClick={restablecer}>{busy ? "Resetting…" : "Reset password"}</button>
+          <button className="btn" disabled={busy} onClick={restablecer}>{busy ? tr("resetting") : tr("reset_password")}</button>
           <p className="muted" style={{ marginTop: 12 }}>
-            <button className="link" onClick={enviar} style={{ background: "none", border: "none", cursor: "pointer" }}>Didn&apos;t get it? Send again</button>
+            <button className="link" onClick={enviar} style={{ background: "none", border: "none", cursor: "pointer" }}>{tr("resend")}</button>
           </p>
         </>
       )}
       <p className="muted" style={{ marginTop: 20 }}>
-        <Link className="link" href="/login">Back to sign in</Link>
+        <Link className="link" href="/login">{tr("back_signin")}</Link>
       </p>
     </main>
   );
