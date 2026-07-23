@@ -107,6 +107,8 @@ const T = {
     // caminos
     caminos_title: "Your plan for the next 30 days",
     caminos_sub: "Three possible paths. You decide which to take.",
+    from_pacer: "From Pacer",
+    path_word: "Path",
     why_fits: "Why it fits you:",
     tradeoff: "Tradeoff",
     risk: "Risk",
@@ -310,6 +312,8 @@ const T = {
     see_plan: "Ver mi plan para los próximos 30 días →",
     caminos_title: "Tu plan para los próximos 30 días",
     caminos_sub: "Tres caminos posibles. Tú decides cuál tomar.",
+    from_pacer: "De Pacer",
+    path_word: "Camino",
     why_fits: "Por qué te encaja:",
     tradeoff: "Tradeoff",
     risk: "Riesgo",
