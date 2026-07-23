@@ -57,5 +57,20 @@ services:
       db:
         condition: service_healthy
 
+  frontend:
+    build: ./frontend
+    container_name: climb_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"           # Next.js (frontend de producción, Fase 3)
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules     # preserva node_modules del contenedor
+    environment:
+      # El navegador (host) llega a la API por el puerto publicado 8000.
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
