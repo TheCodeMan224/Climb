@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../../lib/api";
+import { t, getLang } from "../../../lib/i18n";
 
 export default function MirrorSession() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [lang, setLang] = useState("en");
   const [patron, setPatron] = useState(null);
   const [turns, setTurns] = useState([]);
   const [pregunta, setPregunta] = useState("");
@@ -18,21 +20,11 @@ export default function MirrorSession() {
 
   useEffect(() => {
     const u = getUsuario();
-    if (!u) {
-      router.push("/login");
-      return;
-    }
-    setUser(u);
+    if (!u) { router.push("/login"); return; }
+    setUser(u); setLang(getLang());
     let p = null;
-    try {
-      p = JSON.parse(localStorage.getItem("climb_mirror_patron"));
-    } catch {
-      p = null;
-    }
-    if (!p) {
-      router.push("/mirror");
-      return;
-    }
+    try { p = JSON.parse(localStorage.getItem("climb_mirror_patron")); } catch { p = null; }
+    if (!p) { router.push("/mirror"); return; }
     setPatron(p);
     const iniciales = p.sesion?.turns || [];
     setTurns(iniciales);
@@ -40,39 +32,26 @@ export default function MirrorSession() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  async function fetchPregunta(u, quote, t, reanclar) {
+  const tr = (k) => t(k, lang);
+
+  async function fetchPregunta(u, quote, tn, reanclar) {
     setBusy(true);
     try {
-      const r = await api(`/api/usuarios/${u.id_usuario}/mirror/pregunta`, { method: "POST", body: { quote, turns: t, reanclar } });
-      setPregunta(r.pregunta);
-      setListo(r.listo);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+      const r = await api(`/api/usuarios/${u.id_usuario}/mirror/pregunta`, { method: "POST", body: { quote, turns: tn, reanclar } });
+      setPregunta(r.pregunta); setListo(r.listo);
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
   }
 
   async function responder() {
     const ans = respuesta.trim();
     if (!ans || busy) return;
     const nuevos = [...turns, ["mirror", pregunta], ["user", ans]];
-    setTurns(nuevos);
-    setRespuesta("");
-    setBusy(true);
-    setError("");
+    setTurns(nuevos); setRespuesta(""); setBusy(true); setError("");
     try {
       const b = await api(`/api/usuarios/${user.id_usuario}/mirror/boundary`, { method: "POST", body: { texto: ans } });
-      if (b.boundary) {
-        setBoundary(true);
-        setBusy(false);
-        return;
-      }
+      if (b.boundary) { setBoundary(true); setBusy(false); return; }
       await fetchPregunta(user, patron.quote, nuevos, false);
-    } catch (err) {
-      setError(err.message);
-      setBusy(false);
-    }
+    } catch (err) { setError(err.message); setBusy(false); }
   }
 
   async function verEspejo() {
@@ -81,40 +60,32 @@ export default function MirrorSession() {
       const reframe = await api(`/api/usuarios/${user.id_usuario}/mirror/reframe`, { method: "POST", body: { quote: patron.quote, turns } });
       localStorage.setItem("climb_mirror_reframe", JSON.stringify(reframe));
       router.push("/mirror/espejo");
-    } catch (err) {
-      setError(err.message);
-      setBusy(false);
-    }
+    } catch (err) { setError(err.message); setBusy(false); }
   }
 
   async function dejar() {
     try {
       await api(`/api/usuarios/${user.id_usuario}/mirror/dejar`, {
-        method: "POST",
-        body: { id: patron.id, quote: patron.quote, source: patron.source, scout_ref: patron.scout_ref, turns },
+        method: "POST", body: { id: patron.id, quote: patron.quote, source: patron.source, scout_ref: patron.scout_ref, turns },
       });
-    } catch {
-      /* no bloquear la salida */
-    }
+    } catch { /* */ }
     router.push("/mirror");
   }
 
   if (!user || !patron) return null;
 
-  const respondidas = turns.filter((t) => t[0] === "user").length;
+  const respondidas = turns.filter((tn) => tn[0] === "user").length;
   const puedeCerrar = listo || respondidas >= 3;
 
   if (boundary) {
     return (
       <main>
-        <h2>Mirror responds</h2>
-        <p>What you&apos;re sharing is important, and that&apos;s exactly why I&apos;m not the one who should be with you there.</p>
-        <p className="muted">For what you&apos;re going through, a mental health professional will be more useful than me.</p>
+        <h2>{tr("mirror_responds")}</h2>
+        <p>{tr("boundary1")}</p>
+        <p className="muted">{tr("boundary2")}</p>
         <div className="row">
-          <button className="btn" style={{ marginTop: 0 }} onClick={() => router.push("/mirror")}>End the session</button>
-          <button className="link" onClick={() => { setBoundary(false); fetchPregunta(user, patron.quote, turns, true); }}>
-            Back to the pattern →
-          </button>
+          <button className="btn" style={{ marginTop: 0 }} onClick={() => router.push("/mirror")}>{tr("end_session")}</button>
+          <button className="link" onClick={() => { setBoundary(false); fetchPregunta(user, patron.quote, turns, true); }}>{tr("back_to_pattern")}</button>
         </div>
       </main>
     );
@@ -123,24 +94,17 @@ export default function MirrorSession() {
   return (
     <main>
       <Link className="link" href="/mirror">← Mirror</Link>
-      <p className="muted" style={{ marginTop: 16 }}>Pattern · {patron.quote}</p>
-      <h1>Question {respondidas + 1}</h1>
-      <p className="pivote">{busy && !pregunta ? "Mirror is preparing your question…" : pregunta}</p>
-
+      <p className="muted" style={{ marginTop: 16 }}>{tr("pattern_label")} {patron.quote}</p>
+      <h1>{tr("onb_progress")} {respondidas + 1}</h1>
+      <p className="pivote">{busy && !pregunta ? tr("mirror_preparing") : pregunta}</p>
       {error && <p className="error">{error}</p>}
-
       <div className="row">
-        <input value={respuesta} onChange={(e) => setRespuesta(e.target.value)}
-               onKeyDown={(e) => e.key === "Enter" && responder()}
-               placeholder="Tell Mirror about your work..." />
-        <button className="btn" style={{ marginTop: 0 }} disabled={busy} onClick={responder}>Send</button>
+        <input value={respuesta} onChange={(e) => setRespuesta(e.target.value)} onKeyDown={(e) => e.key === "Enter" && responder()} placeholder={tr("mirror_placeholder2")} />
+        <button className="btn" style={{ marginTop: 0 }} disabled={busy} onClick={responder}>{tr("send")}</button>
       </div>
-
       <div className="row" style={{ marginTop: 20 }}>
-        {puedeCerrar && (
-          <button className="btn" style={{ marginTop: 0 }} disabled={busy} onClick={verEspejo}>End & see the mirror →</button>
-        )}
-        <button className="link" onClick={dejar}>Leave for later</button>
+        {puedeCerrar && <button className="btn" style={{ marginTop: 0 }} disabled={busy} onClick={verEspejo}>{tr("see_mirror")}</button>}
+        <button className="link" onClick={dejar}>{tr("leave_later")}</button>
       </div>
     </main>
   );

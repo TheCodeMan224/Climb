@@ -3,29 +3,26 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario } from "../../lib/api";
+import { t, getLang } from "../../lib/i18n";
 
 export default function EditorHome() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [data, setData] = useState(null); // {activos, completados}
+  const [lang, setLang] = useState("en");
+  const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const u = getUsuario();
-    if (!u) {
-      router.push("/login");
-      return;
-    }
-    setUser(u);
+    if (!u) { router.push("/login"); return; }
+    setUser(u); setLang(getLang());
     (async () => {
-      try {
-        setData(await api(`/api/usuarios/${u.id_usuario}/editor/borradores`));
-      } catch (err) {
-        setError(err.message);
-      }
+      try { setData(await api(`/api/usuarios/${u.id_usuario}/editor/borradores`)); }
+      catch (err) { setError(err.message); }
     })();
   }, [router]);
 
+  const tr = (k) => t(k, lang);
   if (!user) return null;
 
   const Lista = ({ titulo, items }) =>
@@ -43,17 +40,17 @@ export default function EditorHome() {
 
   return (
     <main>
-      <Link className="link" href="/dashboard">← Back to dashboard</Link>
-      <h1 style={{ marginTop: 16 }}>Editor</h1>
-      <p className="sub">Turn your work into content, in your voice.</p>
-      <button className="btn" onClick={() => router.push("/editor/estudio")}>＋ New draft</button>
+      <Link className="link" href="/dashboard">{tr("back_dashboard")}</Link>
+      <h1 style={{ marginTop: 16 }}>{tr("editor")}</h1>
+      <p className="sub">{tr("editor_intro")}</p>
+      <button className="btn" onClick={() => router.push("/editor/estudio")}>{tr("new_draft")}</button>
       {error && <p className="error">{error}</p>}
       {data && (
         <>
-          <Lista titulo="Active drafts" items={data.activos} />
-          <Lista titulo="Completed" items={data.completados} />
+          <Lista titulo={tr("active_drafts")} items={data.activos} />
+          <Lista titulo={tr("completed")} items={data.completados} />
           {data.activos.length === 0 && data.completados.length === 0 && (
-            <p className="muted" style={{ marginTop: 20 }}>No drafts yet. Create a new one to start.</p>
+            <p className="muted" style={{ marginTop: 20 }}>{tr("no_drafts")}</p>
           )}
         </>
       )}
