@@ -36,6 +36,8 @@ export default function Onboarding() {
     try {
       await api(`/api/usuarios/${user.id_usuario}/perfil`, { method: "POST", body: form });
       const d = await api(`/api/usuarios/${user.id_usuario}/diagnostico`, { method: "POST" });
+      // Guardamos el diagnóstico para que la pantalla de caminos lo use sin regenerarlo.
+      localStorage.setItem("climb_diagnostico", JSON.stringify(d));
       setDiag(d);
     } catch (err) {
       setError(err.message);
@@ -47,11 +49,25 @@ export default function Onboarding() {
   if (!user) return null;
 
   if (diag) {
+    const patrones = diag.patrones || [];
     return (
       <main>
         <h2>Scout &middot; Your diagnosis</h2>
         <p className="pivote">{diag.frase_pivote || "Your diagnosis is ready."}</p>
-        <button className="btn" onClick={() => router.push("/dashboard")}>Go to dashboard →</button>
+        {patrones.length > 0 && (
+          <>
+            <h2>Patterns Scout detected</h2>
+            {patrones.map((p, i) => (
+              <div className="card" key={i}>
+                <strong>{p.nombre}</strong>
+                <p className="muted">{p.descripcion}</p>
+              </div>
+            ))}
+          </>
+        )}
+        <button className="btn" onClick={() => router.push("/caminos")}>
+          See my plan for the next 30 days →
+        </button>
       </main>
     );
   }
