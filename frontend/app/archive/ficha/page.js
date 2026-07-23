@@ -50,6 +50,20 @@ export default function ArchiveFicha() {
       {tags.length > 0 && (
         <p className="muted" style={{ marginTop: 16 }}>{tags.map((t) => `#${t}`).join("  ")}</p>
       )}
+
+      <button className="btn" onClick={redactarEnEditor}>Write with Editor →</button>
     </main>
   );
+
+  function redactarEnEditor() {
+    const partes = [
+      ficha.titulo,
+      ficha.contexto,
+      ficha.mi_rol ? `My role: ${ficha.mi_rol}` : "",
+      ficha.aprendizaje ? `Takeaway: ${ficha.aprendizaje}` : "",
+      metrics.length ? `Metrics: ${metrics.map((m) => `${m.value} ${m.label}`).join(", ")}` : "",
+    ].filter(Boolean);
+    localStorage.setItem("climb_editor_contexto", JSON.stringify({ titulo: ficha.titulo, texto: partes.join(". ") }));
+    router.push("/editor/estudio");
+  }
 }

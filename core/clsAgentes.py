@@ -737,8 +737,10 @@ def _fmt_desc(formato):
 async def editor_estudio(id_usuario, formato, contexto_logro, borrador_actual, turns):
     """Genera/edita el entregable. Devuelve dict {borrador, asunto, comentario, sugerencias}."""
     fmt = _fmt_desc(formato)
+    nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario) or ""
     system = (
         PROMPT_EDITOR
+        + (f"\n\nEl usuario se llama {nombre}. Fírmalo o personalízalo con su nombre cuando corresponda." if nombre else "")
         + _snippet_voice(id_usuario)
         + (("\n\n--- Logro (materia prima, no inventes nada) ---\n" + contexto_logro) if contexto_logro else "")
         + f"\n\n--- Tarea ---\nEstás ayudando a redactar {fmt}.\n"
