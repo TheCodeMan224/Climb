@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "../../lib/api";
 import { t, getLang } from "../../lib/i18n";
+import Wordmark from "../components/Wordmark";
 
 export default function Recuperar() {
   const router = useRouter();
@@ -49,7 +50,8 @@ export default function Recuperar() {
   }
 
   return (
-    <main>
+    <main style={{ maxWidth: 480 }}>
+      <div className="topbar"><Wordmark href="/" /></div>
       <h1>{tr("reset_title")}</h1>
       {fase === "correo" ? (
         <>

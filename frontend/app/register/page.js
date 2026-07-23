@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, setUsuario } from "../../lib/api";
 import { t, getLang } from "../../lib/i18n";
+import Wordmark from "../components/Wordmark";
 
 export default function Register() {
   const router = useRouter();
@@ -31,7 +32,8 @@ export default function Register() {
   }
 
   return (
-    <main>
+    <main style={{ maxWidth: 480 }}>
+      <div className="topbar"><Wordmark href="/" /></div>
       <h1>{tr("reg_title")}</h1>
       <p className="sub">{tr("reg_sub")}</p>
       <form onSubmit={submit}>
