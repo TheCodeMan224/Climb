@@ -1,7 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api, getUsuario, clearUsuario } from "../../lib/api";
+
+const AGENTES = [
+  ["Pacer", "/pacer", "Your weekly mission and its actions."],
+  ["Mirror", "/mirror", "Work on your limiting patterns."],
+  ["Archive", "/archive", "Document your wins for when they matter."],
+  ["Editor", "/editor", "Turn your work into content, in your voice."],
+  ["Clarity", "/clarity", "Think before deciding your next move."],
+];
 
 export default function Dashboard() {
   const router = useRouter();
@@ -65,6 +74,16 @@ export default function Dashboard() {
       ) : (
         <p className="muted">No mission yet.</p>
       )}
+
+      <h2>Your agents</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {AGENTES.map(([nombre, ruta, desc]) => (
+          <Link key={ruta} href={ruta} className="card" style={{ textDecoration: "none", color: "inherit" }}>
+            <strong style={{ color: "var(--amber)" }}>{nombre}</strong>
+            <p className="muted" style={{ margin: "6px 0 0" }}>{desc}</p>
+          </Link>
+        ))}
+      </div>
 
       <h2>From the archive</h2>
       {logros.length ? (

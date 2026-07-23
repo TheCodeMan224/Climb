@@ -248,6 +248,41 @@ async def api_mision(id_usuario: int):
     return await clsAgentes.generar_mision_pacer(id_usuario)
 
 
+# --- Pacer: progreso / completar / sugerencias ---
+class ProgresoIn(BaseModel):
+    progreso: list   # list[bool] alineada con las acciones
+
+
+class MisionIn(BaseModel):
+    mision: dict
+
+
+@app.patch("/api/misiones/{id_mision}/progreso")
+def api_progreso_mision(id_mision: int, payload: ProgresoIn):
+    """Actualiza las acciones completadas de una misión."""
+    db.guardar_progreso_mision(id_mision, payload.progreso)
+    return {"ok": True}
+
+
+@app.post("/api/misiones/{id_mision}/completar")
+def api_completar_mision(id_mision: int):
+    """Marca la misión como completada."""
+    db.completar_mision(id_mision)
+    return {"ok": True}
+
+
+@app.get("/api/usuarios/{id_usuario}/misiones/sugerencias")
+async def api_sugerencias_mision(id_usuario: int):
+    """Pacer sugiere 2-3 misiones nuevas (tras completar una)."""
+    return {"sugerencias": await clsAgentes.sugerir_misiones_pacer(id_usuario)}
+
+
+@app.post("/api/usuarios/{id_usuario}/misiones", status_code=201)
+def api_aceptar_mision(id_usuario: int, payload: MisionIn):
+    """Acepta una misión sugerida (la inserta como activa)."""
+    return {"id_mision": db.insertar_mision(id_usuario, payload.mision)}
+
+
 @app.get("/api/usuarios/{id_usuario}")
 def get_usuario(id_usuario: int):
     """Datos básicos de un usuario (nombre, handle, idioma)."""
