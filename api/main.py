@@ -184,7 +184,36 @@ def api_guardar_perfil(id_usuario: int, payload: PerfilIn):
         payload.vision_futuro,
         payload.desahogo_libre,
     )
+    # Registrar las respuestas para el voice profile (paridad con Flet). Las
+    # respuestas emparejadas vienen separadas por " || "; se registran sueltas.
+    campos = [
+        payload.apertura_emocional, payload.contexto_profesional, payload.logro_principal,
+        payload.reaccion_presion_visibilidad, payload.intentos_previos,
+        payload.vision_futuro, payload.desahogo_libre,
+    ]
+    for campo in campos:
+        for parte in (campo or "").split(" || "):
+            if parte.strip():
+                db.registrar_texto_usuario(id_usuario, "onboarding", parte.strip())
     return {"ok": True}
+
+
+@app.get("/api/usuarios/{id_usuario}/resumen")
+def api_resumen(id_usuario: int):
+    """Resumen consolidado (frase pivote en voice_profile.tono_natural, patrones)."""
+    raw = db.obtener_ultimo_resumen(id_usuario)
+    if not raw:
+        return {}
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        return {}
+
+
+@app.get("/api/usuarios/{id_usuario}/camino")
+def api_camino(id_usuario: int):
+    """El camino elegido del usuario, o null."""
+    return db.obtener_camino_elegido(id_usuario)
 
 
 # ============================================================================

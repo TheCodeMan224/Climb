@@ -3,23 +3,36 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getUsuario } from "../../lib/api";
 
-const PREGUNTAS = [
-  ["apertura_emocional", "How do you feel about your career right now?"],
-  ["contexto_profesional", "What do you do today? Job, company, day-to-day."],
-  ["logro_principal", "The achievement you're most proud of, and why."],
-  ["reaccion_presion_visibilidad", "Presenting in front of important people: does it lift you or weigh on you?"],
-  ["intentos_previos", "What have you tried to grow or get noticed? What didn't work?"],
-  ["vision_futuro", "Your career in three years, with no limits. What does it look like?"],
-  ["desahogo_libre", "Anything about your career you're carrying that you haven't said?"],
+const ACTOS = [
+  ["Act I — Where you are today", [
+    "How do you feel about your career right now? Not what others see, but what you really feel.",
+    "When something at work frustrates you or you feel stuck, what do you do with it?",
+  ]],
+  ["Act II — Where you come from", [
+    "Tell me what you do today. Your job, what kind of company, your day-to-day responsibilities.",
+    "And to get there, what did you go through? Your path so far, like you'd tell it over dinner.",
+  ]],
+  ["Act III — What you've built", [
+    "What's the achievement you're most proud of? What happened and why does that one matter?",
+    "When you present in front of important people, how do you experience it? Does it lift you or weigh on you?",
+  ]],
+  ["Act IV — Where you're headed", [
+    "What have you tried to grow or get noticed more? Tell me what didn't work too.",
+    "Picture your career in three years, with no limits. What does it look like?",
+    "Before we wrap up, is there anything about your career you're carrying that you haven't said?",
+  ]],
 ];
+
+// Aplana a 9 preguntas con su acto.
+const PREGUNTAS = ACTOS.flatMap(([acto, qs]) => qs.map((q) => ({ acto, q })));
 
 export default function Onboarding() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [form, setForm] = useState({});
-  const [error, setError] = useState("");
+  const [paso, setPaso] = useState(0);
+  const [resp, setResp] = useState(Array(9).fill(""));
   const [busy, setBusy] = useState(false);
-  const [diag, setDiag] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const u = getUsuario();
@@ -27,65 +40,63 @@ export default function Onboarding() {
     else setUser(u);
   }, [router]);
 
-  const upd = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+  function set(i, v) {
+    const r = resp.slice();
+    r[i] = v;
+    setResp(r);
+  }
 
-  async function submit(e) {
-    e.preventDefault();
+  async function finalizar() {
     setBusy(true);
     setError("");
     try {
-      await api(`/api/usuarios/${user.id_usuario}/perfil`, { method: "POST", body: form });
+      const [a1, a2, a3, a4, a5, a6, a7, a8, a9] = resp;
+      await api(`/api/usuarios/${user.id_usuario}/perfil`, {
+        method: "POST",
+        body: {
+          apertura_emocional: `${a1} || ${a2}`,
+          contexto_profesional: `${a3} || ${a4}`,
+          logro_principal: a5,
+          reaccion_presion_visibilidad: a6,
+          intentos_previos: a7,
+          vision_futuro: a8,
+          desahogo_libre: a9,
+        },
+      });
       const d = await api(`/api/usuarios/${user.id_usuario}/diagnostico`, { method: "POST" });
-      // Guardamos el diagnóstico para que la pantalla de caminos lo use sin regenerarlo.
       localStorage.setItem("climb_diagnostico", JSON.stringify(d));
-      setDiag(d);
+      router.push("/diagnostico");
     } catch (err) {
       setError(err.message);
-    } finally {
       setBusy(false);
     }
   }
 
   if (!user) return null;
 
-  if (diag) {
-    const patrones = diag.patrones || [];
-    return (
-      <main>
-        <h2>Scout &middot; Your diagnosis</h2>
-        <p className="pivote">{diag.frase_pivote || "Your diagnosis is ready."}</p>
-        {patrones.length > 0 && (
-          <>
-            <h2>Patterns Scout detected</h2>
-            {patrones.map((p, i) => (
-              <div className="card" key={i}>
-                <strong>{p.nombre}</strong>
-                <p className="muted">{p.descripcion}</p>
-              </div>
-            ))}
-          </>
-        )}
-        <button className="btn" onClick={() => router.push("/caminos")}>
-          See my plan for the next 30 days →
-        </button>
-      </main>
-    );
-  }
+  const p = PREGUNTAS[paso];
+  const ultima = paso === PREGUNTAS.length - 1;
 
   return (
     <main>
-      <h1>Initial diagnosis</h1>
-      <p className="sub">Write the way you talk. There are no right answers.</p>
-      <form onSubmit={submit}>
-        {PREGUNTAS.map(([k, q]) => (
-          <div key={k}>
-            <label>{q}</label>
-            <textarea value={form[k] || ""} onChange={upd(k)} />
-          </div>
-        ))}
-        {error && <p className="error">{error}</p>}
-        <button className="btn" disabled={busy}>{busy ? "Generating your diagnosis…" : "Finish"}</button>
-      </form>
+      <p className="muted" style={{ textTransform: "uppercase", fontSize: 12 }}>
+        Question {String(paso + 1).padStart(2, "0")} / {PREGUNTAS.length}
+      </p>
+      <h2 style={{ marginTop: 4 }}>{p.acto}</h2>
+      <p className="pivote" style={{ marginTop: 8 }}>{p.q}</p>
+      <textarea value={resp[paso]} onChange={(e) => set(paso, e.target.value)}
+                placeholder="Write the way you talk, no filter..." style={{ minHeight: 120 }} />
+      {error && <p className="error">{error}</p>}
+      <div className="row">
+        {paso > 0 && <button className="link" onClick={() => setPaso(paso - 1)}>← Previous</button>}
+        {!ultima ? (
+          <button className="btn" style={{ marginTop: 0 }} onClick={() => setPaso(paso + 1)}>Next →</button>
+        ) : (
+          <button className="btn" style={{ marginTop: 0 }} disabled={busy} onClick={finalizar}>
+            {busy ? "Generating your diagnosis…" : "Reach the summit →"}
+          </button>
+        )}
+      </div>
     </main>
   );
 }

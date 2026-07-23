@@ -17,6 +17,8 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [mision, setMision] = useState(null);
   const [logros, setLogros] = useState([]);
+  const [resumen, setResumen] = useState(null);
+  const [camino, setCamino] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,6 +38,8 @@ export default function Dashboard() {
           setMision(null);
         }
         setLogros(await api(`/api/usuarios/${u.id_usuario}/logros`));
+        try { setResumen(await api(`/api/usuarios/${u.id_usuario}/resumen`)); } catch { /* sin resumen */ }
+        try { setCamino(await api(`/api/usuarios/${u.id_usuario}/camino`)); } catch { /* sin camino */ }
       } catch (err) {
         setError(err.message);
       }
@@ -59,6 +63,32 @@ export default function Dashboard() {
         </button>
       </div>
       <p className="muted">{user.handle} · {user.idioma?.toUpperCase()}</p>
+
+      {resumen?.voice_profile?.tono_natural && (
+        <p className="pivote" style={{ marginTop: 8 }}>{resumen.voice_profile.tono_natural}</p>
+      )}
+
+      {(resumen?.patrones_consolidados || []).length > 0 && (
+        <>
+          <h2>Scout · Detected patterns</h2>
+          {resumen.patrones_consolidados.slice(0, 2).map((p, i) => (
+            <div className="card" key={i}>
+              <strong>{p.nombre}</strong>
+              <p className="muted" style={{ margin: "6px 0 0" }}>{p.descripcion}</p>
+            </div>
+          ))}
+        </>
+      )}
+
+      {camino?.nombre_camino && (
+        <>
+          <h2>Your path</h2>
+          <div className="card" style={{ background: "var(--navy)", color: "var(--offwhite)" }}>
+            <strong>{camino.nombre_camino}</strong>
+            <p style={{ margin: "6px 0 0" }}>{camino.descripcion_camino}</p>
+          </div>
+        </>
+      )}
 
       <h2>Active mission</h2>
       {mision ? (
