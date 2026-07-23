@@ -37,5 +37,25 @@ services:
       db:
         condition: service_healthy
 
+  api:
+    build: .
+    container_name: climb_api
+    restart: unless-stopped
+    # Misma imagen que el backend, distinto comando: sirve la API REST (Fase 2).
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"           # API REST (FastAPI)
+    volumes:
+      - .:/app
+    environment:
+      PYTHONUNBUFFERED: "1"
+      DATABASE_URL: postgresql://climb_dev:${POSTGRES_PASSWORD:-climb_dev_password}@db:5432/climb_development
+      CORS_ORIGINS: http://localhost:3000
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   postgres_data:
