@@ -17,7 +17,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from core import clsAgentes, clsCorreo, clsMirror
+from core import clsAgentes, clsClarity, clsCorreo, clsMirror
 from core.clsAgentes import orquestar_interaccion_agente, seed_agentes
 from data import clsInteraccionDB as db
 
@@ -510,6 +510,69 @@ def api_mirror_dejar(id_usuario: int, payload: MirrorDejarIn):
     else:
         db.insertar_patron_en_progreso(id_usuario, payload.quote, payload.source, turns_json, payload.scout_ref)
     return {"ok": True}
+
+
+# ============================================================================
+# Clarity (espejo determinista -> conversación con citas -> puertas)
+# ============================================================================
+class ClarityMensajeIn(BaseModel):
+    turns: list = []            # [[speaker, texto], ...] speaker ∈ {clarity, user}
+    primer_turno: bool = False
+
+
+class ClarityCierreIn(BaseModel):
+    turns: list = []
+
+
+def _espejo_dict(e):
+    return {
+        "nombre": e.nombre,
+        "bloques": [
+            {
+                "numero": b.numero, "agente": b.agente,
+                "segmentos": [[s[0], s[1]] for s in b.segmentos],
+                "tiene_datos": b.tiene_datos,
+                "cta_texto": b.cta_texto, "cta_ruta": b.cta_ruta,
+                "cta_patron": list(b.cta_patron) if b.cta_patron else None,
+            }
+            for b in e.bloques
+        ],
+        "pacer": {"nombre": e.pacer.nombre, "hechas": e.pacer.hechas, "total": e.pacer.total} if e.pacer else None,
+        "counters": e.counters,
+    }
+
+
+@app.get("/api/usuarios/{id_usuario}/clarity/espejo")
+def api_clarity_espejo(id_usuario: int):
+    """El 'espejo' determinista de lo que el usuario ha construido."""
+    return _espejo_dict(clsClarity.cargar_espejo(id_usuario))
+
+
+@app.post("/api/usuarios/{id_usuario}/clarity/mensaje")
+async def api_clarity_mensaje(id_usuario: int, payload: ClarityMensajeIn):
+    """Turno de conversación de Clarity. Devuelve el mensaje y la cita real (si aplica)."""
+    turns = payload.turns
+    if turns and turns[-1][0] == "user":
+        db.registrar_texto_usuario(id_usuario, "clarity", turns[-1][1])
+        try:
+            await clsAgentes.actualizar_voice_profile_si_toca(id_usuario)
+        except Exception:
+            pass
+    refs = clsClarity.referencias_disponibles(id_usuario)
+    res = await clsAgentes.responder_clarity(turns, id_usuario, refs, payload.primer_turno)
+    ref_id = res.get("referencia_id")
+    cita = None
+    if isinstance(ref_id, int) and 0 <= ref_id < len(refs):
+        r = refs[ref_id]
+        cita = {"agente": r.agente, "fecha": r.fecha, "cita": r.cita}
+    return {"mensaje": res.get("mensaje", ""), "tema": res.get("tema", ""),
+            "listo": bool(res.get("listo")), "referencia": cita}
+
+
+@app.post("/api/usuarios/{id_usuario}/clarity/cierre")
+async def api_clarity_cierre(id_usuario: int, payload: ClarityCierreIn):
+    """Síntesis final + las 3 puertas de salida."""
+    return await clsAgentes.clarity_cierre(payload.turns, id_usuario)
 
 
 @app.get("/api/usuarios/{id_usuario}")
