@@ -19,10 +19,10 @@ export function setLang(l) {
 const T = {
   en: {
     // landing
-    tagline: "Your career's right hand",
-    get_started: "Get started",
+    tagline: "Your career's right hand.",
+    get_started: "Begin your diagnosis",
     have_account: "I already have an account",
-    keywords: "CONTEXT  ·  PATTERN  ·  EXECUTION",
+    keywords: "Context · Pattern · Execution",
     // register
     reg_title: "Create your account",
     reg_sub: "Your name is how Climb greets you. Your username and email are how you sign back in.",
@@ -229,10 +229,10 @@ const T = {
     door3_title: "Turn it into a Pacer action",
   },
   es: {
-    tagline: "La mano derecha de tu carrera",
-    get_started: "Comenzar",
+    tagline: "La mano derecha de tu carrera.",
+    get_started: "Comienza tu diagnóstico",
     have_account: "Ya tengo cuenta",
-    keywords: "CONTEXTO  ·  PATRÓN  ·  EJECUCIÓN",
+    keywords: "Contexto · Patrón · Ejecución",
     reg_title: "Crea tu cuenta",
     reg_sub: "Tu nombre es cómo Climb te saluda. Tu usuario y tu correo son cómo vuelves a entrar.",
     name: "Tu nombre",
