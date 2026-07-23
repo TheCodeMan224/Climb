@@ -3,18 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, getUsuario, clearUsuario } from "../../lib/api";
-
-const AGENTES = [
-  ["Pacer", "/pacer", "Your weekly mission and its actions."],
-  ["Mirror", "/mirror", "Work on your limiting patterns."],
-  ["Archive", "/archive", "Document your wins for when they matter."],
-  ["Editor", "/editor", "Turn your work into content, in your voice."],
-  ["Clarity", "/clarity", "Think before deciding your next move."],
-];
+import { t, getLang } from "../../lib/i18n";
 
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [lang, setLang] = useState("en");
   const [mision, setMision] = useState(null);
   const [logros, setLogros] = useState([]);
   const [resumen, setResumen] = useState(null);
@@ -23,33 +17,30 @@ export default function Dashboard() {
 
   useEffect(() => {
     const u = getUsuario();
-    if (!u) {
-      router.push("/login");
-      return;
-    }
+    if (!u) { router.push("/login"); return; }
+    setLang(getLang());
     (async () => {
       try {
         const info = await api(`/api/usuarios/${u.id_usuario}`);
         setUser(info);
-        // Misión activa (puede no existir -> 404, lo tratamos como "sin misión").
-        try {
-          setMision(await api(`/api/usuarios/${u.id_usuario}/mision`));
-        } catch {
-          setMision(null);
-        }
+        try { setMision(await api(`/api/usuarios/${u.id_usuario}/mision`)); } catch { setMision(null); }
         setLogros(await api(`/api/usuarios/${u.id_usuario}/logros`));
-        try { setResumen(await api(`/api/usuarios/${u.id_usuario}/resumen`)); } catch { /* sin resumen */ }
-        try { setCamino(await api(`/api/usuarios/${u.id_usuario}/camino`)); } catch { /* sin camino */ }
-      } catch (err) {
-        setError(err.message);
-      }
+        try { setResumen(await api(`/api/usuarios/${u.id_usuario}/resumen`)); } catch { /* */ }
+        try { setCamino(await api(`/api/usuarios/${u.id_usuario}/camino`)); } catch { /* */ }
+      } catch (err) { setError(err.message); }
     })();
   }, [router]);
 
-  function logout() {
-    clearUsuario();
-    router.push("/");
-  }
+  const tr = (k) => t(k, lang);
+  const AGENTES = [
+    ["Pacer", "/pacer", tr("ag_pacer_d")],
+    ["Mirror", "/mirror", tr("ag_mirror_d")],
+    ["Archive", "/archive", tr("ag_archive_d")],
+    ["Editor", "/editor", tr("ag_editor_d")],
+    ["Clarity", "/clarity", tr("ag_clarity_d")],
+  ];
+
+  function logout() { clearUsuario(); router.push("/"); }
 
   if (error) return <main><p className="error">{error}</p></main>;
   if (!user) return null;
@@ -57,32 +48,25 @@ export default function Dashboard() {
   return (
     <main>
       <div className="row" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ margin: 0 }}>Hi, {user.nombre}</h1>
-        <button className="link" onClick={logout} style={{ background: "none", border: "none", cursor: "pointer" }}>
-          Sign out
-        </button>
+        <h1 style={{ margin: 0 }}>{tr("hi")}, {user.nombre}</h1>
+        <button className="link" onClick={logout} style={{ background: "none", border: "none", cursor: "pointer" }}>{tr("sign_out")}</button>
       </div>
       <p className="muted">{user.handle} · {user.idioma?.toUpperCase()}</p>
 
-      {resumen?.voice_profile?.tono_natural && (
-        <p className="pivote" style={{ marginTop: 8 }}>{resumen.voice_profile.tono_natural}</p>
-      )}
+      {resumen?.voice_profile?.tono_natural && (<p className="pivote" style={{ marginTop: 8 }}>{resumen.voice_profile.tono_natural}</p>)}
 
       {(resumen?.patrones_consolidados || []).length > 0 && (
         <>
-          <h2>Scout · Detected patterns</h2>
+          <h2>{tr("scout_patterns")}</h2>
           {resumen.patrones_consolidados.slice(0, 2).map((p, i) => (
-            <div className="card" key={i}>
-              <strong>{p.nombre}</strong>
-              <p className="muted" style={{ margin: "6px 0 0" }}>{p.descripcion}</p>
-            </div>
+            <div className="card" key={i}><strong>{p.nombre}</strong><p className="muted" style={{ margin: "6px 0 0" }}>{p.descripcion}</p></div>
           ))}
         </>
       )}
 
       {camino?.nombre_camino && (
         <>
-          <h2>Your path</h2>
+          <h2>{tr("your_path")}</h2>
           <div className="card" style={{ background: "var(--navy)", color: "var(--offwhite)" }}>
             <strong>{camino.nombre_camino}</strong>
             <p style={{ margin: "6px 0 0" }}>{camino.descripcion_camino}</p>
@@ -90,22 +74,18 @@ export default function Dashboard() {
         </>
       )}
 
-      <h2>Active mission</h2>
+      <h2>{tr("active_mission")}</h2>
       {mision ? (
         <div className="card">
           <strong>{mision.mision?.nombre_mision}</strong>
           <p className="muted">{mision.mision?.descripcion}</p>
-          <ul>
-            {(mision.mision?.acciones || []).map((a, i) => (
-              <li key={i}>{a}</li>
-            ))}
-          </ul>
+          <Link className="link" href="/pacer">→</Link>
         </div>
       ) : (
-        <p className="muted">No mission yet.</p>
+        <p className="muted">{tr("no_mission")}</p>
       )}
 
-      <h2>Your agents</h2>
+      <h2>{tr("your_agents")}</h2>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         {AGENTES.map(([nombre, ruta, desc]) => (
           <Link key={ruta} href={ruta} className="card" style={{ textDecoration: "none", color: "inherit" }}>
@@ -115,16 +95,13 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <h2>From the archive</h2>
+      <h2>{tr("from_archive")}</h2>
       {logros.length ? (
         logros.map((l) => (
-          <div className="card" key={l.id}>
-            <strong>{l.titulo}</strong>
-            <p className="muted">{l.tipo} · {l.fecha_corta}</p>
-          </div>
+          <div className="card" key={l.id}><strong>{l.titulo}</strong><p className="muted">{l.tipo} · {l.fecha_corta}</p></div>
         ))
       ) : (
-        <p className="muted">No wins documented yet.</p>
+        <p className="muted">{tr("no_wins")}</p>
       )}
     </main>
   );

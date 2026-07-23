@@ -2,33 +2,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getUsuario } from "../../lib/api";
-
-const ACTOS = [
-  ["Act I — Where you are today", [
-    "How do you feel about your career right now? Not what others see, but what you really feel.",
-    "When something at work frustrates you or you feel stuck, what do you do with it?",
-  ]],
-  ["Act II — Where you come from", [
-    "Tell me what you do today. Your job, what kind of company, your day-to-day responsibilities.",
-    "And to get there, what did you go through? Your path so far, like you'd tell it over dinner.",
-  ]],
-  ["Act III — What you've built", [
-    "What's the achievement you're most proud of? What happened and why does that one matter?",
-    "When you present in front of important people, how do you experience it? Does it lift you or weigh on you?",
-  ]],
-  ["Act IV — Where you're headed", [
-    "What have you tried to grow or get noticed more? Tell me what didn't work too.",
-    "Picture your career in three years, with no limits. What does it look like?",
-    "Before we wrap up, is there anything about your career you're carrying that you haven't said?",
-  ]],
-];
-
-// Aplana a 9 preguntas con su acto.
-const PREGUNTAS = ACTOS.flatMap(([acto, qs]) => qs.map((q) => ({ acto, q })));
+import { t, getLang } from "../../lib/i18n";
 
 export default function Onboarding() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [lang, setLang] = useState("en");
   const [paso, setPaso] = useState(0);
   const [resp, setResp] = useState(Array(9).fill(""));
   const [busy, setBusy] = useState(false);
@@ -37,8 +16,11 @@ export default function Onboarding() {
   useEffect(() => {
     const u = getUsuario();
     if (!u) router.push("/login");
-    else setUser(u);
+    else { setUser(u); setLang(getLang()); }
   }, [router]);
+
+  const tr = (k) => t(k, lang);
+  const PREGUNTAS = tr("onb_preguntas");
 
   function set(i, v) {
     const r = resp.slice();
@@ -80,20 +62,20 @@ export default function Onboarding() {
   return (
     <main>
       <p className="muted" style={{ textTransform: "uppercase", fontSize: 12 }}>
-        Question {String(paso + 1).padStart(2, "0")} / {PREGUNTAS.length}
+        {tr("onb_progress")} {String(paso + 1).padStart(2, "0")} / {PREGUNTAS.length}
       </p>
       <h2 style={{ marginTop: 4 }}>{p.acto}</h2>
       <p className="pivote" style={{ marginTop: 8 }}>{p.q}</p>
       <textarea value={resp[paso]} onChange={(e) => set(paso, e.target.value)}
-                placeholder="Write the way you talk, no filter..." style={{ minHeight: 120 }} />
+                placeholder={tr("onb_placeholder")} style={{ minHeight: 120 }} />
       {error && <p className="error">{error}</p>}
       <div className="row">
-        {paso > 0 && <button className="link" onClick={() => setPaso(paso - 1)}>← Previous</button>}
+        {paso > 0 && <button className="link" onClick={() => setPaso(paso - 1)}>{tr("previous")}</button>}
         {!ultima ? (
-          <button className="btn" style={{ marginTop: 0 }} onClick={() => setPaso(paso + 1)}>Next →</button>
+          <button className="btn" style={{ marginTop: 0 }} onClick={() => setPaso(paso + 1)}>{tr("next")}</button>
         ) : (
           <button className="btn" style={{ marginTop: 0 }} disabled={busy} onClick={finalizar}>
-            {busy ? "Generating your diagnosis…" : "Reach the summit →"}
+            {busy ? tr("generating_diag") : tr("reach_summit")}
           </button>
         )}
       </div>
