@@ -1,4 +1,4 @@
-# Imagen del backend Climb (Fase 1): app Flet web + psycopg2 hacia PostgreSQL.
+# Imagen del backend Climb: API FastAPI + psycopg2 hacia PostgreSQL.
 FROM python:3.11-slim
 
 # libpq-dev + build-essential para psycopg2.
@@ -14,6 +14,5 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
-EXPOSE 8550
-# main.py arranca Flet en modo web sobre $PORT (AppView.WEB_BROWSER).
-CMD ["python", "main.py"]
+EXPOSE 8000
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]

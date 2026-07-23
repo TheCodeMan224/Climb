@@ -1,4 +1,5 @@
-# Orquestación de desarrollo local (Fase 1): PostgreSQL + backend Flet.
+# Orquestación local: PostgreSQL + API (FastAPI) + Frontend (Next.js).
+# La app Flet fue jubilada; el backend es ahora solo la API.
 services:
   db:
     image: postgres:16-alpine
@@ -19,40 +20,21 @@ services:
       timeout: 3s
       retries: 10
 
-  backend:
-    build: .
-    container_name: climb_backend
-    restart: unless-stopped
-    ports:
-      - "8550:8550"           # Flet web
-    volumes:
-      - .:/app                # hot-reload del código en desarrollo
-    environment:
-      PORT: "8550"
-      PYTHONUNBUFFERED: "1"   # logs de Python en vivo (sin buffering en el contenedor)
-      DATABASE_URL: postgresql://climb_dev:${POSTGRES_PASSWORD:-climb_dev_password}@db:5432/climb_development
-    env_file:
-      - .env                  # ANTHROPIC_API_KEY, SMTP_USER, SMTP_APP_PASSWORD, SMTP_FROM
-    depends_on:
-      db:
-        condition: service_healthy
-
   api:
-    build: .
+    build: ./backend
     container_name: climb_api
     restart: unless-stopped
-    # Misma imagen que el backend, distinto comando: sirve la API REST (Fase 2).
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"           # API REST (FastAPI)
     volumes:
-      - .:/app
+      - ./backend:/app
     environment:
       PYTHONUNBUFFERED: "1"
       DATABASE_URL: postgresql://climb_dev:${POSTGRES_PASSWORD:-climb_dev_password}@db:5432/climb_development
       CORS_ORIGINS: http://localhost:3000
     env_file:
-      - .env
+      - .env                  # ANTHROPIC_API_KEY, SMTP_USER, SMTP_APP_PASSWORD, SMTP_FROM
     depends_on:
       db:
         condition: service_healthy
@@ -62,12 +44,11 @@ services:
     container_name: climb_frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"           # Next.js (frontend de producción, Fase 3)
+      - "3000:3000"           # Next.js
     volumes:
       - ./frontend:/app
       - /app/node_modules     # preserva node_modules del contenedor
     environment:
-      # El navegador (host) llega a la API por el puerto publicado 8000.
       NEXT_PUBLIC_API_URL: http://localhost:8000
     depends_on:
       - api
