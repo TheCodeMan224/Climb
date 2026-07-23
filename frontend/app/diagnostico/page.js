@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUsuario } from "../../lib/api";
 import { t, getLang } from "../../lib/i18n";
+import Wordmark from "../components/Wordmark";
 
-const COLOR = { verde: "#4a9d6a", ambar: "#BA7517", rojo: "#712B13" };
+const COLOR = { verde: "var(--green)", ambar: "var(--func-amber)", rojo: "var(--red)" };
 
 export default function Diagnostico() {
   const router = useRouter();
@@ -30,28 +31,50 @@ export default function Diagnostico() {
   const creencia = d.creencia_limitante || {};
   const estanc = d.tipo_estancamiento || {};
 
+  const Retrato = ({ eyebrow, color, texto }) =>
+    texto ? (
+      <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `3px solid ${color}`, borderRadius: "0 0 8px 8px", padding: "28px 26px" }}>
+        <div className="eyebrow" style={{ color, letterSpacing: "0.16em", marginBottom: 16 }}>{eyebrow}</div>
+        <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0 }}>{texto}</p>
+      </div>
+    ) : null;
+
   return (
-    <main style={{ maxWidth: 640 }}>
-      <p className="muted" style={{ textTransform: "uppercase", fontSize: 12 }}>{tr("diag_sub")}</p>
+    <main style={{ maxWidth: 900 }}>
+      <div className="topbar"><Wordmark href="/dashboard" /></div>
+
+      <div className="eyebrow" style={{ marginBottom: 20 }}>{tr("diag_sub")}</div>
       <h1>{tr("diag_saludo")}{d.nombre_usuario ? `, ${d.nombre_usuario}` : ""}</h1>
 
-      {d.frase_pivote && <p className="pivote">{d.frase_pivote}</p>}
-      {d.parrafo_narrativo && <p>{d.parrafo_narrativo}</p>}
+      {d.frase_pivote && (
+        <div className="pivote-rule" style={{ margin: "12px 0 40px" }}>
+          <blockquote style={{ margin: 0, fontFamily: "var(--syne)", fontWeight: 600, fontSize: "clamp(28px,4.6vw,44px)", lineHeight: 1.18, letterSpacing: "-0.02em" }}>
+            {d.frase_pivote}
+          </blockquote>
+        </div>
+      )}
+      {d.parrafo_narrativo && <p style={{ fontSize: 18, lineHeight: 1.7, maxWidth: 720 }}>{d.parrafo_narrativo}</p>}
 
-      {retrato.lo_que_eres && (<div className="card"><div className="muted" style={{ fontSize: 12, textTransform: "uppercase" }}>{tr("what_you_are")}</div><p style={{ margin: "6px 0 0" }}>{retrato.lo_que_eres}</p></div>)}
-      {retrato.lo_que_te_frena && (<div className="card"><div className="muted" style={{ fontSize: 12, textTransform: "uppercase" }}>{tr("what_holds")}</div><p style={{ margin: "6px 0 0" }}>{retrato.lo_que_te_frena}</p></div>)}
-      {retrato.donde_esta_la_brecha && (<div className="card"><div className="muted" style={{ fontSize: 12, textTransform: "uppercase" }}>{tr("where_gap")}</div><p style={{ margin: "6px 0 0" }}>{retrato.donde_esta_la_brecha}</p></div>)}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 24, marginTop: 48 }}>
+        <Retrato eyebrow={tr("what_you_are")} color="var(--navy)" texto={retrato.lo_que_eres} />
+        <Retrato eyebrow={tr("what_holds")} color="var(--red)" texto={retrato.lo_que_te_frena} />
+        <Retrato eyebrow={tr("where_gap")} color="var(--gold)" texto={retrato.donde_esta_la_brecha} />
+      </div>
 
       {(d.visibilidad || []).length > 0 && (
         <>
           <h2>{tr("visibility_h")}</h2>
-          {d.visibilidad.map((v, i) => (
-            <div key={i} style={{ margin: "10px 0" }}>
-              <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 5, background: COLOR[v.estado] || "#ccc", marginRight: 8 }} />
-              <strong>{v.dimension}</strong>
-              <p className="muted" style={{ margin: "2px 0 0 18px" }}>{v.descripcion}</p>
-            </div>
-          ))}
+          <div style={{ borderTop: "1px solid var(--gold)" }}>
+            {d.visibilidad.map((v, i) => (
+              <div key={i} style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 16, alignItems: "start", padding: "20px 0", borderBottom: "1px solid var(--border)" }}>
+                <span style={{ width: 10, height: 10, borderRadius: 5, background: COLOR[v.estado] || "#ccc", marginTop: 7 }} />
+                <div>
+                  <strong style={{ fontFamily: "var(--syne)", fontWeight: 600, fontSize: 17 }}>{v.dimension}</strong>
+                  <p className="muted" style={{ margin: "4px 0 0", lineHeight: 1.55 }}>{v.descripcion}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </>
       )}
 
@@ -59,7 +82,7 @@ export default function Diagnostico() {
         <>
           <h2>{tr("patterns_h")}</h2>
           {d.patrones.map((p, i) => (
-            <div className="card" key={i}><strong>{p.nombre}</strong><p className="muted" style={{ margin: "6px 0 0" }}>{p.descripcion}</p></div>
+            <div className="card" key={i}><strong>{p.nombre}</strong><p className="muted" style={{ margin: "8px 0 0" }}>{p.descripcion}</p></div>
           ))}
         </>
       )}
@@ -68,8 +91,8 @@ export default function Diagnostico() {
         <>
           <h2>{tr("limiting_belief")}</h2>
           <div className="card">
-            {creencia.cita && <p style={{ fontStyle: "italic", margin: 0 }}>“{creencia.cita}”</p>}
-            {creencia.reformulacion && <p style={{ color: "var(--amber)", margin: "8px 0 0" }}>{creencia.reformulacion}</p>}
+            {creencia.cita && <p className="pivote" style={{ margin: 0 }}>“{creencia.cita}”</p>}
+            {creencia.reformulacion && <p style={{ color: "var(--gold)", fontWeight: 600, margin: "10px 0 0" }}>{creencia.reformulacion}</p>}
           </div>
         </>
       )}
@@ -81,7 +104,7 @@ export default function Diagnostico() {
         </>
       )}
 
-      {d.proximo_paso?.parrafo && (<><h2>{tr("next_step_h")}</h2><p>{d.proximo_paso.parrafo}</p></>)}
+      {d.proximo_paso?.parrafo && (<><h2>{tr("next_step_h")}</h2><p style={{ fontSize: 17, lineHeight: 1.7 }}>{d.proximo_paso.parrafo}</p></>)}
 
       <button className="btn" onClick={() => router.push("/caminos")}>{tr("see_plan")}</button>
     </main>
