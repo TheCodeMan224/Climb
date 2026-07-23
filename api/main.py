@@ -325,6 +325,75 @@ def api_archive_timeline(id_usuario: int):
     return {"stats": db.archivo_stats(id_usuario), "meses": db.archivo_agrupado_por_mes(id_usuario)}
 
 
+# ============================================================================
+# Editor (home + estudio)
+# ============================================================================
+class EditorEstudioIn(BaseModel):
+    id_borrador: Optional[int] = None
+    formato: str = ""
+    contexto: str = ""          # logro de origen (opcional)
+    borrador_actual: str = ""
+    turns: list = []            # [[speaker, texto], ...] speaker ∈ {editor, user}
+
+
+@app.get("/api/usuarios/{id_usuario}/editor/borradores")
+def api_editor_borradores(id_usuario: int):
+    """Borradores del usuario, separados en activos y completados."""
+    return {
+        "activos": db.obtener_borradores_editor(id_usuario, "activo"),
+        "completados": db.obtener_borradores_editor(id_usuario, "completado"),
+    }
+
+
+@app.get("/api/editor/borradores/{id_borrador}")
+def api_editor_borrador(id_borrador: int):
+    """Un borrador completo (para retomarlo en el estudio)."""
+    b = db.obtener_borrador_editor(id_borrador)
+    if b is None:
+        raise HTTPException(status_code=404, detail="Borrador no encontrado")
+    return b
+
+
+@app.post("/api/usuarios/{id_usuario}/editor/estudio")
+async def api_editor_estudio(id_usuario: int, payload: EditorEstudioIn):
+    """Genera/edita el borrador con Editor y lo persiste. Devuelve el nuevo estado."""
+    turns = payload.turns
+    if turns and turns[-1][0] == "user":
+        db.registrar_texto_usuario(id_usuario, "editor", turns[-1][1])
+    res = await clsAgentes.editor_estudio(id_usuario, payload.formato, payload.contexto, payload.borrador_actual, turns)
+    try:
+        await clsAgentes.actualizar_voice_profile_si_toca(id_usuario)
+    except Exception:
+        pass
+    comentario = res.get("comentario", "")
+    nuevos_turns = turns + [["editor", comentario]] if comentario else turns
+    es_correo = payload.formato == "correo"
+    turns_json = json.dumps(nuevos_turns, ensure_ascii=False)
+    asunto = res.get("asunto", "")
+    borrador = res.get("borrador", payload.borrador_actual)
+    if payload.id_borrador:
+        db.actualizar_borrador_editor(payload.id_borrador, payload.formato, es_correo, asunto, borrador, turns_json)
+        bid = payload.id_borrador
+    else:
+        bid = db.crear_borrador_editor(id_usuario, payload.formato, es_correo, asunto, borrador, turns_json=turns_json)
+    return {
+        "id_borrador": bid,
+        "borrador": borrador,
+        "asunto": asunto,
+        "comentario": comentario,
+        "sugerencias": res.get("sugerencias", []),
+        "es_correo": es_correo,
+        "turns": nuevos_turns,
+    }
+
+
+@app.post("/api/editor/borradores/{id_borrador}/completar")
+def api_editor_completar(id_borrador: int):
+    """Marca un borrador como completado."""
+    db.marcar_borrador_estado(id_borrador, "completado")
+    return {"ok": True}
+
+
 @app.get("/api/usuarios/{id_usuario}")
 def get_usuario(id_usuario: int):
     """Datos básicos de un usuario (nombre, handle, idioma)."""
