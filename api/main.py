@@ -19,7 +19,17 @@ from pydantic import BaseModel
 
 from core import clsAgentes, clsClarity, clsCorreo, clsMirror
 from core.clsAgentes import orquestar_interaccion_agente, seed_agentes
+from core.textos import set_idioma
 from data import clsInteraccionDB as db
+
+
+def _lang(id_usuario):
+    """Fija el idioma de la IA según la preferencia del usuario para esta request.
+
+    (Nota: usa el global de i18n como en Flet; para alta concurrencia con idiomas
+    mezclados convendría un contextvar — pendiente para cuando se jubile Flet.)
+    """
+    set_idioma(db.obtener_idioma(id_usuario))
 
 
 @asynccontextmanager
@@ -234,6 +244,7 @@ class CaminoElegidoIn(BaseModel):
 
 
 def _requiere_perfil(id_usuario):
+    _lang(id_usuario)
     if db.obtener_perfil(id_usuario) is None:
         raise HTTPException(status_code=400, detail="El usuario aún no completó el onboarding.")
 
@@ -303,6 +314,7 @@ def api_completar_mision(id_mision: int):
 @app.get("/api/usuarios/{id_usuario}/misiones/sugerencias")
 async def api_sugerencias_mision(id_usuario: int):
     """Pacer sugiere 2-3 misiones nuevas (tras completar una)."""
+    _lang(id_usuario)
     return {"sugerencias": await clsAgentes.sugerir_misiones_pacer(id_usuario)}
 
 
@@ -325,6 +337,7 @@ _ARCHIVE_TRIGGER = "document the win this way"
 @app.post("/api/usuarios/{id_usuario}/archive/mensaje")
 async def api_archive_mensaje(id_usuario: int, payload: TurnosIn):
     """Responde en la conversación de Archive. Indica si ya se puede generar la ficha."""
+    _lang(id_usuario)
     turns = payload.turns
     if turns and turns[-1][0] == "user":
         db.registrar_texto_usuario(id_usuario, "archive", turns[-1][1])
@@ -339,6 +352,7 @@ async def api_archive_mensaje(id_usuario: int, payload: TurnosIn):
 @app.post("/api/usuarios/{id_usuario}/archive/ficha", status_code=201)
 async def api_archive_ficha(id_usuario: int, payload: TurnosIn):
     """Genera la ficha de logro desde la conversación y la persiste."""
+    _lang(id_usuario)
     ficha = await clsAgentes.generar_ficha_logro(payload.turns, id_usuario)
     id_registro = db.insertar_logro_completo(
         id_usuario, ficha["tipo"], ficha["titulo"], ficha["contexto"],
@@ -386,6 +400,7 @@ def api_editor_borrador(id_borrador: int):
 @app.post("/api/usuarios/{id_usuario}/editor/estudio")
 async def api_editor_estudio(id_usuario: int, payload: EditorEstudioIn):
     """Genera/edita el borrador con Editor y lo persiste. Devuelve el nuevo estado."""
+    _lang(id_usuario)
     turns = payload.turns
     if turns and turns[-1][0] == "user":
         db.registrar_texto_usuario(id_usuario, "editor", turns[-1][1])
@@ -495,6 +510,7 @@ def api_mirror_patron(id_usuario: int, payload: MirrorQuoteIn):
 @app.post("/api/usuarios/{id_usuario}/mirror/pregunta")
 async def api_mirror_pregunta(id_usuario: int, payload: MirrorPreguntaIn):
     """Siguiente pregunta socrática. `listo=True` cuando Mirror decide cerrar."""
+    _lang(id_usuario)
     turns = payload.turns
     if turns and turns[-1][0] == "user":
         db.registrar_texto_usuario(id_usuario, "mirror", turns[-1][1])
@@ -516,6 +532,7 @@ async def api_mirror_boundary(id_usuario: int, payload: MirrorBoundaryIn):
 @app.post("/api/usuarios/{id_usuario}/mirror/reframe")
 async def api_mirror_reframe(id_usuario: int, payload: MirrorReframeIn):
     """Genera el reframe final (el 'espejo') de la sesión."""
+    _lang(id_usuario)
     return await clsAgentes.mirror_reframe(payload.quote, payload.turns)
 
 
@@ -580,6 +597,7 @@ def api_clarity_espejo(id_usuario: int):
 @app.post("/api/usuarios/{id_usuario}/clarity/mensaje")
 async def api_clarity_mensaje(id_usuario: int, payload: ClarityMensajeIn):
     """Turno de conversación de Clarity. Devuelve el mensaje y la cita real (si aplica)."""
+    _lang(id_usuario)
     turns = payload.turns
     if turns and turns[-1][0] == "user":
         db.registrar_texto_usuario(id_usuario, "clarity", turns[-1][1])
@@ -601,6 +619,7 @@ async def api_clarity_mensaje(id_usuario: int, payload: ClarityMensajeIn):
 @app.post("/api/usuarios/{id_usuario}/clarity/cierre")
 async def api_clarity_cierre(id_usuario: int, payload: ClarityCierreIn):
     """Síntesis final + las 3 puertas de salida."""
+    _lang(id_usuario)
     return await clsAgentes.clarity_cierre(payload.turns, id_usuario)
 
 
