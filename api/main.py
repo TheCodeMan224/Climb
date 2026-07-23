@@ -17,7 +17,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from core import clsAgentes, clsCorreo
+from core import clsAgentes, clsCorreo, clsMirror
 from core.clsAgentes import orquestar_interaccion_agente, seed_agentes
 from data import clsInteraccionDB as db
 
@@ -391,6 +391,124 @@ async def api_editor_estudio(id_usuario: int, payload: EditorEstudioIn):
 def api_editor_completar(id_borrador: int):
     """Marca un borrador como completado."""
     db.marcar_borrador_estado(id_borrador, "completado")
+    return {"ok": True}
+
+
+# ============================================================================
+# Mirror (hub -> sesión socrática -> espejo/reframe)
+# ============================================================================
+class MirrorQuoteIn(BaseModel):
+    quote: str
+
+
+class MirrorPreguntaIn(BaseModel):
+    quote: str
+    turns: list = []            # [[speaker, texto], ...] speaker ∈ {mirror, user}
+    reanclar: bool = False
+
+
+class MirrorBoundaryIn(BaseModel):
+    texto: str
+
+
+class MirrorReframeIn(BaseModel):
+    quote: str
+    turns: list = []
+
+
+class MirrorProcesarIn(BaseModel):
+    id: str                     # "db:5" | "scout:0" | "clarity:patron"
+    quote: str
+    source: str = "user"
+    scout_ref: Optional[str] = None
+    reframe: dict
+
+
+class MirrorDejarIn(BaseModel):
+    id: str
+    quote: str
+    source: str = "user"
+    scout_ref: Optional[str] = None
+    turns: list = []
+
+
+def _patron_dict(p):
+    d = {
+        "id": p.id, "quote": p.quote, "source": p.source, "status": p.status,
+        "en_progreso": p.en_progreso, "respuestas_en_progreso": p.respuestas_en_progreso,
+        "detected_meta": p.detected_meta, "observed_meta": p.observed_meta,
+        "scout_ref": p.scout_ref, "sesion": p.sesion,
+    }
+    if p.reframe:
+        d["reframe"] = {
+            "old_quote": p.reframe.old_quote, "new_quote": p.reframe.new_quote,
+            "lo_que_vimos": p.reframe.lo_que_vimos, "manifestacion": p.reframe.manifestacion,
+            "recomendaciones": p.reframe.recomendaciones,
+        }
+    return d
+
+
+@app.get("/api/usuarios/{id_usuario}/mirror/hub")
+def api_mirror_hub(id_usuario: int):
+    """Patrones pendientes (Scout + propios) y en observación (con su reframe)."""
+    pend, obs = clsMirror.cargar_hub(id_usuario)
+    return {"pendientes": [_patron_dict(p) for p in pend], "observando": [_patron_dict(p) for p in obs]}
+
+
+@app.post("/api/usuarios/{id_usuario}/mirror/patron", status_code=201)
+def api_mirror_patron(id_usuario: int, payload: MirrorQuoteIn):
+    """Registra un patrón descrito por el usuario."""
+    idp = db.insertar_patron_usuario(id_usuario, payload.quote)
+    db.registrar_texto_usuario(id_usuario, "mirror", payload.quote)
+    return {"id_patron": idp, "id": f"db:{idp}"}
+
+
+@app.post("/api/usuarios/{id_usuario}/mirror/pregunta")
+async def api_mirror_pregunta(id_usuario: int, payload: MirrorPreguntaIn):
+    """Siguiente pregunta socrática. `listo=True` cuando Mirror decide cerrar."""
+    turns = payload.turns
+    if turns and turns[-1][0] == "user":
+        db.registrar_texto_usuario(id_usuario, "mirror", turns[-1][1])
+        try:
+            await clsAgentes.actualizar_voice_profile_si_toca(id_usuario)
+        except Exception:
+            pass
+    pregunta = await clsAgentes.mirror_pregunta(payload.quote, turns, id_usuario, payload.reanclar)
+    listo = "[LISTO]" in pregunta
+    return {"pregunta": pregunta.replace("[LISTO]", "").strip(), "listo": listo}
+
+
+@app.post("/api/usuarios/{id_usuario}/mirror/boundary")
+async def api_mirror_boundary(id_usuario: int, payload: MirrorBoundaryIn):
+    """Clasifica si el mensaje cruza hacia salud mental (límite de Mirror)."""
+    return {"boundary": await clsAgentes.mirror_es_boundary(payload.texto)}
+
+
+@app.post("/api/usuarios/{id_usuario}/mirror/reframe")
+async def api_mirror_reframe(id_usuario: int, payload: MirrorReframeIn):
+    """Genera el reframe final (el 'espejo') de la sesión."""
+    return await clsAgentes.mirror_reframe(payload.quote, payload.turns)
+
+
+@app.post("/api/usuarios/{id_usuario}/mirror/procesar")
+def api_mirror_procesar(id_usuario: int, payload: MirrorProcesarIn):
+    """Marca el patrón como procesado (observing) con su reframe."""
+    reframe_json = json.dumps(payload.reframe, ensure_ascii=False)
+    if payload.id.startswith("db:"):
+        db.marcar_patron_procesado(int(payload.id[3:]), reframe_json)
+    else:
+        db.insertar_patron_procesado(id_usuario, payload.quote, payload.source, reframe_json, payload.scout_ref)
+    return {"ok": True}
+
+
+@app.post("/api/usuarios/{id_usuario}/mirror/dejar")
+def api_mirror_dejar(id_usuario: int, payload: MirrorDejarIn):
+    """Deja la sesión a medias para retomarla luego."""
+    turns_json = json.dumps({"turns": payload.turns}, ensure_ascii=False)
+    if payload.id.startswith("db:"):
+        db.guardar_sesion_mirror(int(payload.id[3:]), turns_json)
+    else:
+        db.insertar_patron_en_progreso(id_usuario, payload.quote, payload.source, turns_json, payload.scout_ref)
     return {"ok": True}
 
 
