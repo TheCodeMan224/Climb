@@ -1134,3 +1134,46 @@ def obtener_camino_elegido(id_usuario):
     ).fetchone()
     conexion.close()
     return dict(fila) if fila else None
+
+
+# ----------------------------------------------------------------------------
+# Agentes (catalogo de configuracion dinamica; se siembra desde el codigo)
+# ----------------------------------------------------------------------------
+def upsert_agente(nombre_agente, descripcion, rol, instruccion):
+    """Inserta o actualiza la config de un agente (idempotente por nombre)."""
+    conexion = obtener_conexion()
+    conexion.execute(
+        """
+        INSERT INTO Agentes (nombre_agente, descripcion_agente, rol_agente, instruccion_agente)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (nombre_agente) DO UPDATE SET
+            descripcion_agente = EXCLUDED.descripcion_agente,
+            rol_agente = EXCLUDED.rol_agente,
+            instruccion_agente = EXCLUDED.instruccion_agente
+        """,
+        (nombre_agente, descripcion, rol, instruccion),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_agente(nombre_agente):
+    """Devuelve la config completa de un agente por nombre, o None."""
+    conexion = obtener_conexion()
+    fila = conexion.execute(
+        "SELECT id_agente, nombre_agente, descripcion_agente, rol_agente, instruccion_agente "
+        "FROM Agentes WHERE nombre_agente = ?",
+        (nombre_agente,),
+    ).fetchone()
+    conexion.close()
+    return dict(fila) if fila else None
+
+
+def listar_agentes():
+    """Devuelve el catalogo de agentes (sin los prompts largos)."""
+    conexion = obtener_conexion()
+    filas = conexion.execute(
+        "SELECT id_agente, nombre_agente, descripcion_agente FROM Agentes ORDER BY id_agente"
+    ).fetchall()
+    conexion.close()
+    return [dict(f) for f in filas]

@@ -9,13 +9,27 @@ Arranque: `uvicorn api.main:app --host 0.0.0.0 --port 8000`
 """
 
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from core.clsAgentes import seed_agentes
 from data import clsInteraccionDB as db
 
-app = FastAPI(title="Climb API", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(app):
+    # Siembra el catalogo de Agentes desde el codigo al arrancar (idempotente).
+    try:
+        seed_agentes()
+        print("[api] catalogo de Agentes sembrado")
+    except Exception as exc:  # noqa: BLE001 - no impedir el arranque por el seed
+        print(f"[api] seed_agentes fallo: {exc}")
+    yield
+
+
+app = FastAPI(title="Climb API", version="0.1.0", lifespan=lifespan)
 
 # CORS para el futuro frontend Next.js (orígenes configurables por env).
 _origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
@@ -70,3 +84,18 @@ def get_mision(id_usuario: int):
 def get_logros(id_usuario: int):
     """Logros documentados con Archive (enriquecidos), más recientes primero."""
     return db.obtener_logros_completos(id_usuario)
+
+
+@app.get("/api/agentes")
+def get_agentes():
+    """Catálogo de agentes (nombre + descripción)."""
+    return db.listar_agentes()
+
+
+@app.get("/api/agentes/{nombre}")
+def get_agente(nombre: str):
+    """Configuración completa de un agente (identidad + reglas base)."""
+    agente = db.obtener_agente(nombre)
+    if agente is None:
+        raise HTTPException(status_code=404, detail="Agente no encontrado")
+    return agente

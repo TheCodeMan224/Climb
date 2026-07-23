@@ -163,6 +163,16 @@ CREATE TABLE IF NOT EXISTS Password_Resets (
     fecha_creacion TIMESTAMPTZ NOT NULL
 );
 
+-- 15. Agentes (catálogo de configuración dinámica; se siembra desde el código)
+CREATE TABLE IF NOT EXISTS Agentes (
+    id_agente          SERIAL PRIMARY KEY,
+    nombre_agente      VARCHAR(50) UNIQUE NOT NULL,  -- 'scout','pacer','mirror','archive','editor','clarity'
+    descripcion_agente TEXT,
+    rol_agente         TEXT,   -- identidad / system prompt base
+    instruccion_agente TEXT,   -- reglas operacionales base (prompt principal)
+    fecha_creacion     TIMESTAMPTZ DEFAULT now()
+);
+
 -- Índices de rendimiento
 CREATE INDEX IF NOT EXISTS idx_chats_usuario     ON Chats (id_usuario);
 CREATE INDEX IF NOT EXISTS idx_hallazgos_usuario ON Hallazgos_Perfil (id_usuario);

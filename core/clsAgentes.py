@@ -1417,3 +1417,24 @@ async def refrescar_diagnostico_incremental(id_usuario):
 
     clsInteraccionDB.insertar_resumen(id_usuario, json.dumps(resumen, ensure_ascii=False))
     return resumen
+
+
+# ============================================================================
+# Catalogo de Agentes (config dinamica en BD) — Fase 2
+# ============================================================================
+# rol_agente = identidad compartida de Climb; instruccion_agente = prompt principal
+# de cada agente. La tabla Agentes se siembra desde aqui (fuente de verdad = codigo).
+AGENTES_SEED = [
+    ("scout",   "Explorador cualitativo: lee el onboarding y devuelve el diagnostico y los tres caminos.", IDENTIDAD_CLIMB, PROMPT_DIAGNOSTICO),
+    ("pacer",   "Estratega semanal: convierte el camino elegido en misiones con acciones verificables.",   IDENTIDAD_CLIMB, PROMPT_PACER),
+    ("mirror",  "Trabaja patrones limitantes con preguntas socraticas.",                                    IDENTIDAD_CLIMB, PROMPT_MIRROR),
+    ("archive", "Documenta los logros profesionales para cuando importen.",                                 IDENTIDAD_CLIMB, PROMPT_ARCHIVE),
+    ("editor",  "Traduce el impacto tecnico a lenguaje ejecutivo sin perder la voz del usuario.",           IDENTIDAD_CLIMB, PROMPT_EDITOR),
+    ("clarity", "Da perspectiva y ayuda a pensar antes de decidir el siguiente movimiento.",                IDENTIDAD_CLIMB, PROMPT_CLARITY),
+]
+
+
+def seed_agentes():
+    """Siembra/actualiza la tabla Agentes desde las constantes del codigo (idempotente)."""
+    for nombre, descripcion, rol, instruccion in AGENTES_SEED:
+        clsInteraccionDB.upsert_agente(nombre, descripcion, rol, instruccion)
