@@ -40,6 +40,15 @@ export default function Register() {
         <input value={form.username} onChange={upd("username")} placeholder="alexcarter" />
         <label>Password</label>
         <input type="password" value={form.clave} onChange={upd("clave")} placeholder="At least 4 characters" />
+        <label>Language</label>
+        <div className="row" style={{ marginTop: 0 }}>
+          {[["en", "English"], ["es", "Español"]].map(([code, label]) => (
+            <button type="button" key={code} onClick={() => setForm({ ...form, idioma: code })}
+                    className="btn" style={{ marginTop: 0, background: form.idioma === code ? "var(--navy)" : "#fff", color: form.idioma === code ? "var(--offwhite)" : "var(--navy)", border: "1px solid var(--border)" }}>
+              {label}
+            </button>
+          ))}
+        </div>
         {error && <p className="error">{error}</p>}
         <button className="btn" disabled={busy}>{busy ? "Creating…" : "Create account"}</button>
       </form>
