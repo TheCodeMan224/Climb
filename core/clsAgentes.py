@@ -22,14 +22,14 @@ MODELO_FICHA = "claude-sonnet-4-6"
 _cliente = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
-def _directiva_idioma():
-    """Instrucción de idioma de salida según el idioma activo de la sesión.
+def _directiva_idioma(idioma=None):
+    """Instrucción de idioma de salida.
 
-    Solo afecta el texto libre que el usuario lee. Los nombres de claves JSON y
-    los valores enumerados/fijos que el prompt define literalmente (p. ej. los
-    tipos de hallazgo) deben quedar EXACTAMENTE como aparecen en el prompt, sin
-    traducir, para no romper el parseo ni las validaciones."""
-    if get_idioma() == "es":
+    Si `idioma` se pasa (p. ej. desde la API stateless, con el idioma del usuario),
+    se usa ese; si no, cae al idioma activo de la sesión (Flet). Solo afecta el
+    texto libre que el usuario lee: las claves JSON y los valores enumerados/fijos
+    que el prompt define literalmente deben quedar EXACTAMENTE como aparecen."""
+    if (idioma or get_idioma()) == "es":
         return (
             "\n\n---\n\nIDIOMA DE SALIDA: escribe en ESPAÑOL todo el texto libre que el "
             "usuario leerá, con la voz de Climb. NO cambies los nombres de las claves JSON "
@@ -1438,3 +1438,42 @@ def seed_agentes():
     """Siembra/actualiza la tabla Agentes desde las constantes del codigo (idempotente)."""
     for nombre, descripcion, rol, instruccion in AGENTES_SEED:
         clsInteraccionDB.upsert_agente(nombre, descripcion, rol, instruccion)
+
+
+async def orquestar_interaccion_agente(nombre_agente, id_usuario, mensaje=None, id_chat=None, contexto_extra=""):
+    """Orquestador unico (Fase 2): resuelve una interaccion CONVERSACIONAL leyendo la
+    identidad (rol_agente) y las reglas base (instruccion_agente) del agente desde la
+    tabla Agentes (config dinamica en BD). Devuelve el texto de respuesta.
+
+    Cubre la via conversacional (mirror, archive, editor, clarity); los agentes
+    generadores (scout, pacer) siguen usando sus funciones dedicadas.
+
+    Si `id_chat` se provee, usa el historial del chat; si no, usa solo `mensaje`.
+    """
+    agente = clsInteraccionDB.obtener_agente(nombre_agente)
+    if not agente:
+        raise ValueError(f"Agente desconocido: {nombre_agente}")
+
+    nombre = clsInteraccionDB.obtener_nombre_usuario(id_usuario)
+    perfil = clsInteraccionDB.obtener_perfil(id_usuario) or {}
+    contexto_onboarding = _formatear_onboarding(perfil, nombre)
+
+    # System prompt armado desde la BD: identidad + reglas base + contexto + idioma.
+    # El idioma se toma del usuario (API stateless), no de un global de sesion.
+    idioma = clsInteraccionDB.obtener_idioma(id_usuario)
+    system_prompt = (
+        (agente.get("rol_agente") or IDENTIDAD_CLIMB)
+        + "\n\n---\n\n" + (agente.get("instruccion_agente") or "")
+        + "\n\n--- Contexto del onboarding del usuario (estatico) ---\n" + contexto_onboarding
+    )
+    if contexto_extra:
+        system_prompt += "\n\n--- Contexto puntual de esta sesion ---\n" + contexto_extra
+    system_prompt += _directiva_idioma(idioma)
+
+    if id_chat is not None:
+        historico = clsInteraccionDB.obtener_ultimos_mensajes(id_chat, 10)
+        mensajes = [{"role": m["rol"], "content": m["contenido"]} for m in historico]
+    else:
+        mensajes = [{"role": "user", "content": mensaje or ""}]
+
+    return await _llamar_claude(system_prompt, mensajes, max_tokens=1536, modelo=MODELO_AGENTE)

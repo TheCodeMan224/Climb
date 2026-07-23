@@ -13,8 +13,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-from core.clsAgentes import seed_agentes
+from core.clsAgentes import orquestar_interaccion_agente, seed_agentes
 from data import clsInteraccionDB as db
 
 
@@ -99,3 +100,22 @@ def get_agente(nombre: str):
     if agente is None:
         raise HTTPException(status_code=404, detail="Agente no encontrado")
     return agente
+
+
+class InteraccionIn(BaseModel):
+    id_usuario: int
+    mensaje: str
+
+
+@app.post("/api/agentes/{nombre}/interactuar")
+async def interactuar(nombre: str, payload: InteraccionIn):
+    """Interacción conversacional con un agente vía el orquestador único.
+
+    El orquestador arma el prompt desde la config del agente en la BD (identidad
+    + reglas) y responde. Cubre los agentes conversacionales.
+    """
+    try:
+        respuesta = await orquestar_interaccion_agente(nombre, payload.id_usuario, payload.mensaje)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return {"agente": nombre, "respuesta": respuesta}
