@@ -41,7 +41,7 @@ export default function PacerCompletada() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div className="topbar"><Wordmark /><Link className="back" href="/dashboard">{tr("back_dashboard")}</Link></div>
       <h1>{tr("mission_complete")}</h1>
       <p className="sub">{tr("next_intro")}</p>
       {error && <p className="error">{error}</p>}

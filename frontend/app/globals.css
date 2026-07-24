@@ -116,6 +116,10 @@ textarea::placeholder { color: var(--hint); font-style: italic; font-family: var
 
 .link { font-family: var(--inter); font-weight: 600; color: var(--navy); text-decoration: none; font-size: 15px; border-bottom: 1.5px solid var(--gold); padding-bottom: 1px; }
 .link:hover { color: var(--gold); }
+
+/* Enlace dorado de "regresar" — separado del logo (que es solo marca) */
+.back { font-family: var(--inter); font-weight: 600; font-size: 14px; color: var(--gold); text-decoration: none; background: none; border: none; cursor: pointer; padding: 0; }
+.back:hover { text-decoration: underline; }
 .row { display: flex; gap: 18px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
 
 /* Cards */

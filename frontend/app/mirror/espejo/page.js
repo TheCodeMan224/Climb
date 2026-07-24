@@ -40,7 +40,7 @@ export default function MirrorEspejo() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div className="topbar"><Wordmark /><button className="back" onClick={() => router.push("/mirror")}>← Mirror</button></div>
       <div className="eyebrow" style={{ marginBottom: 12 }}>{tr("the_mirror")}</div>
       <h1>{tr("this_is_what_we_saw")}</h1>
       <div className="card">

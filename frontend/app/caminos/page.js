@@ -62,8 +62,8 @@ export default function Caminos() {
   return (
     <main style={{ maxWidth: 900 }}>
       <div className="topbar">
-        <Wordmark href="/dashboard" />
-        <span className="eyebrow">{tr("from_pacer")}</span>
+        <Wordmark />
+        <button className="back" onClick={() => router.push("/dashboard")}>{tr("back_dashboard")}</button>
       </div>
       <h1>{tr("caminos_title")}</h1>
       <p className="sub">{tr("caminos_sub")}</p>

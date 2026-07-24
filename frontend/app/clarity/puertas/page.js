@@ -47,7 +47,7 @@ export default function ClarityPuertas() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div className="topbar"><Wordmark /><button className="back" onClick={() => router.push("/clarity")}>← Clarity</button></div>
       <h1>{tr("next_up_to_you")}</h1>
       <p className="pivote">{cierre.sintesis}</p>
       <p className="sub">{cierre.pregunta}</p>

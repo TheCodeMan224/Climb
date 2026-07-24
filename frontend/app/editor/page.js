@@ -42,7 +42,7 @@ export default function EditorHome() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div className="topbar"><Wordmark /><Link className="back" href="/dashboard">{tr("back_dashboard")}</Link></div>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 10 }}>
         <AgentMark name="Editor" size={44} />
         <h1 style={{ margin: 0 }}>{tr("editor")}</h1>

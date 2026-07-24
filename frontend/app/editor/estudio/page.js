@@ -74,7 +74,7 @@ export default function EditorEstudio() {
   if (!formato) {
     return (
       <main>
-        <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/editor">{tr("back_editor")}</Link></div>
+        <div className="topbar"><Wordmark href="/dashboard" /><Link className="back" href="/editor">{tr("back_editor")}</Link></div>
         <h1>{tr("editor_studio")}</h1>
         {contextoTitulo && <p className="muted">{tr("writing_about")} <strong>{contextoTitulo}</strong></p>}
         <p className="sub">{tr("pick_format")}</p>
@@ -91,7 +91,7 @@ export default function EditorEstudio() {
       <div className="topbar" style={{ marginBottom: 8 }}>
         <Wordmark href="/dashboard" />
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <Link className="link" href="/editor">{tr("back_editor")}</Link>
+          <Link className="back" href="/editor">{tr("back_editor")}</Link>
           {idBorrador && <button className="link" onClick={completar} style={{ background: "none", border: "none", cursor: "pointer" }}>{tr("complete")}</button>}
         </div>
       </div>

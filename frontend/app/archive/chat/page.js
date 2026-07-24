@@ -55,7 +55,7 @@ export default function ArchiveChat() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/archive">{tr("back_archive")}</Link></div>
+      <div className="topbar"><Wordmark /><Link className="back" href="/archive">{tr("back_archive")}</Link></div>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 8 }}>
         <AgentMark name="Archive" size={40} />
         <h1 style={{ margin: 0 }}>Archive</h1>

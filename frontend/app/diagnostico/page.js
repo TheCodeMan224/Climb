@@ -41,7 +41,7 @@ export default function Diagnostico() {
 
   return (
     <main style={{ maxWidth: 900 }}>
-      <div className="topbar"><Wordmark href="/dashboard" /></div>
+      <div className="topbar"><Wordmark /><button className="back" onClick={() => router.push("/dashboard")}>{tr("back_dashboard")}</button></div>
 
       <div className="eyebrow" style={{ marginBottom: 20 }}>{tr("diag_sub")}</div>
       <h1>{tr("diag_saludo")}{d.nombre_usuario ? `, ${d.nombre_usuario}` : ""}</h1>

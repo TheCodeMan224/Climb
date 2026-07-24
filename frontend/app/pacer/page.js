@@ -57,8 +57,8 @@ export default function Pacer() {
   if (sinMision) {
     return (
       <main>
-        <Link className="link" href="/dashboard">{tr("back_dashboard")}</Link>
-        <h1 style={{ marginTop: 16 }}>{tr("pacer_week")}</h1>
+        <div className="topbar"><Wordmark /><Link className="back" href="/dashboard">{tr("back_dashboard")}</Link></div>
+        <h1>{tr("pacer_week")}</h1>
         <p className="sub">{tr("no_active_mission")}</p>
         {error && <p className="error">{error}</p>}
         <button className="btn" disabled={busy} onClick={generar}>{busy ? tr("generating") : tr("generate_mission")}</button>
@@ -76,8 +76,8 @@ export default function Pacer() {
   return (
     <main style={{ maxWidth: 820 }}>
       <div className="topbar">
-        <Wordmark href="/dashboard" />
-        <span className="eyebrow">{tr("from_pacer")}</span>
+        <Wordmark />
+        <Link className="back" href="/dashboard">{tr("back_dashboard")}</Link>
       </div>
 
       <div className="eyebrow" style={{ marginBottom: 10 }}>Pacer</div>

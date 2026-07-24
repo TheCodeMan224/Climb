@@ -94,7 +94,7 @@ export default function MirrorSession() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/mirror">← Mirror</Link></div>
+      <div className="topbar"><Wordmark /><Link className="back" href="/mirror">← Mirror</Link></div>
       <div className="eyebrow" style={{ marginBottom: 8 }}>{tr("pattern_label")} {patron.quote}</div>
       <h1>{tr("onb_progress")} {respondidas + 1}</h1>
       <p className="pivote">{busy && !pregunta ? tr("mirror_preparing") : pregunta}</p>

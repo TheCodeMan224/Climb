@@ -27,7 +27,7 @@ export default function ArchiveFicha() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/archive">{tr("back_archive")}</Link></div>
+      <div className="topbar"><Wordmark /><Link className="back" href="/archive">{tr("back_archive")}</Link></div>
       <div className="eyebrow" style={{ marginBottom: 12 }}>{ficha._recien_generado ? tr("win_archived") : tr("from_archive_eyebrow")}</div>
       <h1>{ficha.titulo}</h1>
       <p className="muted">{ficha.tipo}{ficha.fecha_corta ? ` · ${ficha.fecha_corta}` : ""}</p>

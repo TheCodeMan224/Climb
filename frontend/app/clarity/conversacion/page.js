@@ -55,7 +55,7 @@ export default function ClarityConversacion() {
 
   return (
     <main>
-      <div className="topbar"><Wordmark href="/dashboard" /><Link className="link" href="/clarity">← Clarity</Link></div>
+      <div className="topbar"><Wordmark /><Link className="back" href="/clarity">← Clarity</Link></div>
       <div style={{ margin: "16px 0" }}>
         {turns.map(([who, text], i) => (
           <div key={i} style={{ margin: "12px 0", whiteSpace: "pre-wrap" }}>

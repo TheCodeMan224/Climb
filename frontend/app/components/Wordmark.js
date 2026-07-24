@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
 
 // Logo Climb: archivo cuadrado 500x500 en /public/climb-logo.png con el
 // wordmark centrado y margen blanco arriba/abajo. Lo mostramos dentro de una
@@ -8,11 +7,13 @@ import Link from "next/link";
 // margen vertical y deja solo la banda del wordmark. Si el archivo no existe,
 // cae con gracia al wordmark "Climb" en Syne.
 //
+// Es SOLO marca: no navega (para regresar hay un enlace dorado aparte).
+//
 // RATIO: sube el número para recortar MÁS blanco (banda más delgada), bájalo
 // para mostrar más del logo. Ajústalo si el recorte te clipa las letras.
 const RATIO = 2.4;
 
-export default function Wordmark({ href = "/dashboard", height = 30 }) {
+export default function Wordmark({ height = 30 }) {
   const [err, setErr] = useState(false);
 
   const content = err ? (
@@ -24,9 +25,5 @@ export default function Wordmark({ href = "/dashboard", height = 30 }) {
     </span>
   );
 
-  return href ? (
-    <Link href={href} style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>{content}</Link>
-  ) : (
-    <span style={{ display: "inline-flex", alignItems: "center" }}>{content}</span>
-  );
+  return <span style={{ display: "inline-flex", alignItems: "center" }}>{content}</span>;
 }
